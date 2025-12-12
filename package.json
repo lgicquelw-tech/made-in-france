@@ -1,0 +1,54 @@
+{
+  "name": "made-in-france",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plateforme de découverte Made in France",
+  "author": "Le P'tit Studio",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "test": "turbo test",
+    "test:e2e": "turbo test:e2e",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean && rm -rf node_modules",
+    "db:migrate": "pnpm --filter @mif/database migrate:dev",
+    "db:migrate:prod": "pnpm --filter @mif/database migrate:deploy",
+    "db:push": "pnpm --filter @mif/database db:push",
+    "db:seed": "pnpm --filter @mif/database seed",
+    "db:studio": "pnpm --filter @mif/database studio",
+    "db:generate": "pnpm --filter @mif/database generate",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.5",
+    "prettier": "^3.3.0",
+    "prettier-plugin-tailwindcss": "^0.6.1",
+    "turbo": "^2.0.3",
+    "typescript": "^5.4.5"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+}

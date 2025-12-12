@@ -1,0 +1,672 @@
+// ===========================================
+// Made in France - Database Schema
+// ===========================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector"), uuid_ossp(map: "uuid-ossp"), pg_trgm]
+}
+
+// ===========================================
+// ENUMS
+// ===========================================
+
+enum MadeInFranceLevel {
+  FABRICATION_100_FRANCE
+  ASSEMBLE_FRANCE
+  CONCU_FRANCE
+  MATIERE_FRANCE
+  ENTREPRISE_FRANCAISE
+  MIXTE
+}
+
+enum BrandStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+enum SubscriptionTier {
+  FREE
+  STARTER
+  STANDARD
+  PREMIUM
+}
+
+enum UserRole {
+  CONSUMER
+  BRAND_OWNER
+  BRAND_MANAGER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum EventType {
+  BRAND_PAGE_VIEW
+  PRODUCT_PAGE_VIEW
+  SEARCH_RESULTS_VIEW
+  SEARCH_QUERY
+  FILTER_APPLIED
+  MAP_INTERACTION
+  CLICK_OUT
+  AFFILIATE_CLICK
+  ADD_TO_FAVORITES
+  AI_CONVERSATION
+  AI_RECOMMENDATION_SHOWN
+  AI_RECOMMENDATION_CLICKED
+  BRAND_DASHBOARD_VIEW
+  CAMPAIGN_CREATED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+// ===========================================
+// REFERENCE DATA
+// ===========================================
+
+model Region {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  centerLat   Float?   @map("center_lat")
+  centerLng   Float?   @map("center_lng")
+  bbox        Json?    // Bounding box for map
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  departments Department[]
+  brands      Brand[]
+
+  @@map("regions")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  regionId  String   @map("region_id")
+  name      String
+  code      String   @unique // "35", "75", etc.
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  region Region  @relation(fields: [regionId], references: [id])
+  brands Brand[]
+
+  @@map("departments")
+}
+
+model Sector {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String?  // Icon name (lucide, heroicons)
+  color     String?  // Hex color code
+  createdAt DateTime @default(now()) @map("created_at")
+
+  brands     Brand[]
+  categories Category[]
+
+  @@map("sectors")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  parentId    String?  @map("parent_id")
+  sectorId    String?  @map("sector_id")
+  name        String
+  slug        String   @unique
+  description String?
+  level       Int      @default(0)
+  path        String?  // For hierarchical queries (ltree)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  sector   Sector?    @relation(fields: [sectorId], references: [id])
+
+  brands   BrandCategory[]
+  products Product[]
+
+  @@map("categories")
+}
+
+model Label {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  logoUrl     String?  @map("logo_url")
+  websiteUrl  String?  @map("website_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  brands   BrandLabel[]
+  products ProductLabel[]
+
+  @@map("labels")
+}
+
+// ===========================================
+// BRANDS
+// ===========================================
+
+model Brand {
+  id               String             @id @default(uuid())
+  
+  // Identity
+  name             String
+  slug             String             @unique
+  tagline          String?
+  descriptionShort String?            @map("description_short")
+  descriptionLong  String?            @map("description_long")
+  story            String?            // Brand storytelling
+  
+  // Media
+  logoUrl          String?            @map("logo_url")
+  coverImageUrl    String?            @map("cover_image_url")
+  galleryUrls      Json               @default("[]") @map("gallery_urls")
+  videoUrl         String?            @map("video_url")
+  
+  // Location
+  regionId         String?            @map("region_id")
+  departmentId     String?            @map("department_id")
+  city             String?
+  address          String?
+  postalCode       String?            @map("postal_code")
+  latitude         Float?
+  longitude        Float?
+  
+  // Classification
+  sectorId         String?            @map("sector_id")
+  madeInFranceLevel MadeInFranceLevel @default(MIXTE) @map("made_in_france_level")
+  yearFounded      Int?               @map("year_founded")
+  employeeRange    String?            @map("employee_count_range")
+  
+  // External links
+  websiteUrl       String?            @map("website_url")
+  socialLinks      Json               @default("{}") @map("social_links")
+  
+  // Affiliation
+  affiliateProgram String?            @map("affiliate_program")
+  affiliateId      String?            @map("affiliate_id")
+  affiliateBaseUrl String?            @map("affiliate_base_url")
+  commissionRate   Float?             @map("commission_rate")
+  
+  // Status & Moderation
+  status           BrandStatus        @default(DRAFT)
+  isVerified       Boolean            @default(false) @map("is_verified")
+  isFeatured       Boolean            @default(false) @map("is_featured")
+  isSponsored      Boolean            @default(false) @map("is_sponsored")
+  sponsoredUntil   DateTime?          @map("sponsored_until")
+  
+  // Subscription
+  subscriptionTier SubscriptionTier   @default(FREE) @map("subscription_tier")
+  subscriptionExpiresAt DateTime?     @map("subscription_expires_at")
+  stripeCustomerId String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?        @map("stripe_subscription_id")
+  
+  // SEO
+  seoTitle         String?            @map("seo_title")
+  seoDescription   String?            @map("seo_description")
+  
+  // AI
+  aiGeneratedContent Json             @default("{}") @map("ai_generated_content")
+  embedding        Unsupported("vector(1536)")?
+  
+  // Timestamps
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  publishedAt      DateTime?          @map("published_at")
+  
+  // Relations
+  region           Region?            @relation(fields: [regionId], references: [id])
+  department       Department?        @relation(fields: [departmentId], references: [id])
+  sector           Sector?            @relation(fields: [sectorId], references: [id])
+  
+  categories       BrandCategory[]
+  labels           BrandLabel[]
+  products         Product[]
+  members          BrandMember[]
+  events           Event[]
+  analyticsDaily   BrandAnalyticsDaily[]
+  campaigns        Campaign[]
+  favorites        UserFavorite[]
+
+  @@index([status])
+  @@index([sectorId])
+  @@index([regionId])
+  @@index([isFeatured])
+  @@index([isSponsored])
+  @@map("brands")
+}
+
+model BrandCategory {
+  brandId    String  @map("brand_id")
+  categoryId String  @map("category_id")
+  isPrimary  Boolean @default(false) @map("is_primary")
+
+  brand    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([brandId, categoryId])
+  @@map("brand_categories")
+}
+
+model BrandLabel {
+  brandId String @map("brand_id")
+  labelId String @map("label_id")
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([brandId, labelId])
+  @@map("brand_labels")
+}
+
+// ===========================================
+// PRODUCTS
+// ===========================================
+
+model Product {
+  id               String        @id @default(uuid())
+  brandId          String        @map("brand_id")
+  
+  // Identity
+  name             String
+  slug             String
+  descriptionShort String?       @map("description_short")
+  descriptionLong  String?       @map("description_long")
+  
+  // Media
+  imageUrl         String?       @map("image_url")
+  galleryUrls      Json          @default("[]") @map("gallery_urls")
+  
+  // Classification
+  categoryId       String?       @map("category_id")
+  
+  // Price
+  priceMin         Float?        @map("price_min")
+  priceMax         Float?        @map("price_max")
+  currency         String        @default("EUR")
+  
+  // Manufacturing
+  manufacturingLocation String?  @map("manufacturing_location")
+  materials        Json          @default("[]")
+  madeInFranceLevel MadeInFranceLevel? @map("made_in_france_level")
+  
+  // Buy link
+  externalBuyUrl   String?       @map("external_buy_url")
+  affiliateUrl     String?       @map("affiliate_url")
+  
+  // Tags & Attributes
+  tags             Json          @default("[]")
+  attributes       Json          @default("{}")
+  
+  // Status
+  status           ProductStatus @default(DRAFT)
+  isFeatured       Boolean       @default(false) @map("is_featured")
+  isSponsored      Boolean       @default(false) @map("is_sponsored")
+  
+  // SEO
+  seoTitle         String?       @map("seo_title")
+  seoDescription   String?       @map("seo_description")
+  
+  // AI
+  aiSellingPoints  Json          @default("[]") @map("ai_selling_points")
+  embedding        Unsupported("vector(1536)")?
+  
+  // Timestamps
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  brand            Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  category         Category?     @relation(fields: [categoryId], references: [id])
+  
+  labels           ProductLabel[]
+  events           Event[]
+  favorites        UserFavorite[]
+
+  @@unique([brandId, slug])
+  @@index([brandId])
+  @@index([categoryId])
+  @@index([status])
+  @@map("products")
+}
+
+model ProductLabel {
+  productId String @map("product_id")
+  labelId   String @map("label_id")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label   Label   @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([productId, labelId])
+  @@map("product_labels")
+}
+
+// ===========================================
+// USERS & AUTH
+// ===========================================
+
+model User {
+  id                String    @id @default(uuid())
+  
+  // Auth
+  email             String    @unique
+  emailVerified     Boolean   @default(false) @map("email_verified")
+  passwordHash      String?   @map("password_hash")
+  
+  // Profile
+  firstName         String?   @map("first_name")
+  lastName          String?   @map("last_name")
+  avatarUrl         String?   @map("avatar_url")
+  
+  // Role
+  role              UserRole  @default(CONSUMER)
+  
+  // OAuth
+  oauthProvider     String?   @map("oauth_provider")
+  oauthId           String?   @map("oauth_id")
+  
+  // Preferences
+  preferences       Json      @default("{}")
+  favoriteCategories Json     @default("[]") @map("favorite_categories")
+  favoriteRegions   Json      @default("[]") @map("favorite_regions")
+  
+  // Timestamps
+  lastLoginAt       DateTime? @map("last_login_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  brandMembers           BrandMember[]
+  invitedBrandMembers   BrandMember[] @relation("InvitedBy")
+  favorites              UserFavorite[]
+  events                 Event[]
+  aiConversations        AiConversation[]
+
+  @@map("users")
+}
+
+
+model BrandMember {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  brandId     String    @map("brand_id")
+  role        String    @default("member") // owner, admin, member
+  permissions Json      @default("{}")
+  invitedById String?   @map("invited_by")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  invitedBy User?  @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@unique([userId, brandId])
+  @@map("brand_members")
+}
+
+model UserFavorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  brandId   String?  @map("brand_id")
+  productId String?  @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand   Brand?   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("user_favorites")
+}
+
+// ===========================================
+// ANALYTICS & EVENTS
+// ===========================================
+
+model Event {
+  id        String    @id @default(uuid())
+  
+  // Context
+  eventType EventType @map("event_type")
+  userId    String?   @map("user_id")
+  sessionId String?   @map("session_id")
+  
+  // Entities
+  brandId   String?   @map("brand_id")
+  productId String?   @map("product_id")
+  
+  // Data
+  metadata  Json      @default("{}")
+  
+  // Tracking
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  referrer  String?
+  
+  // Geo
+  country   String?
+  region    String?
+  city      String?
+  
+  // Timestamp
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user    User?    @relation(fields: [userId], references: [id])
+  brand   Brand?   @relation(fields: [brandId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([brandId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("events")
+}
+
+model BrandAnalyticsDaily {
+  id               String   @id @default(uuid())
+  brandId          String   @map("brand_id")
+  date             DateTime @db.Date
+  
+  // Metrics
+  pageViews        Int      @default(0) @map("page_views")
+  uniqueVisitors   Int      @default(0) @map("unique_visitors")
+  clickOuts        Int      @default(0) @map("click_outs")
+  affiliateClicks  Int      @default(0) @map("affiliate_clicks")
+  searchImpressions Int     @default(0) @map("search_impressions")
+  favoritesAdded   Int      @default(0) @map("favorites_added")
+  
+  // Details
+  topSearchQueries Json     @default("[]") @map("top_search_queries")
+  visitorsByRegion Json     @default("{}") @map("visitors_by_region")
+  
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@unique([brandId, date])
+  @@map("brand_analytics_daily")
+}
+
+// ===========================================
+// CAMPAIGNS
+// ===========================================
+
+model Campaign {
+  id             String         @id @default(uuid())
+  brandId        String         @map("brand_id")
+  
+  // Config
+  name           String
+  description    String?
+  
+  // Targeting
+  targetIntents  Json           @default("[]") @map("target_intents")
+  targetCategories Json         @default("[]") @map("target_categories")
+  targetRegions  Json           @default("[]") @map("target_regions")
+  
+  // Budget
+  budgetTotal    Float?         @map("budget_total")
+  budgetDaily    Float?         @map("budget_daily")
+  budgetSpent    Float          @default(0) @map("budget_spent")
+  startDate      DateTime?      @map("start_date") @db.Date
+  endDate        DateTime?      @map("end_date") @db.Date
+  
+  // Status
+  status         CampaignStatus @default(DRAFT)
+  
+  // Performance
+  impressions    Int            @default(0)
+  clicks         Int            @default(0)
+  
+  // Timestamps
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  brand Brand @relation(fields: [brandId], references: [id])
+
+  @@map("campaigns")
+}
+
+// ===========================================
+// AI & SEARCH
+// ===========================================
+
+model AiConversation {
+  id                 String    @id @default(uuid())
+  userId             String?   @map("user_id")
+  sessionId          String?   @map("session_id")
+  
+  // Conversation
+  messages           Json      // [{role, content, timestamp}]
+  
+  // Parsed intent
+  parsedIntent       Json?     @map("parsed_intent")
+  
+  // Suggestions
+  suggestedBrandIds  String[]  @map("suggested_brand_ids")
+  suggestedProductIds String[] @map("suggested_product_ids")
+  
+  // Timestamps
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([sessionId])
+  @@map("ai_conversations")
+}
+
+model SearchCache {
+  id           String    @id @default(uuid())
+  queryHash    String    @unique @map("query_hash")
+  queryText    String    @map("query_text")
+  parsedFilters Json?    @map("parsed_filters")
+  results      Json
+  expiresAt    DateTime? @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@map("search_cache")
+}
+
+model AiPrompt {
+  id            String   @id @default(uuid())
+  name          String
+  version       Int      @default(1)
+  
+  // Prompt
+  systemMessage String?  @map("system_message")
+  userTemplate  String?  @map("user_template")
+  
+  // Config
+  model         String?
+  temperature   Float?
+  maxTokens     Int?     @map("max_tokens")
+  
+  // Status
+  isActive      Boolean  @default(true) @map("is_active")
+  
+  // Timestamps
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, version])
+  @@map("ai_prompts")
+}
+
+// ===========================================
+// SUBSCRIPTIONS & BILLING
+// ===========================================
+
+model SubscriptionPlan {
+  id                    String           @id @default(uuid())
+  tier                  SubscriptionTier @unique
+  name                  String
+  description           String?
+  
+  // Pricing
+  priceMonthly          Float?           @map("price_monthly")
+  priceYearly           Float?           @map("price_yearly")
+  stripePriceIdMonthly  String?          @map("stripe_price_id_monthly")
+  stripePriceIdYearly   String?          @map("stripe_price_id_yearly")
+  
+  // Limits
+  maxProducts           Int?             @map("max_products")
+  maxTeamMembers        Int?             @map("max_team_members")
+  hasAnalytics          Boolean          @default(false) @map("has_analytics")
+  hasAdvancedAnalytics  Boolean          @default(false) @map("has_advanced_analytics")
+  hasCampaigns          Boolean          @default(false) @map("has_campaigns")
+  hasApiAccess          Boolean          @default(false) @map("has_api_access")
+  
+  // Features
+  features              Json             @default("[]")
+  
+  // Display
+  isPopular             Boolean          @default(false) @map("is_popular")
+  displayOrder          Int              @default(0) @map("display_order")
+  
+  createdAt             DateTime         @default(now()) @map("created_at")
+
+  @@map("subscription_plans")
+}
+
+model Invoice {
+  id              String   @id @default(uuid())
+  brandId         String   @map("brand_id")
+  stripeInvoiceId String?  @map("stripe_invoice_id")
+  
+  amount          Float
+  currency        String   @default("EUR")
+  status          String
+  
+  pdfUrl          String?  @map("pdf_url")
+  
+  periodStart     DateTime? @map("period_start") @db.Date
+  periodEnd       DateTime? @map("period_end") @db.Date
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("invoices")
+}
