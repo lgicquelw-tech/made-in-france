@@ -10,7 +10,7 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [pgvector(map: "vector"), uuid_ossp(map: "uuid-ossp"), pg_trgm]
+  extensions = [uuid_ossp(map: "uuid-ossp"), pg_trgm]
 }
 
 // ===========================================
@@ -43,17 +43,8 @@ enum ProductStatus {
 
 enum SubscriptionTier {
   FREE
-  STARTER
-  STANDARD
   PREMIUM
-}
-
-enum UserRole {
-  CONSUMER
-  BRAND_OWNER
-  BRAND_MANAGER
-  ADMIN
-  SUPER_ADMIN
+  ROYALE
 }
 
 enum EventType {
@@ -82,6 +73,20 @@ enum CampaignStatus {
   CANCELLED
 }
 
+enum BrandOwnerRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
 // ===========================================
 // REFERENCE DATA
 // ===========================================
@@ -92,7 +97,7 @@ model Region {
   slug        String   @unique
   centerLat   Float?   @map("center_lat")
   centerLng   Float?   @map("center_lng")
-  bbox        Json?    // Bounding box for map
+  bbox        Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -106,7 +111,7 @@ model Department {
   id        String   @id @default(uuid())
   regionId  String   @map("region_id")
   name      String
-  code      String   @unique // "35", "75", etc.
+  code      String   @unique
   slug      String   @unique
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -120,8 +125,8 @@ model Sector {
   id        String   @id @default(uuid())
   name      String   @unique
   slug      String   @unique
-  icon      String?  // Icon name (lucide, heroicons)
-  color     String?  // Hex color code
+  icon      String?
+  color     String?
   createdAt DateTime @default(now()) @map("created_at")
 
   brands     Brand[]
@@ -138,7 +143,7 @@ model Category {
   slug        String   @unique
   description String?
   level       Int      @default(0)
-  path        String?  // For hierarchical queries (ltree)
+  path        String?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -174,21 +179,18 @@ model Label {
 model Brand {
   id               String             @id @default(uuid())
   
-  // Identity
   name             String
   slug             String             @unique
   tagline          String?
   descriptionShort String?            @map("description_short")
   descriptionLong  String?            @map("description_long")
-  story            String?            // Brand storytelling
+  story            String?
   
-  // Media
   logoUrl          String?            @map("logo_url")
   coverImageUrl    String?            @map("cover_image_url")
   galleryUrls      Json               @default("[]") @map("gallery_urls")
   videoUrl         String?            @map("video_url")
   
-  // Location
   regionId         String?            @map("region_id")
   departmentId     String?            @map("department_id")
   city             String?
@@ -197,49 +199,39 @@ model Brand {
   latitude         Float?
   longitude        Float?
   
-  // Classification
   sectorId         String?            @map("sector_id")
   madeInFranceLevel MadeInFranceLevel @default(MIXTE) @map("made_in_france_level")
   yearFounded      Int?               @map("year_founded")
   employeeRange    String?            @map("employee_count_range")
   
-  // External links
   websiteUrl       String?            @map("website_url")
   socialLinks      Json               @default("{}") @map("social_links")
   
-  // Affiliation
   affiliateProgram String?            @map("affiliate_program")
   affiliateId      String?            @map("affiliate_id")
   affiliateBaseUrl String?            @map("affiliate_base_url")
   commissionRate   Float?             @map("commission_rate")
   
-  // Status & Moderation
   status           BrandStatus        @default(DRAFT)
   isVerified       Boolean            @default(false) @map("is_verified")
   isFeatured       Boolean            @default(false) @map("is_featured")
   isSponsored      Boolean            @default(false) @map("is_sponsored")
   sponsoredUntil   DateTime?          @map("sponsored_until")
   
-  // Subscription
   subscriptionTier SubscriptionTier   @default(FREE) @map("subscription_tier")
   subscriptionExpiresAt DateTime?     @map("subscription_expires_at")
   stripeCustomerId String?            @map("stripe_customer_id")
   stripeSubscriptionId String?        @map("stripe_subscription_id")
   
-  // SEO
   seoTitle         String?            @map("seo_title")
   seoDescription   String?            @map("seo_description")
   
-  // AI
   aiGeneratedContent Json             @default("{}") @map("ai_generated_content")
-  embedding        Unsupported("vector(1536)")?
   
-  // Timestamps
   createdAt        DateTime           @default(now()) @map("created_at")
   updatedAt        DateTime           @updatedAt @map("updated_at")
   publishedAt      DateTime?          @map("published_at")
   
-  // Relations
   region           Region?            @relation(fields: [regionId], references: [id])
   department       Department?        @relation(fields: [departmentId], references: [id])
   sector           Sector?            @relation(fields: [sectorId], references: [id])
@@ -247,11 +239,17 @@ model Brand {
   categories       BrandCategory[]
   labels           BrandLabel[]
   products         Product[]
-  members          BrandMember[]
   events           Event[]
   analyticsDaily   BrandAnalyticsDaily[]
   campaigns        Campaign[]
-  favorites        UserFavorite[]
+  favoritedBy      Favorite[]
+  views            BrandView[]
+  collectionBrands CollectionBrand[]
+  featuredBrands   FeaturedBrand[]
+  trendingBrands   TrendingBrand[]
+  owners           BrandOwner[]
+  claimRequests    BrandClaimRequest[]
+  images       BrandImage[]
 
   @@index([status])
   @@index([sectorId])
@@ -259,6 +257,19 @@ model Brand {
   @@index([isFeatured])
   @@index([isSponsored])
   @@map("brands")
+}
+
+model BrandImage {
+  id        String   @id @default(uuid())
+  brandId   String   @map("brand_id")
+  url       String
+  publicId  String?  @map("public_id")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("brand_images")
 }
 
 model BrandCategory {
@@ -292,66 +303,57 @@ model Product {
   id               String        @id @default(uuid())
   brandId          String        @map("brand_id")
   
-  // Identity
   name             String
   slug             String
   descriptionShort String?       @map("description_short")
   descriptionLong  String?       @map("description_long")
   
-  // Media
   imageUrl         String?       @map("image_url")
   galleryUrls      Json          @default("[]") @map("gallery_urls")
   
-  // Classification
   categoryId       String?       @map("category_id")
   
-  // Price
   priceMin         Float?        @map("price_min")
   priceMax         Float?        @map("price_max")
   currency         String        @default("EUR")
   
-  // Manufacturing
   manufacturingLocation String?  @map("manufacturing_location")
   materials        Json          @default("[]")
   madeInFranceLevel MadeInFranceLevel? @map("made_in_france_level")
   
-  // Buy link
   externalBuyUrl   String?       @map("external_buy_url")
   affiliateUrl     String?       @map("affiliate_url")
   
-  // Tags & Attributes
   tags             Json          @default("[]")
   attributes       Json          @default("{}")
   
-  // Status
   status           ProductStatus @default(DRAFT)
   isFeatured       Boolean       @default(false) @map("is_featured")
   isSponsored      Boolean       @default(false) @map("is_sponsored")
   
-  // SEO
   seoTitle         String?       @map("seo_title")
   seoDescription   String?       @map("seo_description")
   
-  // AI
   aiSellingPoints  Json          @default("[]") @map("ai_selling_points")
-  embedding        Unsupported("vector(1536)")?
   
-  // Timestamps
+  externalId       String?       @map("external_id")
+  externalSource   String?       @map("external_source")
+  externalData     String?       @map("external_data")
+  
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
   
-  // Relations
   brand            Brand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
   category         Category?     @relation(fields: [categoryId], references: [id])
   
   labels           ProductLabel[]
   events           Event[]
-  favorites        UserFavorite[]
 
   @@unique([brandId, slug])
   @@index([brandId])
   @@index([categoryId])
   @@index([status])
+  @@index([externalSource, externalId])
   @@map("products")
 }
 
@@ -367,80 +369,171 @@ model ProductLabel {
 }
 
 // ===========================================
-// USERS & AUTH
+// USERS & AUTH (NextAuth.js)
 // ===========================================
 
 model User {
-  id                String    @id @default(uuid())
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  password      String?
   
-  // Auth
-  email             String    @unique
-  emailVerified     Boolean   @default(false) @map("email_verified")
-  passwordHash      String?   @map("password_hash")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
   
-  // Profile
-  firstName         String?   @map("first_name")
-  lastName          String?   @map("last_name")
-  avatarUrl         String?   @map("avatar_url")
+  points        Int       @default(0)
+  rank          String    @default("Explorateur")
   
-  // Role
-  role              UserRole  @default(CONSUMER)
+  preferences   Json      @default("{}")
   
-  // OAuth
-  oauthProvider     String?   @map("oauth_provider")
-  oauthId           String?   @map("oauth_id")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
   
-  // Preferences
-  preferences       Json      @default("{}")
-  favoriteCategories Json     @default("[]") @map("favorite_categories")
-  favoriteRegions   Json      @default("[]") @map("favorite_regions")
-  
-  // Timestamps
-  lastLoginAt       DateTime? @map("last_login_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  
-  // Relations
-  brandMembers           BrandMember[]
-  invitedBrandMembers   BrandMember[] @relation("InvitedBy")
-  favorites              UserFavorite[]
-  events                 Event[]
-  aiConversations        AiConversation[]
+  accounts      Account[]
+  sessions      Session[]
+  favorites     Favorite[]
+  brandViews    BrandView[]
+  conversations AiConversation[]
+  ownedBrands   BrandOwner[]
 
   @@map("users")
 }
 
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
-model BrandMember {
-  id          String    @id @default(uuid())
-  userId      String    @map("user_id")
-  brandId     String    @map("brand_id")
-  role        String    @default("member") // owner, admin, member
-  permissions Json      @default("{}")
-  invitedById String?   @map("invited_by")
-  acceptedAt  DateTime? @map("accepted_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  brand     Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  invitedBy User?  @relation("InvitedBy", fields: [invitedById], references: [id])
-
-  @@unique([userId, brandId])
-  @@map("brand_members")
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
-model UserFavorite {
-  id        String   @id @default(uuid())
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ===========================================
+// USER INTERACTIONS
+// ===========================================
+
+model Favorite {
+  id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  brandId   String?  @map("brand_id")
-  productId String?  @map("product_id")
+  brandId   String   @map("brand_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  brand   Brand?   @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
-  @@map("user_favorites")
+  @@unique([userId, brandId])
+  @@map("favorites")
+}
+
+model BrandView {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  brandId   String   @map("brand_id")
+  viewedAt  DateTime @default(now()) @map("viewed_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([userId, viewedAt(sort: Desc)])
+  @@map("brand_views")
+}
+
+// ===========================================
+// BRAND OWNERSHIP & CLAIMS
+// ===========================================
+
+model BrandOwner {
+  id        String         @id @default(uuid())
+  brandId   String         @map("brand_id")
+  userId    String         @map("user_id")
+  role      BrandOwnerRole @default(EDITOR)
+  
+  invitedBy String?        @map("invited_by")
+  invitedAt DateTime       @default(now()) @map("invited_at")
+  acceptedAt DateTime?     @map("accepted_at")
+  
+  isActive  Boolean        @default(true) @map("is_active")
+  
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, userId])
+  @@index([userId])
+  @@map("brand_owners")
+}
+
+model BrandClaimRequest {
+  id              String      @id @default(uuid())
+  brandId         String      @map("brand_id")
+  
+  email           String
+  firstName       String      @map("first_name")
+  lastName        String      @map("last_name")
+  phone           String?
+  jobTitle        String?     @map("job_title")
+  companyRole     String?     @map("company_role")
+  
+  proofType       String      @map("proof_type")
+  proofDetails    String?     @map("proof_details")
+  proofDocumentUrl String?    @map("proof_document_url")
+  
+  verificationCode String?    @map("verification_code")
+  verificationSentAt DateTime? @map("verification_sent_at")
+  verifiedAt      DateTime?   @map("verified_at")
+  
+  status          ClaimStatus @default(PENDING)
+  reviewedBy      String?     @map("reviewed_by")
+  reviewedAt      DateTime?   @map("reviewed_at")
+  reviewNotes     String?     @map("review_notes")
+  
+  userId          String?     @map("user_id")
+  
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+  @@index([email])
+  @@index([status])
+  @@map("brand_claim_requests")
 }
 
 // ===========================================
@@ -450,32 +543,25 @@ model UserFavorite {
 model Event {
   id        String    @id @default(uuid())
   
-  // Context
   eventType EventType @map("event_type")
   userId    String?   @map("user_id")
   sessionId String?   @map("session_id")
   
-  // Entities
   brandId   String?   @map("brand_id")
   productId String?   @map("product_id")
   
-  // Data
   metadata  Json      @default("{}")
   
-  // Tracking
   ipAddress String?   @map("ip_address")
   userAgent String?   @map("user_agent")
   referrer  String?
   
-  // Geo
   country   String?
   region    String?
   city      String?
   
-  // Timestamp
   createdAt DateTime  @default(now()) @map("created_at")
 
-  user    User?    @relation(fields: [userId], references: [id])
   brand   Brand?   @relation(fields: [brandId], references: [id])
   product Product? @relation(fields: [productId], references: [id])
 
@@ -490,7 +576,6 @@ model BrandAnalyticsDaily {
   brandId          String   @map("brand_id")
   date             DateTime @db.Date
   
-  // Metrics
   pageViews        Int      @default(0) @map("page_views")
   uniqueVisitors   Int      @default(0) @map("unique_visitors")
   clickOuts        Int      @default(0) @map("click_outs")
@@ -498,7 +583,6 @@ model BrandAnalyticsDaily {
   searchImpressions Int     @default(0) @map("search_impressions")
   favoritesAdded   Int      @default(0) @map("favorites_added")
   
-  // Details
   topSearchQueries Json     @default("[]") @map("top_search_queries")
   visitorsByRegion Json     @default("{}") @map("visitors_by_region")
   
@@ -518,30 +602,24 @@ model Campaign {
   id             String         @id @default(uuid())
   brandId        String         @map("brand_id")
   
-  // Config
   name           String
   description    String?
   
-  // Targeting
   targetIntents  Json           @default("[]") @map("target_intents")
   targetCategories Json         @default("[]") @map("target_categories")
   targetRegions  Json           @default("[]") @map("target_regions")
   
-  // Budget
   budgetTotal    Float?         @map("budget_total")
   budgetDaily    Float?         @map("budget_daily")
   budgetSpent    Float          @default(0) @map("budget_spent")
   startDate      DateTime?      @map("start_date") @db.Date
   endDate        DateTime?      @map("end_date") @db.Date
   
-  // Status
   status         CampaignStatus @default(DRAFT)
   
-  // Performance
   impressions    Int            @default(0)
   clicks         Int            @default(0)
   
-  // Timestamps
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
@@ -559,17 +637,12 @@ model AiConversation {
   userId             String?   @map("user_id")
   sessionId          String?   @map("session_id")
   
-  // Conversation
-  messages           Json      // [{role, content, timestamp}]
-  
-  // Parsed intent
+  messages           Json
   parsedIntent       Json?     @map("parsed_intent")
   
-  // Suggestions
   suggestedBrandIds  String[]  @map("suggested_brand_ids")
   suggestedProductIds String[] @map("suggested_product_ids")
   
-  // Timestamps
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
@@ -596,19 +669,15 @@ model AiPrompt {
   name          String
   version       Int      @default(1)
   
-  // Prompt
   systemMessage String?  @map("system_message")
   userTemplate  String?  @map("user_template")
   
-  // Config
   model         String?
   temperature   Float?
   maxTokens     Int?     @map("max_tokens")
   
-  // Status
   isActive      Boolean  @default(true) @map("is_active")
   
-  // Timestamps
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -626,13 +695,11 @@ model SubscriptionPlan {
   name                  String
   description           String?
   
-  // Pricing
   priceMonthly          Float?           @map("price_monthly")
   priceYearly           Float?           @map("price_yearly")
   stripePriceIdMonthly  String?          @map("stripe_price_id_monthly")
   stripePriceIdYearly   String?          @map("stripe_price_id_yearly")
   
-  // Limits
   maxProducts           Int?             @map("max_products")
   maxTeamMembers        Int?             @map("max_team_members")
   hasAnalytics          Boolean          @default(false) @map("has_analytics")
@@ -640,10 +707,8 @@ model SubscriptionPlan {
   hasCampaigns          Boolean          @default(false) @map("has_campaigns")
   hasApiAccess          Boolean          @default(false) @map("has_api_access")
   
-  // Features
   features              Json             @default("[]")
   
-  // Display
   isPopular             Boolean          @default(false) @map("is_popular")
   displayOrder          Int              @default(0) @map("display_order")
   
@@ -669,4 +734,108 @@ model Invoice {
   createdAt       DateTime @default(now()) @map("created_at")
 
   @@map("invoices")
+}
+
+// ===========================================
+// BACK-OFFICE & ADMINISTRATION
+// ===========================================
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  role         String   @default("admin")
+  isActive     Boolean  @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_users")
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?  @map("image_url")
+  color       String?
+  
+  isActive    Boolean  @default(true) @map("is_active")
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  displayOrder Int     @default(0) @map("display_order")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  brands      CollectionBrand[]
+
+  @@map("collections")
+}
+
+model CollectionBrand {
+  collectionId String   @map("collection_id")
+  brandId      String   @map("brand_id")
+  displayOrder Int      @default(0) @map("display_order")
+  addedAt      DateTime @default(now()) @map("added_at")
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  brand      Brand      @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, brandId])
+  @@map("collection_brands")
+}
+
+model FeaturedBrand {
+  id           String   @id @default(uuid())
+  brandId      String   @map("brand_id")
+  
+  title        String?
+  description  String?
+  imageUrl     String?  @map("image_url")
+  
+  featuredType String   @default("weekly") @map("featured_type")
+  
+  isActive     Boolean  @default(true) @map("is_active")
+  startDate    DateTime @map("start_date")
+  endDate      DateTime @map("end_date")
+  displayOrder Int      @default(0) @map("display_order")
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("featured_brands")
+}
+
+model TrendingBrand {
+  id           String    @id @default(uuid())
+  brandId      String    @map("brand_id")
+  
+  trendScore   Int       @default(0) @map("trend_score")
+  reason       String?
+  
+  isActive     Boolean   @default(true) @map("is_active")
+  startDate    DateTime? @map("start_date")
+  endDate      DateTime? @map("end_date")
+  displayOrder Int       @default(0) @map("display_order")
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("trending_brands")
+}
+
+model SiteSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
 }

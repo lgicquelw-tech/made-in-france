@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Map, { Marker, Popup, NavigationControl } from 'react-map-gl';
 import Link from 'next/link';
-import { MapPin, X, ExternalLink, Building2, Filter, Award } from 'lucide-react';
+import { MapPin, X, ExternalLink, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -18,14 +18,29 @@ interface Brand {
   latitude: number | null;
   longitude: number | null;
   labels: string[];
+  sector: string | null;
+  sectorSlug: string | null;
+  sectorColor: string;
+}
+
+interface Sector {
+  slug: string;
+  name: string;
+  color: string;
 }
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-const LABEL_FILTERS = [
-  { id: 'epv', name: 'EPV', fullName: 'Entreprise du Patrimoine Vivant', color: 'bg-amber-500' },
-  { id: 'ofg', name: 'OFG', fullName: 'Origine France Garantie', color: 'bg-blue-500' },
-  { id: 'artisan', name: 'Artisan', fullName: 'Artisan', color: 'bg-green-500' },
+const SECTORS: Sector[] = [
+  { slug: 'mode-accessoires', name: 'Mode & Accessoires', color: '#3B82F6' },
+  { slug: 'maison-jardin', name: 'Maison & Jardin', color: '#10B981' },
+  { slug: 'gastronomie', name: 'Gastronomie', color: '#F59E0B' },
+  { slug: 'cosmetique', name: 'Cosmétique', color: '#EC4899' },
+  { slug: 'enfance', name: 'Enfance', color: '#8B5CF6' },
+  { slug: 'loisirs-sport', name: 'Loisirs & Sport', color: '#06B6D4' },
+  { slug: 'animaux', name: 'Animaux', color: '#8B4513' },
+  { slug: 'sante-nutrition', name: 'Santé & Nutrition', color: '#22C55E' },
+  { slug: 'high-tech', name: 'High-Tech', color: '#6366F1' },
 ];
 
 export default function CartePage() {
@@ -33,7 +48,7 @@ export default function CartePage() {
   const [filteredBrands, setFilteredBrands] = useState<Brand[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [activeSectors, setActiveSectors] = useState<string[]>([]);
   const [viewState, setViewState] = useState({
     latitude: 46.603354,
     longitude: 1.888334,
@@ -59,25 +74,21 @@ export default function CartePage() {
 
   // Filtrer les marques quand les filtres changent
   useEffect(() => {
-    if (activeFilters.length === 0) {
+    if (activeSectors.length === 0) {
       setFilteredBrands(allBrands);
     } else {
       const filtered = allBrands.filter(brand => 
-        activeFilters.some(filter => 
-          brand.labels.some(label => 
-            label.toLowerCase().includes(filter.toLowerCase())
-          )
-        )
+        brand.sectorSlug && activeSectors.includes(brand.sectorSlug)
       );
       setFilteredBrands(filtered);
     }
-  }, [activeFilters, allBrands]);
+  }, [activeSectors, allBrands]);
 
-  const toggleFilter = (filterId: string) => {
-    setActiveFilters(prev => 
-      prev.includes(filterId) 
-        ? prev.filter(f => f !== filterId)
-        : [...prev, filterId]
+  const toggleSector = (sectorSlug: string) => {
+    setActiveSectors(prev => 
+      prev.includes(sectorSlug) 
+        ? prev.filter(s => s !== sectorSlug)
+        : [...prev, sectorSlug]
     );
     setSelectedBrand(null);
   };
@@ -93,13 +104,6 @@ export default function CartePage() {
       }));
     }
   }, []);
-
-  const getMarkerColor = (labels: string[]) => {
-    if (labels.some(l => l.toLowerCase().includes('patrimoine'))) return 'bg-amber-500';
-    if (labels.some(l => l.toLowerCase().includes('origine'))) return 'bg-blue-500';
-    if (labels.some(l => l.toLowerCase().includes('artisan'))) return 'bg-green-500';
-    return 'bg-france-blue';
-  };
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -121,31 +125,37 @@ export default function CartePage() {
             <h1 className="text-2xl font-bold text-gray-900">Carte des marques</h1>
             <p className="text-gray-600">
               {filteredBrands.length} marques affichées
-              {activeFilters.length > 0 && ` (${allBrands.length} au total)`}
+              {activeSectors.length > 0 && ` (${allBrands.length} au total)`}
             </p>
           </div>
           
-          {/* Filtres */}
-          <div className="flex items-center gap-2">
+          {/* Filtres par secteur */}
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter className="h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-500 mr-2">Filtrer :</span>
-            {LABEL_FILTERS.map(filter => (
+            <span className="text-sm text-gray-500 mr-2">Secteurs :</span>
+            {SECTORS.map(sector => (
               <button
-                key={filter.id}
-                onClick={() => toggleFilter(filter.id)}
+                key={sector.slug}
+                onClick={() => toggleSector(sector.slug)}
+                style={{
+                  backgroundColor: activeSectors.includes(sector.slug) ? sector.color : undefined,
+                }}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5
-                  ${activeFilters.includes(filter.id) 
-                    ? `${filter.color} text-white` 
+                  ${activeSectors.includes(sector.slug) 
+                    ? 'text-white' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
               >
-                <Award className="h-3.5 w-3.5" />
-                {filter.name}
+                <span 
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: sector.color }}
+                />
+                {sector.name}
               </button>
             ))}
-            {activeFilters.length > 0 && (
+            {activeSectors.length > 0 && (
               <button
-                onClick={() => setActiveFilters([])}
+                onClick={() => setActiveSectors([])}
                 className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 underline"
               >
                 Réinitialiser
@@ -184,7 +194,10 @@ export default function CartePage() {
                   }}
                 >
                   <div className="cursor-pointer transform hover:scale-125 transition-transform">
-                    <div className={`${getMarkerColor(brand.labels)} text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white text-xs font-bold`}>
+                    <div 
+                      className="text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white text-xs font-bold"
+                      style={{ backgroundColor: brand.sectorColor || '#002395' }}
+                    >
                       {brand.name.charAt(0)}
                     </div>
                   </div>
@@ -199,19 +212,46 @@ export default function CartePage() {
                 anchor="bottom"
                 onClose={() => setSelectedBrand(null)}
                 closeButton={false}
-                className="rounded-xl"
+                maxWidth="300px"
                 offset={15}
               >
-                <div className="p-4 min-w-[250px]">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-bold text-gray-900 text-lg">{selectedBrand.name}</h3>
+                <div className="p-4 w-[280px]">
+                  <div className="flex items-start gap-3 mb-3">
+                    {/* Logo */}
+                    {selectedBrand.websiteUrl && (
+                      <div 
+                        className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
+                        style={{ backgroundColor: `${selectedBrand.sectorColor}20` }}
+                      >
+                        <img 
+                          src={`https://www.google.com/s2/favicons?domain=${new URL(selectedBrand.websiteUrl).hostname}&sz=64`}
+                          alt={selectedBrand.name}
+                          className="w-7 h-7 object-contain"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-900 text-lg pr-6">{selectedBrand.name}</h3>
+                    </div>
                     <button
                       onClick={() => setSelectedBrand(null)}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-gray-400 hover:text-gray-600 absolute top-2 right-2"
                     >
                       <X className="h-4 w-4" />
                     </button>
                   </div>
+                  
+                  {/* Secteur */}
+                  {selectedBrand.sector && (
+                    <div className="mb-3">
+                      <span 
+                        className="text-xs px-2 py-1 rounded-full text-white"
+                        style={{ backgroundColor: selectedBrand.sectorColor }}
+                      >
+                        {selectedBrand.sector}
+                      </span>
+                    </div>
+                  )}
                   
                   {/* Labels */}
                   {selectedBrand.labels.length > 0 && (
@@ -219,7 +259,7 @@ export default function CartePage() {
                       {selectedBrand.labels.map((label, idx) => (
                         <span 
                           key={idx}
-                          className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full"
+                          className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full"
                         >
                           {label}
                         </span>
@@ -234,10 +274,10 @@ export default function CartePage() {
                   )}
 
                   <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
-                    <MapPin className="h-4 w-4" />
-                    <span>{selectedBrand.city}</span>
+                    <MapPin className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{selectedBrand.city}</span>
                     {selectedBrand.region && (
-                      <span className="text-france-blue">• {selectedBrand.region}</span>
+                      <span className="text-france-blue truncate">• {selectedBrand.region}</span>
                     )}
                   </div>
 
@@ -262,25 +302,18 @@ export default function CartePage() {
         )}
 
         {/* Legend */}
-        <div className="absolute bottom-6 left-6 bg-white rounded-xl shadow-lg p-4">
-          <h3 className="font-semibold text-gray-900 mb-3">Légende</h3>
+        <div className="absolute bottom-6 left-6 hidden md:block bg-white rounded-xl shadow-lg p-4 max-h-80 overflow-y-auto">
+          <h3 className="font-semibold text-gray-900 mb-3">Secteurs</h3>
           <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="bg-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">E</div>
-              <span className="text-gray-600">EPV</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">O</div>
-              <span className="text-gray-600">Origine France Garantie</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">A</div>
-              <span className="text-gray-600">Artisan</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-france-blue text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">M</div>
-              <span className="text-gray-600">Autres marques</span>
-            </div>
+            {SECTORS.map(sector => (
+              <div key={sector.slug} className="flex items-center gap-2">
+                <div 
+                  className="rounded-full w-4 h-4"
+                  style={{ backgroundColor: sector.color }}
+                />
+                <span className="text-gray-600">{sector.name}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

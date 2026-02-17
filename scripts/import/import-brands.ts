@@ -152,52 +152,73 @@ const REGION_ALIASES: Record<string, string> = {
 };
 
 const SECTOR_MAPPING: Record<string, string> = {
-  'mode': 'Mode',
-  'textile': 'Mode',
-  'vêtements': 'Mode',
-  'habillement': 'Mode',
-  'accessoires': 'Mode',
-  'chaussures': 'Mode',
-  'maroquinerie': 'Mode',
+  // Mode & Accessoires
+  'mode & accessoires': 'Mode & Accessoires',
+  'mode': 'Mode & Accessoires',
+  'accessoires': 'Mode & Accessoires',
+  'textile': 'Mode & Accessoires',
+  'vêtements': 'Mode & Accessoires',
+  'habillement': 'Mode & Accessoires',
+  'chaussures': 'Mode & Accessoires',
+  'maroquinerie': 'Mode & Accessoires',
   
-  'maison': 'Maison',
-  'décoration': 'Maison',
-  'déco': 'Maison',
-  'mobilier': 'Maison',
-  'ameublement': 'Maison',
-  'linge': 'Maison',
+  // Maison & Jardin
+  'maison & jardin': 'Maison & Jardin',
+  'maison': 'Maison & Jardin',
+  'jardin': 'Maison & Jardin',
+  'décoration': 'Maison & Jardin',
+  'déco': 'Maison & Jardin',
+  'mobilier': 'Maison & Jardin',
+  'ameublement': 'Maison & Jardin',
+  'linge': 'Maison & Jardin',
+  'extérieur': 'Maison & Jardin',
   
+  // Gastronomie
+  'gastronomie': 'Gastronomie',
   'alimentaire': 'Gastronomie',
   'food': 'Gastronomie',
   'agroalimentaire': 'Gastronomie',
-  'gastronomie': 'Gastronomie',
   'épicerie': 'Gastronomie',
   'boissons': 'Gastronomie',
   
-  'cosmétique': 'Cosmétiques',
-  'cosmétiques': 'Cosmétiques',
-  'beauté': 'Cosmétiques',
-  'soins': 'Cosmétiques',
+  // Cosmétique
+  'cosmétique': 'Cosmétique',
+  'cosmetique': 'Cosmétique',
+  'cosmétiques': 'Cosmétique',
+  'beauté': 'Cosmétique',
+  'soins': 'Cosmétique',
   
-  'enfant': 'Enfants',
-  'enfants': 'Enfants',
-  'puériculture': 'Enfants',
-  'jouets': 'Enfants',
+  // Enfance
+  'enfance': 'Enfance',
+  'enfant': 'Enfance',
+  'enfants': 'Enfance',
+  'puériculture': 'Enfance',
+  'jouets': 'Enfance',
   
-  'tech': 'High-Tech',
+  // Loisirs & Sport
+  'loisirs & sport': 'Loisirs & Sport',
+  'loisirs': 'Loisirs & Sport',
+  'sport': 'Loisirs & Sport',
+  'outdoor': 'Loisirs & Sport',
+  'sport & loisirs': 'Loisirs & Sport',
+  
+  // Animaux
+  'animaux': 'Animaux',
+  'animal': 'Animaux',
+  'animalerie': 'Animaux',
+  
+  // Santé & Nutrition
+  'santé & nutrition': 'Santé & Nutrition',
+  'santé': 'Santé & Nutrition',
+  'nutrition': 'Santé & Nutrition',
+  'bien-être': 'Santé & Nutrition',
+  
+  // High-Tech
   'high-tech': 'High-Tech',
+  'hightech': 'High-Tech',
+  'tech': 'High-Tech',
   'électronique': 'High-Tech',
   'informatique': 'High-Tech',
-  
-  'sport': 'Sport & Loisirs',
-  'loisirs': 'Sport & Loisirs',
-  'outdoor': 'Sport & Loisirs',
-  
-  'jardin': 'Jardin & Extérieur',
-  'extérieur': 'Jardin & Extérieur',
-  
-  'artisanat': 'Artisanat',
-  'artisan': 'Artisanat',
 };
 
 const MADE_IN_FRANCE_MAPPING: Record<string, MadeInFranceLevel> = {

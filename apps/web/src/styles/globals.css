@@ -2,50 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== MADE IN FRANCE - DESIGN SYSTEM ===== */
+/* Palette tricolore élégante : Bleu marine, Blanc crème, Rouge bordeaux */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Couleurs principales - Tricolore élégant */
+    --france-blue: 220 70% 25%;      /* Bleu marine profond #0D2B4E */
+    --france-blue-light: 215 60% 45%; /* Bleu plus clair #3B6BA5 */
+    --france-red: 0 65% 45%;          /* Rouge bordeaux #BD3A3A */
+    --france-red-light: 0 70% 55%;    /* Rouge plus vif #D94F4F */
+    --france-cream: 40 30% 97%;       /* Blanc crème #FAF9F7 */
+    --france-gold: 38 80% 55%;        /* Or/Doré accent #E5A632 */
+
+    /* Couleurs sémantiques */
+    --background: 40 20% 98%;         /* Fond crème très léger */
+    --foreground: 220 60% 15%;        /* Texte bleu marine */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 60% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 211 100% 32%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 211 100% 32%;
-    --radius: 0.5rem;
+    --popover-foreground: 220 60% 15%;
+    --primary: 220 70% 25%;           /* Bleu marine */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 20% 95%;
+    --secondary-foreground: 220 60% 20%;
+    --muted: 40 15% 93%;
+    --muted-foreground: 220 20% 45%;
+    --accent: 0 65% 45%;              /* Rouge bordeaux */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 220 70% 25%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 220 50% 8%;
+    --foreground: 40 20% 95%;
+    --card: 220 45% 12%;
+    --card-foreground: 40 20% 95%;
+    --popover: 220 45% 12%;
+    --popover-foreground: 40 20% 95%;
+    --primary: 215 60% 55%;
+    --primary-foreground: 220 50% 8%;
+    --secondary: 220 40% 18%;
+    --secondary-foreground: 40 20% 90%;
+    --muted: 220 40% 18%;
+    --muted-foreground: 220 15% 60%;
+    --accent: 0 65% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 40% 20%;
+    --input: 220 40% 20%;
+    --ring: 215 60% 55%;
   }
 }
 
@@ -53,20 +65,44 @@
   * {
     @apply border-border;
   }
-  
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
-  
-  /* Smooth scrolling */
+
   html {
     scroll-behavior: smooth;
   }
-  
-  /* Focus styles */
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Focus states élégants */
   *:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2;
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Sélection de texte aux couleurs de la France */
+  ::selection {
+    @apply bg-france-blue text-white;
+  }
+
+  /* Scrollbar personnalisée */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-france-blue/30 rounded-full;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-france-blue/50;
   }
 }
 
@@ -75,82 +111,606 @@
   .container {
     @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
   }
-  
-  /* French flag gradient */
-  .gradient-france {
-    background: linear-gradient(90deg, #0055A4 0%, #0055A4 33%, #FFFFFF 33%, #FFFFFF 66%, #EF4135 66%, #EF4135 100%);
+
+  /* ===== GLASSMORPHISM CARDS ===== */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/50 shadow-lg;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  
-  /* Made in France badge */
+
+  .glass-card:hover {
+    @apply bg-white/95 shadow-xl border-france-blue/20;
+    transform: translateY(-2px);
+  }
+
+  .glass-card-dark {
+    @apply bg-france-blue/5 backdrop-blur-xl border border-france-blue/10;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card-dark:hover {
+    @apply bg-france-blue/10 border-france-blue/20;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -10px rgba(13, 43, 78, 0.15);
+  }
+
+  /* ===== NAVIGATION FLOTTANTE ===== */
+  .nav-floating {
+    @apply fixed top-4 left-1/2 -translate-x-1/2 z-50;
+    @apply bg-white/90 backdrop-blur-xl border border-gray-200/50;
+    @apply rounded-full px-6 py-3 shadow-lg shadow-gray-200/50;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .nav-floating.scrolled {
+    @apply bg-white/95 shadow-xl border-gray-200;
+  }
+
+  .nav-link {
+    @apply relative px-1 py-1 text-gray-600 font-medium transition-colors;
+  }
+
+  .nav-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-france-blue to-france-red rounded-full;
+    transition: width 0.3s ease;
+  }
+
+  .nav-link:hover {
+    @apply text-france-blue;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+
+  /* ===== BOUTONS ===== */
+  .btn-primary {
+    @apply relative overflow-hidden bg-france-blue text-white font-semibold;
+    @apply px-6 py-3 rounded-full;
+    @apply transition-all duration-300;
+    @apply hover:shadow-lg hover:shadow-france-blue/25;
+    @apply active:scale-95;
+  }
+
+  .btn-primary::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    @apply -translate-x-full;
+    transition: transform 0.5s ease;
+  }
+
+  .btn-primary:hover::before {
+    @apply translate-x-full;
+  }
+
+  .btn-secondary {
+    @apply relative bg-white border-2 border-france-blue/20 text-france-blue font-semibold;
+    @apply px-6 py-3 rounded-full;
+    @apply transition-all duration-300;
+    @apply hover:border-france-blue hover:bg-france-blue/5;
+    @apply active:scale-95;
+  }
+
+  .btn-accent {
+    @apply relative overflow-hidden bg-france-red text-white font-semibold;
+    @apply px-6 py-3 rounded-full;
+    @apply transition-all duration-300;
+    @apply hover:shadow-lg hover:shadow-france-red/25;
+    @apply active:scale-95;
+  }
+
+  /* ===== BADGES ===== */
   .badge-mif {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-    @apply bg-france-blue text-white;
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full;
+    @apply text-xs font-semibold uppercase tracking-wider;
+    @apply bg-gradient-to-r from-france-blue to-france-blue/80 text-white;
+    @apply shadow-sm;
   }
-  
-  /* Card hover effect */
-  .card-hover {
-    @apply transition-all duration-200;
-    @apply hover:shadow-lg hover:-translate-y-0.5;
+
+  .badge-label {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full;
+    @apply text-xs font-medium;
+    @apply bg-france-cream border border-france-blue/10 text-france-blue;
   }
-  
-  /* Search input */
+
+  .badge-sector {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full;
+    @apply text-xs font-semibold;
+  }
+
+  /* ===== STATS ===== */
+  .stat-number {
+    @apply text-4xl md:text-5xl font-bold;
+    background: linear-gradient(180deg, hsl(var(--france-blue)) 0%, hsl(var(--france-blue-light)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ===== SECTIONS ===== */
+  .section-header {
+    @apply text-center mb-12 md:mb-16;
+  }
+
+  .section-label {
+    @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-france-red mb-4;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold text-france-blue;
+  }
+
+  .section-subtitle {
+    @apply text-lg text-gray-600 max-w-2xl mx-auto mt-4;
+  }
+
+  /* ===== PRODUCT CARDS ===== */
+  .product-card {
+    @apply relative bg-white rounded-2xl overflow-hidden;
+    @apply border border-gray-100 shadow-sm;
+    @apply transition-all duration-500 ease-out;
+  }
+
+  .product-card:hover {
+    @apply shadow-xl border-france-blue/10;
+    transform: translateY(-4px);
+  }
+
+  .product-card img {
+    @apply transition-transform duration-700 ease-out;
+  }
+
+  .product-card:hover img {
+    transform: scale(1.05);
+  }
+
+  /* ===== BRAND CARDS ===== */
+  .brand-card {
+    @apply relative bg-white rounded-2xl p-6;
+    @apply border border-gray-100 shadow-sm;
+    @apply transition-all duration-400 ease-out;
+  }
+
+  .brand-card:hover {
+    @apply shadow-lg border-france-blue/20;
+    transform: translateY(-2px);
+  }
+
+  /* ===== FRENCH FLAG ELEMENTS ===== */
+  .gradient-france {
+    background: linear-gradient(90deg,
+      hsl(var(--france-blue)) 0%,
+      hsl(var(--france-blue)) 33%,
+      #FFFFFF 33%,
+      #FFFFFF 66%,
+      hsl(var(--france-red)) 66%,
+      hsl(var(--france-red)) 100%
+    );
+  }
+
+  .gradient-france-subtle {
+    background: linear-gradient(135deg,
+      hsl(var(--france-blue) / 0.1) 0%,
+      transparent 40%,
+      transparent 60%,
+      hsl(var(--france-red) / 0.1) 100%
+    );
+  }
+
+  .border-france {
+    @apply border-l-4;
+    border-image: linear-gradient(180deg,
+      hsl(var(--france-blue)) 0%,
+      hsl(var(--france-blue)) 33%,
+      #FFFFFF 33%,
+      #FFFFFF 66%,
+      hsl(var(--france-red)) 66%,
+      hsl(var(--france-red)) 100%
+    ) 1;
+  }
+
+  .flag-bar {
+    @apply flex h-1 w-20 rounded-full overflow-hidden;
+  }
+
+  .flag-bar > span:first-child { @apply bg-france-blue flex-1; }
+  .flag-bar > span:nth-child(2) { @apply bg-white flex-1; }
+  .flag-bar > span:last-child { @apply bg-france-red flex-1; }
+
+  /* ===== HERO SECTION ===== */
+  .hero-gradient {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--france-blue) / 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, hsl(var(--france-red) / 0.05) 0%, transparent 50%),
+      hsl(var(--background));
+  }
+
+  /* ===== SEARCH ===== */
   .search-input {
-    @apply w-full pl-10 pr-4 py-3 rounded-full border-2 border-gray-200;
-    @apply focus:border-france-blue focus:ring-0;
-    @apply placeholder:text-gray-400;
+    @apply w-full pl-12 pr-4 py-4 rounded-2xl;
+    @apply border-2 border-gray-200 bg-white;
+    @apply text-france-blue placeholder:text-gray-400;
+    @apply focus:border-france-blue focus:ring-4 focus:ring-france-blue/10;
+    @apply transition-all duration-300;
   }
-  
-  /* AI chat bubble */
+
+  .search-input:focus {
+    @apply shadow-lg;
+  }
+
+  /* ===== CHAT / AI ===== */
   .chat-bubble {
-    @apply rounded-2xl px-4 py-3 max-w-[85%];
+    @apply rounded-2xl px-5 py-4 max-w-[85%];
   }
-  
+
   .chat-bubble-user {
-    @apply bg-france-blue text-white ml-auto;
+    @apply bg-gradient-to-r from-france-blue to-france-blue/90 text-white ml-auto;
+    @apply rounded-br-md;
   }
-  
+
   .chat-bubble-assistant {
     @apply bg-gray-100 text-gray-900;
+    @apply rounded-bl-md;
+  }
+
+  /* ===== TESTIMONIALS ===== */
+  .testimonial-card {
+    @apply relative glass-card rounded-2xl p-8;
+  }
+
+  .testimonial-card::before {
+    content: '"';
+    @apply absolute -top-2 left-6 text-7xl font-serif text-france-blue/10 leading-none;
+  }
+
+  /* ===== FEATURED CARD ===== */
+  .card-featured {
+    @apply relative;
+    @apply border-2 border-france-blue/30;
+    @apply shadow-lg shadow-france-blue/10;
+  }
+
+  .card-featured::before {
+    content: 'Populaire';
+    @apply absolute -top-3 left-1/2 -translate-x-1/2;
+    @apply bg-gradient-to-r from-france-blue to-france-red;
+    @apply text-white text-xs font-bold uppercase tracking-wider;
+    @apply px-4 py-1.5 rounded-full;
+    @apply shadow-md;
+  }
+
+  /* ===== FILTER BUTTONS ===== */
+  .filter-btn {
+    @apply px-5 py-2.5 rounded-full font-medium text-sm;
+    @apply border border-gray-200 bg-white text-gray-600;
+    @apply transition-all duration-300;
+    @apply hover:border-france-blue/30 hover:text-france-blue;
+  }
+
+  .filter-btn.active {
+    @apply bg-france-blue border-france-blue text-white;
+    @apply shadow-md shadow-france-blue/20;
   }
 }
 
 @layer utilities {
-  /* Text balance */
+  /* Text utilities */
   .text-balance {
     text-wrap: balance;
   }
-  
+
+  .text-gradient-france {
+    background: linear-gradient(90deg, hsl(var(--france-blue)), hsl(var(--france-red)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 30px hsl(var(--france-blue) / 0.3);
+  }
+
   /* Hide scrollbar */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   /* Map container */
   .map-container {
     @apply w-full h-full min-h-[400px];
   }
-  
+
   /* Mapbox overrides */
   .mapboxgl-popup-content {
-    @apply p-0 rounded-lg shadow-lg overflow-hidden !important;
+    @apply p-0 rounded-xl shadow-xl overflow-hidden !important;
   }
-  
+
   .mapboxgl-popup-close-button {
     @apply text-gray-500 hover:text-gray-700 text-lg p-2 !important;
   }
-  
+
   /* Loading skeleton */
   .skeleton {
     @apply animate-pulse bg-gray-200 rounded;
   }
 }
 
-/* Fonts */
+/* ===== ANIMATIONS ===== */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Reveal animation class */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Float animation classes */
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.float-delayed {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: -3s;
+}
+
+/* Shimmer effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--france-blue)) 0%,
+    hsl(var(--france-blue-light)) 25%,
+    hsl(var(--france-blue)) 50%,
+    hsl(var(--france-red)) 75%,
+    hsl(var(--france-blue)) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+/* Buy button shimmer - glass scintillation effect */
+@keyframes btn-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.btn-buy-shimmer {
+  @apply relative overflow-hidden transition-all duration-300;
+}
+
+.btn-buy-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 25%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(255, 255, 255, 0.4) 75%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.btn-buy-shimmer:hover {
+  background-color: #22c55e !important;
+  box-shadow: 0 10px 25px -5px rgba(34, 197, 94, 0.4);
+}
+
+.btn-buy-shimmer:hover::before {
+  opacity: 1;
+  animation: btn-shimmer 0.5s ease-out;
+}
+
+/* AI Logo animation - spin and scale with glass shimmer */
+@keyframes ai-logo-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes ai-logo-spin-fast {
+  0% {
+    transform: scale(1.6) rotate(0deg) translateX(1px);
+  }
+  50% {
+    transform: scale(1.8) rotate(180deg) translateX(1px);
+  }
+  100% {
+    transform: scale(1.6) rotate(360deg) translateX(1px);
+  }
+}
+
+@keyframes ai-logo-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.ai-logo-animated {
+  @apply relative overflow-visible transition-transform duration-300;
+}
+
+.ai-logo-animated::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -100%;
+  width: 100%;
+  height: calc(100% + 4px);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 25%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.6) 75%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.ai-logo-animated:hover {
+  animation: ai-logo-spin 0.5s ease-in-out;
+}
+
+.ai-logo-animated:hover::before {
+  opacity: 1;
+  animation: ai-logo-shimmer 0.5s ease-out;
+}
+
+/* Fast spin animation for group hover */
+.group:hover .group-hover\:animate-spin-fast {
+  animation: ai-logo-spin-fast 0.4s ease-in-out;
+}
+
+/* AI button icon - scaled and centered */
+.ai-btn-icon {
+  transform: scale(1.25);
+}
+
+/* Glass shimmer effect for AI button */
+@keyframes glass-shimmer {
+  0% {
+    transform: translateX(-100%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(200%) rotate(25deg);
+  }
+}
+
+.ai-btn-glass {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-btn-glass::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 25%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.4) 75%,
+    transparent 100%
+  );
+  transform: translateX(-100%) rotate(25deg);
+  pointer-events: none;
+}
+
+.group:hover .ai-btn-glass::after {
+  animation: glass-shimmer 0.6s ease-out;
+}
+
+/* Scroll animation */
+.animate-scroll-left {
+  animation: scroll-left 35s linear infinite;
+}
+
+/* ===== RESPONSIVE UTILITIES ===== */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  .mobile-full {
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-hidden {
+    display: none !important;
+  }
+}
+
+/* ===== FONTS ===== */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
