@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireBrandOwner } from '@/lib/guards';
 import { route, badRequest, forbidden } from '@/lib/api-response';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadImage } from '@/lib/cloudinary';
 
 /**
@@ -24,6 +25,7 @@ const PHOTO_LIMIT_BY_TIER: Record<string, number> = {
 
 export const POST = route<Context>(async (request, { params }) => {
   const { brand } = await requireBrandOwner(params.slug);
+  enforceRateLimit(request, { scope: 'upload-marque', limit: 20, windowMs: 60_000 });
 
   const formData = await request.formData();
   const file = formData.get('image');

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/guards';
 import { route, badRequest } from '@/lib/api-response';
+import { enforceRateLimit } from '@/lib/rate-limit';
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadImage } from '@/lib/cloudinary';
 
 /**
@@ -30,6 +31,7 @@ const ALLOWED_FOLDERS = [
 
 export const POST = route(async (request: Request) => {
   await requireAdmin();
+  enforceRateLimit(request, { scope: 'upload-admin', limit: 60, windowMs: 60_000 });
 
   const url = new URL(request.url);
   const folder = url.searchParams.get('folder') ?? 'made-in-france';

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { route, badRequest, notFound } from '@/lib/api-response';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 /**
  * Inscription d'un compte professionnel. Migré depuis Express.
@@ -32,6 +33,14 @@ const registerSchema = z.object({
 });
 
 export const POST = route(async (request: Request) => {
+  // Avant tout travail : sans cela, on peut creer des comptes en rafale.
+  enforceRateLimit(request, {
+    scope: 'register',
+    limit: 5,
+    windowMs: 60 * 60_000,
+    message: "Trop de tentatives d'inscription. Réessayez dans une heure.",
+  });
+
   const input = registerSchema.parse(await request.json());
 
   const existing = await prisma.user.findUnique({

@@ -4,6 +4,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import { Prisma, PrismaClient } from '@prisma/client';
+import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
@@ -33,7 +34,55 @@ app.use((req, res, next) => {
   }
 });
 
-// Configuration Cloudinary
+// ===========================================
+// LIMITATION DE DÉBIT (REBUILD.md T3.21)
+// ===========================================
+// Il n'y en avait aucune. Trois routes en avaient un besoin immédiat :
+//  - /chat appelle un modèle payant à chaque requête, sans authentification :
+//    n'importe qui pouvait épuiser le budget Anthropic du projet ;
+//  - les recherches déclenchent des requêtes trigram coûteuses ;
+//  - le reste protège simplement la base d'un martèlement.
+//
+// Stockage en mémoire : suffisant pour un processus unique, mais il ne
+// résistera pas à plusieurs instances. À remplacer par un compteur partagé le
+// jour où l'API est déployée sur plus d'une machine (phase 7).
+
+const limiterGeneral = rateLimit({
+  windowMs: 60_000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes. Réessayez dans une minute.' },
+});
+
+const limiterRecherche = rateLimit({
+  windowMs: 60_000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Trop de recherches. Réessayez dans une minute.' },
+});
+
+// Le plus strict : chaque appel coûte de l'argent.
+const limiterChat = rateLimit({
+  windowMs: 60_000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    error: "Vous avez atteint la limite de messages. Patientez une minute avant de continuer.",
+  },
+});
+
+// Le webhook Stripe est appelé par Stripe, pas par un navigateur : le limiter
+// ferait perdre des événements de paiement.
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/v1/stripe/webhook') return next();
+  return limiterGeneral(req, res, next);
+});
+app.use('/api/v1/search', limiterRecherche);
+app.use('/api/v1/brands/search', limiterRecherche);
+app.use('/api/v1/chat', limiterChat);
 
 
 // ===========================================

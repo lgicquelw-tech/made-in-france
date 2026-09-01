@@ -31,7 +31,8 @@ const aiSettingsSchema = z.object({
   model: z.string().trim().min(1).max(120).optional(),
   prompt: z.string().max(20000).optional(),
   temperature: z.coerce.number().min(0).max(2).optional(),
-  maxTokens: z.coerce.number().int().min(1).max(200000).optional(),
+  // 200 000 laissait un administrateur fixer une valeur ruineuse par appel.
+  maxTokens: z.coerce.number().int().min(1).max(8192).optional(),
   rules: z
     .array(
       z.object({

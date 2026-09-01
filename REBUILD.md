@@ -418,7 +418,11 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 - [x] **T3.18** — Import `Stripe` dédoublonné et version d'API figée dans une constante unique `STRIPE_API_VERSION`, utilisée par une fabrique `stripeClient()`. Elle était répétée à trois instanciations, sous une valeur de décembre 2024 que le SDK installé (stripe v20) **n'accepte plus** — le fichier ne compilait pas.
 - [ ] **T3.19** — **Aucun secret en base ni en réponse HTTP.** Les réglages IA ne stockent qu'un nom de modèle et une température.
 - [x] **T3.20** — Uploads : **type MIME réel vérifié** (JPEG, PNG, WebP, AVIF — l'ancienne route n'en contrôlait aucun et acceptait `resource_type: 'auto'`), taille plafonnée, propriété de la marque exigée, quota par palier d'abonnement conservé. Le paramètre `?folder=` d'`/api/upload` partait tel quel dans le chemin Cloudinary : il passe désormais par une liste blanche. `/api/upload/multiple` et le `DELETE` par `publicId` ont été supprimés : personne ne les appelait, et ils permettaient d'effacer n'importe quel média du compte Cloudinary.
-- [ ] **T3.21** — Limitation de débit sur `/chat`, `/search`, `/upload`.
+- [x] **T3.21** — **Il n'existait aucune limitation, nulle part.** Le cas le plus coûteux : `/api/v1/chat` est public, non authentifié, et **chaque appel consomme des crédits Anthropic** — n'importe qui pouvait épuiser le budget du projet.
+  Côté Express : 120 requêtes/min en général, 30/min sur les recherches (requêtes trigram coûteuses), **10/min sur le chat**. Le webhook Stripe est exclu — il est appelé par Stripe, le limiter ferait perdre des événements de paiement.
+  Côté Next.js : un helper `lib/rate-limit.ts` appliqué à l'inscription (5/heure) et aux envois de fichiers (60/min admin, 20/min marque). La limite s'applique **avant** toute validation, sinon une rafale de requêtes invalides passerait quand même.
+  ⚠️ Compteurs **en mémoire du processus** : plusieurs instances = plusieurs compteurs, et l'adresse IP vient d'un en-tête de proxy, donc falsifiable hors proxy de confiance. À remplacer par un compteur partagé au déploiement (phase 7).
+  Vérifié : le chat coupe au 11ᵉ appel, la recherche au 31ᵉ, l'inscription au 6ᵉ ; les en-têtes `RateLimit` sont émis. Plafond de `maxTokens` des réglages IA ramené de 200 000 à 8 192.
 - [ ] **T3.22** — Gestionnaire d'erreurs centralisé, logs structurés (pino), suppression des 35 `console.log`.
 - [ ] **T3.23** — Centraliser l'accès aux données côté web dans `lib/api.ts` et éliminer les 57 `localhost:4000`.
   ```bash
