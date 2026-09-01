@@ -1,3 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # scripts/ declare ses propres dependances (@mif/scripts) mais n'etait pas
+  # dans le workspace : `pnpm install` ne les installait jamais, et tous les
+  # scripts d'import et de scraping etaient inutilisables sur une machine
+  # vierge. Ajoute le 1er septembre 2026.
+  - "scripts"

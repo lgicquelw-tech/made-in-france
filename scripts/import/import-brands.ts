@@ -469,8 +469,12 @@ class BrandImporter {
   async processRow(row: Record<string, unknown>, index: number): Promise<void> {
     try {
       // Required: name
-      const name = row.name as string;
-      if (!name || typeof name !== 'string' || !name.trim()) {
+      // Certaines marques ont un nom purement numerique (909, 1083, 1336 dans
+      // brands.xlsx). XLSX les lit comme des nombres : sans cette conversion,
+      // la validation ci-dessous les rejetait et trois marques reelles etaient
+      // perdues en silence a chaque import.
+      const name = row.name == null ? '' : String(row.name);
+      if (!name.trim()) {
         this.stats.errors.push({
           row: index,
           error: 'Nom manquant ou invalide',

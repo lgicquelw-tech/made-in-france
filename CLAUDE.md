@@ -95,6 +95,7 @@ made-in-france/
 │       └── src/index.ts          # 4 358 lignes, 92 routes — LE monolithe
 ├── packages/
 │   ├── database/prisma/schema.prisma   # 840 lignes, 33 modèles
+├── scripts/                      # paquet @mif/scripts — DOIT rester dans pnpm-workspace.yaml
 │   └── shared/                   # types + constantes partagés
 ├── scripts/                      # imports, scrapers, enrichissement, stats
 ├── data/brands.xlsx              # 996 lignes (source des marques)
@@ -152,15 +153,21 @@ LC_ALL=C /opt/homebrew/opt/postgresql@16/bin/pg_ctl \
 `brew services start postgresql@16` **ne fonctionne pas** : le Homebrew installé est trop
 ancien pour cette formule (`undefined method 'stop_timeout'`). Un `brew update` corrigerait.
 
-**Monter l'environnement complet** : `pnpm bootstrap` (install + generate + migrate + seed).
+**Monter l'environnement complet** : `pnpm bootstrap` (install + generate + migrate + seed
++ import des 903 marques). Idempotent : relancé, il met à jour sans rien dupliquer.
 ⚠️ **Ne pas écrire `pnpm setup`** : c'est une commande **interne** de pnpm qui masque
 silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
 
 **La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
-perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). La base contient
-aujourd'hui les données du seed : 13 régions, 9 secteurs, 11 catégories, 6 labels,
-3 paliers d'abonnement, 4 marques et 2 produits. Le seul actif de données versionné est
-`data/brands.xlsx` (996 marques), pas encore importé.
+perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). Elle contient
+aujourd'hui 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
+**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`) et 2 produits.
+
+⚠️ **Les liens `.env` sont ignorés par git** : `apps/api/.env`, `apps/web/.env` et tout
+lien équivalent n'existent pas sur un clone neuf. C'est pourquoi **toutes les commandes
+`db:*` tournent depuis la racine**, là où se trouve le `.env`. Ne pas réintroduire de
+commande qui dépende d'un lien symbolique. À savoir aussi : `node --env-file` refuse les
+chemins commençant par `../`.
 
 ---
 
@@ -207,6 +214,9 @@ aujourd'hui les données du seed : 13 régions, 9 secteurs, 11 catégories, 6 la
 | Dépôt public | `github.com/lgicquelw-tech/made-in-france` est **public**. Tout commit est immédiatement visible. Vérifier avant chaque push. |
 | Import Stripe en double | `index.ts:11` **et** `index.ts:3944` — erreur de compilation TypeScript |
 | Clearbit | Mort. Les logos passent par Google Favicons |
+| **Taxonomie des secteurs** | Une seule liste fait foi, partagée par quatre endroits : `data/brands.xlsx`, `SECTOR_MAPPING` de `scripts/import/import-brands.ts`, le seed, et le front (`app/secteurs/page.tsx` + `sitemap.ts`). Les 9 slugs : `mode-accessoires`, `maison-jardin`, `gastronomie`, `cosmetique`, `enfance`, `loisirs-sport`, `animaux`, `sante-nutrition`, `high-tech`. **Modifier l'un sans les autres laisse des centaines de marques sans secteur, sans la moindre erreur.** C'est arrivé : 687 marques sur 903. |
+| Noms de marque numériques | `909`, `1083`, `1336` sont de vraies marques. XLSX lit leur nom comme un **nombre** : toute validation en `typeof === 'string'` les rejette silencieusement. |
+| `scripts/` | Est un paquet du workspace (`@mif/scripts`) avec ses propres dépendances. Il doit rester listé dans `pnpm-workspace.yaml`, sinon `pnpm install` l'ignore et aucun script ne fonctionne. |
 | Champs `snake_case` | Les requêtes SQL brutes utilisent les noms de colonnes (`description_short`, `image_url`, `brand_id`), pas les noms Prisma |
 | `.env` | `apps/api/.env` et `apps/web/.env` sont des **liens symboliques** vers le `.env` racine. Les vrais fichiers sont : `.env` (racine, 34 clés) et `apps/web/.env.local` (9 clés NextAuth). Ils ne sont pas dupliqués. |
 | Clé OpenAI | Le chemin OpenAI du chat renvoie une 400 volontaire (`index.ts:~2839`) |

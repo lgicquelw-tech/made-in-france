@@ -247,20 +247,29 @@ pages ont des comportements différents. À trancher en phase 3, avec l'authenti
 - [x] **T2.5** — Scripts `db:push` supprimés de `package.json` (racine) et de `packages/database/package.json`. Plus aucune occurrence dans le dépôt.
 - [x] **T2.6** — ⚠️ **Modifié : Homebrew au lieu de Docker.** Docker n'est pas installé sur la machine et l'installer représentait ~1 Go pour un seul service. PostgreSQL 16.15 tourne via `postgresql@16` (Homebrew). `redis`, `meilisearch` et `minio` ont malgré tout été retirés du compose, qui reste utilisable sur une machine équipée de Docker (il ne garde que `postgres` et `mailhog`).
   **Piège macOS :** sans `LC_ALL` valide, le serveur refuse de démarrer (`postmaster became multithreaded during startup`).
-- [x] **T2.7** — Il n'y avait pas 5 fichiers : `apps/api/.env` et `apps/web/.env` sont des **liens symboliques** vers le `.env` racine. Un troisième lien a été ajouté pour `packages/database/.env` (Prisma ne remonte pas jusqu'à la racine). Vrais fichiers : `.env` (34 clés) et `apps/web/.env.local` (9 clés NextAuth). `.env.example` complété : les 7 clés manquantes (Cloudinary, SMTP) ajoutées, toutes valeurs vides.
-- [~] **T2.8** — Le seed existant **plantait** : il déclarait les paliers `STARTER` et `STANDARD`, disparus du schéma (qui a `FREE`/`PREMIUM`/`ROYALE`). Réécrit sur les trois vrais paliers, aux tarifs réellement affichés par le Studio (0 € / 29 € / 99 €), avec `update` rempli au lieu de `update: {}` — relancer le seed corrige désormais une ligne qui a dérivé au lieu de la laisser en l'état (il a d'ailleurs corrigé un Premium à 199 € hérité de l'ancienne version).
-  **Reste à faire :** il ne produit que 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers, **4 marques et 2 produits**. L'objectif de ~50 marques et ~2 000 produits passe par l'import de `data/brands.xlsx` (996 marques) et les scrapers — à traiter avec la phase 5.
+- [x] **T2.7** — Il n'y avait pas 5 fichiers : `apps/api/.env` et `apps/web/.env` sont des **liens symboliques** vers le `.env` racine. Vrais fichiers : `.env` (34 clés) et `apps/web/.env.local` (9 clés NextAuth). `.env.example` complété : les 7 clés manquantes (Cloudinary, SMTP) ajoutées, toutes valeurs vides.
+  ⚠️ **Piège découvert :** ces liens symboliques sont **ignorés par git** — ils n'existent donc pas sur un clone neuf. Toute commande qui en dépendait aurait échoué sur une machine vierge. `prisma` et `tsx` ont été ajoutés aux dépendances de la racine et **toutes les commandes `db:*` tournent désormais depuis la racine**, là où se trouve le `.env`. Plus aucun lien symbolique n'est nécessaire. (À noter : `node --env-file` refuse les chemins commençant par `../`, ce qui interdisait le contournement évident.)
+- [x] **T2.8** — Le seed existant **plantait** : il déclarait les paliers `STARTER` et `STANDARD`, disparus du schéma (qui a `FREE`/`PREMIUM`/`ROYALE`). Réécrit sur les trois vrais paliers, aux tarifs réellement affichés par le Studio (0 € / 29 € / 99 €), avec `update` rempli au lieu de `update: {}` — relancer le seed corrige désormais une ligne qui a dérivé au lieu de la laisser en l'état.
+  **Les 903 marques de `data/brands.xlsx` sont importées** et l'import fait partie de `pnpm bootstrap`. La base de développement contient 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers et **903 marques**, dont **0 sans secteur**.
+  Trois défauts corrigés au passage, tous silencieux :
+  - **`scripts/` n'était pas dans `pnpm-workspace.yaml`** alors qu'il déclare ses propres dépendances. `pnpm install` ne les installait jamais : sur une machine vierge, aucun script d'import ni de scraping ne fonctionnait.
+  - **Trois marques réelles étaient perdues à chaque import** — `909`, `1083` et `1336`, dont le nom est purement numérique. XLSX les lit comme des nombres et la validation les rejetait comme « nom manquant ou invalide ».
+  - **687 marques sur 903 se retrouvaient sans secteur.** Le seed déclarait une taxonomie (`Mode`, `Maison`, `Cosmétiques`, `Enfants`, `Sport & Loisirs`, `Artisanat`, `Jardin & Extérieur`) différente de celle utilisée par le front, le sitemap, le script d'import **et** le fichier source. Le seed a été aligné sur la taxonomie canonique à 9 secteurs. Le filtre par secteur — fonctionnalité n°1 de `docs/SPEC-V1.md` — ne servait à rien.
+
 - [x] **T2.9** — `slug`, `status`, `brand_id`, `sector_id`, `region_id` existaient déjà via le schéma. Seuls manquaient les index GIN trigram : ajoutés dans `schema.prisma` (`@@index([name(ops: raw("gin_trgm_ops"))], type: Gin)`) et migrés (`20260901072814_index_trigram_recherche`). Vérifié : le planificateur les utilise (`Bitmap Index Scan on brands_name_idx`).
-- [x] **T2.10** — ⚠️ **La commande s'appelle `pnpm bootstrap`, pas `pnpm setup`** : `setup` est une commande **interne** de pnpm (elle configure `PNPM_HOME` dans le shell) et masque silencieusement tout script du même nom. Enchaîne `install --frozen-lockfile` → `db:generate` → `db:migrate:prod` → `db:seed`. Testée deux fois, rejouable.
+- [x] **T2.10** — ⚠️ **La commande s'appelle `pnpm bootstrap`, pas `pnpm setup`** : `setup` est une commande **interne** de pnpm (elle configure `PNPM_HOME` dans le shell) et masque silencieusement tout script du même nom. Enchaîne `install --frozen-lockfile` → `db:generate` → `db:migrate:prod` → `db:seed` → `db:import`. Testée deux fois, rejouable.
 
 **Critère de sortie** — atteint le 1er septembre 2026, à une réserve près :
 
 ```bash
-pnpm bootstrap   # install + generate + migrate + seed — testé, rejouable
+pnpm bootstrap   # install + generate + migrate + seed + import des 903 marques
 pnpm dev         # web 3000 + api 4000, prêts en 2,5 s
-curl "http://localhost:4000/api/v1/brands?limit=3"   # renvoie Armor Lux & co ✅
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/marques/armor-lux  # 200 ✅
+curl "http://localhost:4000/api/v1/sectors/with-counts"   # 9 secteurs, 903 marques ✅
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/secteurs/mode-accessoires  # 200 ✅
 ```
+
+Vérifié sans aucun lien symbolique `.env` présent, donc dans les conditions d'un clone neuf.
+`pnpm bootstrap` relancé sur une base déjà peuplée : **0 création, 903 mises à jour, 0 erreur.**
 
 ⚠️ **Réserve : le démarrage de PostgreSQL n'est pas encore dans `pnpm bootstrap`.** Il faut
 le lancer à la main, avec `LC_ALL` positionné :

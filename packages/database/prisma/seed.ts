@@ -150,98 +150,36 @@ async function main() {
   // ===========================================
   console.log('Creating sectors...');
 
-  const sectors = await Promise.all([
-    prisma.sector.upsert({
-      where: { slug: 'mode' },
-      update: {},
-      create: {
-        name: 'Mode',
-        slug: 'mode',
-        icon: 'shirt',
-        color: '#8B5CF6',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'maison' },
-      update: {},
-      create: {
-        name: 'Maison',
-        slug: 'maison',
-        icon: 'home',
-        color: '#F59E0B',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'gastronomie' },
-      update: {},
-      create: {
-        name: 'Gastronomie',
-        slug: 'gastronomie',
-        icon: 'utensils',
-        color: '#EF4444',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'cosmetiques' },
-      update: {},
-      create: {
-        name: 'Cosmétiques',
-        slug: 'cosmetiques',
-        icon: 'sparkles',
-        color: '#EC4899',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'enfants' },
-      update: {},
-      create: {
-        name: 'Enfants',
-        slug: 'enfants',
-        icon: 'baby',
-        color: '#06B6D4',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'high-tech' },
-      update: {},
-      create: {
-        name: 'High-Tech',
-        slug: 'high-tech',
-        icon: 'laptop',
-        color: '#3B82F6',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'sport-loisirs' },
-      update: {},
-      create: {
-        name: 'Sport & Loisirs',
-        slug: 'sport-loisirs',
-        icon: 'dumbbell',
-        color: '#22C55E',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'jardin-exterieur' },
-      update: {},
-      create: {
-        name: 'Jardin & Extérieur',
-        slug: 'jardin-exterieur',
-        icon: 'flower',
-        color: '#84CC16',
-      },
-    }),
-    prisma.sector.upsert({
-      where: { slug: 'artisanat' },
-      update: {},
-      create: {
-        name: 'Artisanat',
-        slug: 'artisanat',
-        icon: 'hammer',
-        color: '#A16207',
-      },
-    }),
-  ]);
+  // Taxonomie canonique des secteurs. Elle doit rester identique a celle
+  // utilisee par le front (apps/web/src/app/secteurs/page.tsx et sitemap.ts),
+  // par le script d'import (SECTOR_MAPPING) et par data/brands.xlsx.
+  // L'ancien seed declarait une liste differente (Mode, Maison, Cosmetiques,
+  // Enfants, Sport & Loisirs, Artisanat, Jardin & Exterieur) : a l'import des
+  // 903 marques, 687 d'entre elles se retrouvaient sans secteur et le filtre
+  // par secteur — fonctionnalite n°1 de docs/SPEC-V1.md — ne servait a rien.
+  const SECTORS = [
+    { slug: 'mode-accessoires', name: 'Mode & Accessoires', icon: 'shirt',           color: '#3B82F6' },
+    { slug: 'maison-jardin',    name: 'Maison & Jardin',    icon: 'home',            color: '#10B981' },
+    { slug: 'gastronomie',      name: 'Gastronomie',        icon: 'utensils',        color: '#F59E0B' },
+    { slug: 'cosmetique',       name: 'Cosmétique',         icon: 'sparkles',        color: '#EC4899' },
+    { slug: 'enfance',          name: 'Enfance',            icon: 'baby',            color: '#8B5CF6' },
+    { slug: 'loisirs-sport',    name: 'Loisirs & Sport',    icon: 'dumbbell',        color: '#06B6D4' },
+    { slug: 'animaux',          name: 'Animaux',            icon: 'paw-print',       color: '#8B4513' },
+    { slug: 'sante-nutrition',  name: 'Santé & Nutrition',  icon: 'heart',           color: '#22C55E' },
+    { slug: 'high-tech',        name: 'High-Tech',          icon: 'cpu',             color: '#6366F1' },
+  ];
+
+  const sectors = [];
+  for (const sector of SECTORS) {
+    const { slug, ...rest } = sector;
+    sectors.push(
+      await prisma.sector.upsert({
+        where: { slug },
+        update: rest,
+        create: { slug, ...rest },
+      })
+    );
+  }
 
   console.log(`✅ Created ${sectors.length} sectors`);
 
@@ -250,31 +188,39 @@ async function main() {
   // ===========================================
   console.log('Creating categories...');
 
-  const modeSector = sectors.find(s => s.slug === 'mode')!;
-  const maisonSector = sectors.find(s => s.slug === 'maison')!;
-  const gastroSector = sectors.find(s => s.slug === 'gastronomie')!;
-  const cosmetiquesSector = sectors.find(s => s.slug === 'cosmetiques')!;
+  // Resolution par slug, avec echec explicite : un `!` sur un .find() qui
+  // renvoie undefined produit un « cannot read property id of undefined »
+  // illisible, a 300 lignes de la vraie cause.
+  const sectorBySlug = (slug: string) => {
+    const found = sectors.find((s) => s.slug === slug);
+    if (!found) throw new Error(`Secteur introuvable dans le seed : ${slug}`);
+    return found;
+  };
+  const modeSector = sectorBySlug('mode-accessoires');
+  const maisonSector = sectorBySlug('maison-jardin');
+  const gastroSector = sectorBySlug('gastronomie');
+  const cosmetiquesSector = sectorBySlug('cosmetique');
 
   // Mode categories
   const modeCategories = await Promise.all([
     prisma.category.upsert({
       where: { slug: 'vetements' },
-      update: {},
+      update: { name: 'Vêtements', sectorId: modeSector.id, level: 0 },
       create: { name: 'Vêtements', slug: 'vetements', sectorId: modeSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'chaussures' },
-      update: {},
+      update: { name: 'Chaussures', sectorId: modeSector.id, level: 0 },
       create: { name: 'Chaussures', slug: 'chaussures', sectorId: modeSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'accessoires-mode' },
-      update: {},
+      update: { name: 'Accessoires', sectorId: modeSector.id, level: 0 },
       create: { name: 'Accessoires', slug: 'accessoires-mode', sectorId: modeSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'maroquinerie' },
-      update: {},
+      update: { name: 'Maroquinerie', sectorId: modeSector.id, level: 0 },
       create: { name: 'Maroquinerie', slug: 'maroquinerie', sectorId: modeSector.id, level: 0 },
     }),
   ]);
@@ -283,22 +229,22 @@ async function main() {
   const maisonCategories = await Promise.all([
     prisma.category.upsert({
       where: { slug: 'decoration' },
-      update: {},
+      update: { name: 'Décoration', sectorId: maisonSector.id, level: 0 },
       create: { name: 'Décoration', slug: 'decoration', sectorId: maisonSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'mobilier' },
-      update: {},
+      update: { name: 'Mobilier', sectorId: maisonSector.id, level: 0 },
       create: { name: 'Mobilier', slug: 'mobilier', sectorId: maisonSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'linge-de-maison' },
-      update: {},
+      update: { name: 'Linge de maison', sectorId: maisonSector.id, level: 0 },
       create: { name: 'Linge de maison', slug: 'linge-de-maison', sectorId: maisonSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'vaisselle' },
-      update: {},
+      update: { name: 'Vaisselle', sectorId: maisonSector.id, level: 0 },
       create: { name: 'Vaisselle', slug: 'vaisselle', sectorId: maisonSector.id, level: 0 },
     }),
   ]);
@@ -307,17 +253,17 @@ async function main() {
   const gastroCategories = await Promise.all([
     prisma.category.upsert({
       where: { slug: 'epicerie' },
-      update: {},
+      update: { name: 'Épicerie', sectorId: gastroSector.id, level: 0 },
       create: { name: 'Épicerie', slug: 'epicerie', sectorId: gastroSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'boissons' },
-      update: {},
+      update: { name: 'Boissons', sectorId: gastroSector.id, level: 0 },
       create: { name: 'Boissons', slug: 'boissons', sectorId: gastroSector.id, level: 0 },
     }),
     prisma.category.upsert({
       where: { slug: 'produits-frais' },
-      update: {},
+      update: { name: 'Produits frais', sectorId: gastroSector.id, level: 0 },
       create: { name: 'Produits frais', slug: 'produits-frais', sectorId: gastroSector.id, level: 0 },
     }),
   ]);

@@ -52,7 +52,7 @@ made-in-france/
 │   ├── database/               # schema.prisma — 33 modèles, migrations
 │   └── shared/                 # types et constantes partagés
 ├── scripts/                    # imports, scrapers, enrichissement, statistiques
-├── data/brands.xlsx            # 996 marques — seule source de données versionnée
+├── data/brands.xlsx            # 903 marques — seule source de données versionnée
 └── docs/archive/               # documents historiques, non fiables
 ```
 
@@ -85,7 +85,8 @@ createuser mif_user --createdb --pwprompt
 createdb -O mif_user madeinfrance
 ```
 
-**Monter le projet** — une seule commande (installation, génération Prisma, migration, seed) :
+**Monter le projet** — une seule commande : installation, génération Prisma, migration,
+seed, puis import des 903 marques de `data/brands.xlsx`. Elle est idempotente.
 
 ```bash
 cp .env.example .env      # puis renseigner les valeurs
@@ -114,6 +115,7 @@ pnpm lint
 pnpm db:generate          # client Prisma
 pnpm db:migrate           # migration de développement
 pnpm db:seed              # données de démarrage
+pnpm db:import            # import des marques depuis data/brands.xlsx (idempotent)
 pnpm db:studio            # Prisma Studio
 ```
 
@@ -124,9 +126,10 @@ divergé en janvier 2026, faisant perdre trois tables. Uniquement `prisma migrat
 
 Deux fichiers réels, tous deux ignorés par git :
 
-- **`.env`** à la racine — base de données, services, clés serveur.
-  `apps/api/.env`, `apps/web/.env` et `packages/database/.env` sont des **liens
-  symboliques** vers lui.
+- **`.env`** à la racine — base de données, services, clés serveur. Toutes les commandes
+  `db:*` tournent depuis la racine pour le lire directement. `apps/api/.env` et
+  `apps/web/.env` sont des liens symboliques vers lui : pratiques, mais **ignorés par
+  git**, donc absents d'un clone neuf. Ne rien faire qui en dépende.
 - **`apps/web/.env.local`** — NextAuth (`NEXTAUTH_SECRET`, OAuth Google, SMTP).
 
 `.env.example` liste toutes les clés attendues, sans aucune valeur.

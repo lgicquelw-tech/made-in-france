@@ -12,7 +12,7 @@
   "packageManager": "pnpm@9.1.0",
   "scripts": {
     "dev": "turbo dev",
-    "bootstrap": "pnpm install --frozen-lockfile && pnpm db:generate && pnpm db:migrate:prod && pnpm db:seed",
+    "bootstrap": "pnpm install --frozen-lockfile && pnpm db:generate && pnpm db:migrate:prod && pnpm db:seed && pnpm db:import",
     "build": "turbo build",
     "start": "turbo start",
     "lint": "turbo lint",
@@ -21,14 +21,15 @@
     "test:e2e": "turbo test:e2e",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules",
-    "db:migrate": "pnpm --filter @mif/database migrate:dev",
-    "db:migrate:prod": "pnpm --filter @mif/database migrate:deploy",
-    "db:seed": "pnpm --filter @mif/database seed",
-    "db:studio": "pnpm --filter @mif/database studio",
-    "db:generate": "pnpm --filter @mif/database generate",
+    "db:migrate": "prisma migrate dev --schema=packages/database/prisma/schema.prisma",
+    "db:migrate:prod": "prisma migrate deploy --schema=packages/database/prisma/schema.prisma",
+    "db:seed": "tsx --env-file=.env packages/database/prisma/seed.ts",
+    "db:studio": "prisma studio --schema=packages/database/prisma/schema.prisma",
+    "db:generate": "prisma generate --schema=packages/database/prisma/schema.prisma",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:import": "tsx --env-file=.env scripts/import/import-brands.ts data/brands.xlsx"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
@@ -37,6 +38,8 @@
     "lint-staged": "^15.2.5",
     "prettier": "^3.3.0",
     "prettier-plugin-tailwindcss": "^0.6.1",
+    "prisma": "^5.22.0",
+    "tsx": "^4.21.0",
     "turbo": "^2.0.3",
     "typescript": "^5.4.5"
   },
