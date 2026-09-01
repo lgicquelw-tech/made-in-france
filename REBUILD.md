@@ -134,6 +134,32 @@ produit se reconstruit par les scrapers en phase 5, et les phases 5 et 6 changen
 
 ## 2. Les 15 constats vérifiés
 
+### Un huitième constat, absent de l'audit — la revendication de marque
+
+Découvert le 1er septembre 2026 en migrant les routes d'authentification. **C'était la
+faille la plus grave du projet, et le plan ne la mentionnait nulle part.**
+
+Deux routes accordaient la propriété d'une marque, sans aucune vérification :
+
+- `POST /api/auth/claim-brand` prenait `userId` et `brandSlug` **dans le corps de la
+  requête**, sans authentification, et créait aussitôt un `BrandOwner` avec
+  `role: OWNER, isActive: true`. Une seule requête suffisait à devenir propriétaire de
+  n'importe laquelle des 903 marques — pour soi, ou pour le compte de quelqu'un d'autre.
+- `POST /api/auth/register` faisait la même chose dès qu'on lui passait un
+  `claimBrandSlug`.
+
+Le schéma prévoyait pourtant le bon dispositif — `BrandClaimRequest`, avec un statut
+`PENDING`, des champs de preuve et un examen (`reviewedBy`, `reviewedAt`). Il n'était
+simplement pas utilisé.
+
+Corrigé : `claim-brand` est supprimée (plus rien ne l'appelait depuis la phase 1), et
+`register` crée désormais une **demande en attente**, jamais une propriété. Vérifié de
+bout en bout : après inscription avec revendication, `brand_owners` reste vide et le
+compte reçoit **403** sur le tableau de bord, l'écriture et l'envoi d'images de la marque
+qu'il prétend revendiquer.
+
+La validation humaine de ces demandes reste à construire (T8.1).
+
 ### Critiques — bloquent toute mise en ligne
 
 | # | Constat | Preuve |
