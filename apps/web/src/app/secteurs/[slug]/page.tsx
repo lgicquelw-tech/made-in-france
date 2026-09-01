@@ -6,6 +6,7 @@ import { MapPin, ExternalLink, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { brandLogoUrl } from '@/lib/brand-logo';
 
 /**
  * Page d'un secteur (REBUILD.md T4.3, T4.8).
@@ -119,9 +120,22 @@ export default async function SecteurDetailPage({ params }: { params: { slug: st
                 href={`/marques/${brand.slug}`}
                 className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all p-6 group border border-gray-100"
               >
-                <h2 className="text-xl font-bold text-gray-900 group-hover:text-france-blue transition-colors mb-2">
-                  {brand.name}
-                </h2>
+                <div className="flex items-center gap-3 mb-2">
+                <div
+                  className="h-14 w-14 shrink-0 rounded-xl flex items-center justify-center overflow-hidden"
+                  style={{ backgroundColor: '#f3f4f6' }}
+                >
+                  {brandLogoUrl(brand) ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={brandLogoUrl(brand)!} alt="" className="w-8 h-8 object-contain" />
+                  ) : (
+                    <span className="text-xl font-bold text-gray-400">{brand.name.charAt(0)}</span>
+                  )}
+                </div>
+                  <h2 className="text-xl font-bold text-gray-900 group-hover:text-france-blue transition-colors">
+                    {brand.name}
+                  </h2>
+                </div>
                 
                 {brand.descriptionShort && (
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">

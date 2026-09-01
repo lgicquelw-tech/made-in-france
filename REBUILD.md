@@ -545,6 +545,26 @@ Lighthouse SEO ≥ 95 et LCP < 2,5 s restent à mesurer.
 - [ ] **T5.7** — Relancer l'enrichissement IA uniquement sur les champs manquants.
 - [ ] **T5.8** — Ne publier que les produits au-dessus du seuil de complétude (`status = ACTIVE` piloté par l'audit).
 
+### La construction du logo était recopiée dans 16 fichiers
+
+Découvert le 1er septembre 2026 en regardant l'aperçu : les pages « région » et
+« secteur » affichaient une **lettre** là où l'annuaire montrait un vrai logo. La cause
+n'était pas un bug isolé mais une duplication — la même expression réécrite dans
+**16 fichiers**, avec des tailles et des replis différents, et absente de deux pages.
+
+Pire, la forme recopiée était fragile :
+
+```ts
+new URL(brand.websiteUrl).hostname   // lève sur une URL invalide → la page tombe
+```
+
+Centralisé dans `lib/brand-logo.ts`, qui attrape l'erreur. Les trois pages touchées y
+sont branchées ; **les 13 autres fichiers restent à reprendre**.
+
+⚠️ À signaler : ce repli envoie le domaine de chaque marque affichée à Google. C'est un
+transfert vers un tiers, à mentionner dans la politique de confidentialité (T7.5) — ou à
+remplacer par une récupération côté serveur.
+
 ### 899 logos étaient des émojis préfixés par `https://`
 
 Découvert le 1er septembre 2026 en préparant `next/image`. La colonne

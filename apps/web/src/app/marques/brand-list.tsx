@@ -7,6 +7,7 @@ import { Search, MapPin, ChevronLeft, ChevronRight, Filter, X, Building2, ArrowR
 import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { API_URL } from '@/lib/api';
+import { brandLogoUrl } from '@/lib/brand-logo';
 
 export interface Brand {
   id: string;
@@ -357,9 +358,9 @@ export default function BrandList({
                       className="relative h-20 w-full mb-5 flex items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105"
                       style={{ backgroundColor: brand.sectorColor ? `${brand.sectorColor}12` : '#f3f4f6' }}
                     >
-                      {brand.websiteUrl ? (
+                      {brandLogoUrl(brand) ? (
                         <img
-                          src={`https://www.google.com/s2/favicons?domain=${new URL(brand.websiteUrl).hostname}&sz=64`}
+                          src={brandLogoUrl(brand)!}
                           alt={brand.name}
                           className="w-12 h-12 object-contain"
                           onError={(e) => {
@@ -369,7 +370,7 @@ export default function BrandList({
                         />
                       ) : null}
                       <div
-                        className={`text-3xl font-bold ${brand.websiteUrl ? 'hidden' : ''}`}
+                        className={`text-3xl font-bold ${brandLogoUrl(brand) ? 'hidden' : ''}`}
                         style={{ color: brand.sectorColor || '#0D2B4E' }}
                       >
                         {brand.name.charAt(0)}

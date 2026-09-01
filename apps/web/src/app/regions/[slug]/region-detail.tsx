@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { API_URL } from '@/lib/api';
+import { brandLogoUrl } from '@/lib/brand-logo';
 
 export interface Brand {
   id: string;
+  websiteUrl?: string | null;
   name: string;
   slug: string;
   description: string | null;
@@ -119,7 +121,22 @@ export default function RegionDetail({
                   className="group bg-white rounded-2xl p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
                 >
                   <div className="relative h-16 w-full mb-4 flex items-center justify-center bg-gray-100 rounded-xl">
-                    <div className="text-2xl font-bold text-france-blue">
+                    {brandLogoUrl(brand) ? (
+                      <img
+                        src={brandLogoUrl(brand)!}
+                        alt=""
+                        className="w-10 h-10 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`text-2xl font-bold text-france-blue ${
+                        brandLogoUrl(brand) ? 'hidden' : ''
+                      }`}
+                    >
                       {brand.name.charAt(0)}
                     </div>
                   </div>
