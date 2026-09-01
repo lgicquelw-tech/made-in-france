@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 import {
   Building2,
   Mail,
@@ -20,7 +21,6 @@ import {
   FileText
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 export default function StudioInscriptionPage() {
   const router = useRouter();

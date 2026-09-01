@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_URL } from '@/lib/api';
 import {
   Bot,
   Save,
@@ -17,7 +18,6 @@ import {
   Key
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface AISettings {
   model: string;

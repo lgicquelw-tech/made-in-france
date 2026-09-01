@@ -17,7 +17,6 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface User {
   id: string;

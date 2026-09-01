@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, MapPin, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 interface Brand {
   id: string;
@@ -24,7 +25,7 @@ export function FeaturedBrands() {
   useEffect(() => {
     async function fetchBrands() {
       try {
-        const response = await fetch('http://localhost:4000/api/v1/brands?limit=8');
+        const response = await fetch(`${API_URL}/api/v1/brands?limit=8`);
         const data = await response.json();
         setBrands(data.data || []);
       } catch (error) {

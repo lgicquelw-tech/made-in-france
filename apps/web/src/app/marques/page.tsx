@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Search, MapPin, ChevronLeft, ChevronRight, Filter, X, Building2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
+import { API_URL } from '@/lib/api';
 
 interface Brand {
   id: string;
@@ -58,8 +59,8 @@ export default function MarquesPage() {
     async function loadFilters() {
       try {
         const [regionsRes, sectorsRes] = await Promise.all([
-          fetch('http://localhost:4000/api/v1/regions'),
-          fetch('http://localhost:4000/api/v1/sectors'),
+          fetch(`${API_URL}/api/v1/regions`),
+          fetch(`${API_URL}/api/v1/sectors`),
         ]);
         const regionsData = await regionsRes.json();
         const sectorsData = await sectorsRes.json();
@@ -84,10 +85,10 @@ export default function MarquesPage() {
         if (selectedRegion) params.set('region', selectedRegion);
         if (selectedSector) params.set('sector', selectedSector);
 
-        let url = `http://localhost:4000/api/v1/brands?${params.toString()}`;
+        let url = `${API_URL}/api/v1/brands?${params.toString()}`;
 
         if (search) {
-          url = `http://localhost:4000/api/v1/search?q=${encodeURIComponent(search)}&${params.toString()}`;
+          url = `${API_URL}/api/v1/search?q=${encodeURIComponent(search)}&${params.toString()}`;
         }
 
         const response = await fetch(url);

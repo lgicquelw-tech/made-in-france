@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MapPin, ArrowRight, Loader2, List, Map as MapIcon } from 'lucide-react';
 import { REGION_PATHS, SVG_VIEWBOX, DOMTOM_PATHS, DOMTOM_VIEWBOX } from '@/data/regionPaths';
+import { API_URL } from '@/lib/api';
 
 // Liste des DOM-TOM
 const DOMTOM_REGIONS = [
@@ -68,7 +69,7 @@ export default function RegionsPage() {
   useEffect(() => {
     async function fetchRegions() {
       try {
-        const response = await fetch('http://localhost:4000/api/v1/regions/with-counts');
+        const response = await fetch(`${API_URL}/api/v1/regions/with-counts`);
         const data = await response.json();
         // Tri alphabétique
         const sortedRegions = (data.data || []).sort((a: RegionWithCount, b: RegionWithCount) =>

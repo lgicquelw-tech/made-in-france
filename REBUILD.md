@@ -423,8 +423,18 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   Côté Next.js : un helper `lib/rate-limit.ts` appliqué à l'inscription (5/heure) et aux envois de fichiers (60/min admin, 20/min marque). La limite s'applique **avant** toute validation, sinon une rafale de requêtes invalides passerait quand même.
   ⚠️ Compteurs **en mémoire du processus** : plusieurs instances = plusieurs compteurs, et l'adresse IP vient d'un en-tête de proxy, donc falsifiable hors proxy de confiance. À remplacer par un compteur partagé au déploiement (phase 7).
   Vérifié : le chat coupe au 11ᵉ appel, la recherche au 31ᵉ, l'inscription au 6ᵉ ; les en-têtes `RateLimit` sont émis. Plafond de `maxTokens` des réglages IA ramené de 200 000 à 8 192.
-- [ ] **T3.22** — Gestionnaire d'erreurs centralisé, logs structurés (pino), suppression des 35 `console.log`.
-- [ ] **T3.23** — Centraliser l'accès aux données côté web dans `lib/api.ts` et éliminer les 57 `localhost:4000`.
+- [x] **T3.22** — **Journalisation structurée (pino), gestionnaire d'erreurs centralisé, plus un seul `console.log`.**
+  Trois problèmes, pas un :
+  - `console.log('💬 Chat request:', message)` journalisait **le message écrit par le visiteur**, et un autre journalisait le contenu de la réponse. Données personnelles dans les journaux. Supprimés — vérifié qu'une chaîne témoin envoyée au chat n'apparaît nulle part.
+  - **22 routes renvoyaient `details: String(error)` au client** : le message d'exception Prisma, donc les noms de tables et de colonnes de la base. Retirés ; le détail est journalisé côté serveur, le client reçoit une erreur nue.
+  - Aucun gestionnaire d'erreurs centralisé, et une route inconnue renvoyait la page HTML d'Express. Les deux sont en place ; les erreurs non gérées sont journalisées avec méthode et chemin.
+  Le logger masque `password`, `passwordHash`, `apiKey`, `anthropicApiKey`, `openaiApiKey` et les en-têtes `authorization`/`cookie`, au cas où un objet en contiendrait.
+- [x] **T3.23** — **Une seule source pour l'URL d'API.** Il y avait **53 occurrences de `http://localhost:4000` dans 43 fichiers** : 26 redéclaraient leur propre `const API_URL`, les autres l'écrivaient en ligne. Changer d'environnement demandait de les éditer un par un.
+  `API_URL` est désormais exporté par `lib/api.ts` et importé. Deux pages déclaraient même un `API_URL` local **à l'intérieur d'une fonction**, et une journalisait l'adresse e-mail saisie — retirées.
+  ```bash
+  grep -rn "localhost:4000" apps/web/src | grep -v "lib/api.ts"   # vide ✅
+  ```
+  ⚠️ `API_URL` ne vaut que pour les routes encore servies par Express, c'est-à-dire les lectures publiques. Tout appel authentifié doit rester en **URL relative**, sinon le cookie de session ne part pas.
   ```bash
   grep -rn "localhost:4000" apps/web/src | grep -v "lib/api.ts"   # doit être vide
   ```

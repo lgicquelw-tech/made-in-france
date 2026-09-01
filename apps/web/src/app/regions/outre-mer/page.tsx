@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin, Building2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DOMTOM_PATHS, DOMTOM_VIEWBOX } from '@/data/regionPaths';
+import { API_URL } from '@/lib/api';
 
 // Liste des DOM-TOM
 const DOMTOM_REGIONS = [
@@ -51,7 +52,7 @@ export default function OutreMerPage() {
 
         for (const region of DOMTOM_REGIONS) {
           const response = await fetch(
-            `http://localhost:4000/api/v1/brands?region=${region.slug}&limit=100`
+            `${API_URL}/api/v1/brands?region=${region.slug}&limit=100`
           );
           const data = await response.json();
           const regionBrands = data.data || [];

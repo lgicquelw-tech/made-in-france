@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Shirt, Home, UtensilsCrossed, Sparkles, Baby, Dumbbell, PawPrint, Heart, Cpu, ArrowRight, Grid3X3 } from 'lucide-react';
+import { API_URL } from '@/lib/api';
 
 const SECTORS = [
   { slug: 'mode-accessoires', name: 'Mode & Accessoires', color: '#3B82F6', icon: Shirt, description: 'Vêtements, chaussures, maroquinerie, bijoux' },
@@ -15,7 +16,7 @@ const SECTORS = [
 
 async function getSectorCounts() {
   try {
-    const res = await fetch('http://localhost:4000/api/v1/sectors/with-counts', {
+    const res = await fetch(`${API_URL}/api/v1/sectors/with-counts`, {
       cache: 'no-store',
     });
     if (!res.ok) return {};

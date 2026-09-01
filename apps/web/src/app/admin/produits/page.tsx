@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 import {
   Search,
   ShoppingBag,
@@ -19,7 +20,6 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Product {
   id: string;

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MapPin, ExternalLink, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 const SECTORS: Record<string, { name: string; color: string; description: string }> = {
   'mode-accessoires': { name: 'Mode & Accessoires', color: '#3B82F6', description: 'Vêtements, chaussures, maroquinerie, bijoux' },
@@ -27,7 +28,7 @@ interface Brand {
 
 async function getBrandsBySector(sectorSlug: string): Promise<Brand[]> {
   try {
-    const res = await fetch(`http://localhost:4000/api/v1/brands?sector=${sectorSlug}&limit=100`, {
+    const res = await fetch(`${API_URL}/api/v1/brands?sector=${sectorSlug}&limit=100`, {
       cache: 'no-store',
     });
     if (!res.ok) return [];

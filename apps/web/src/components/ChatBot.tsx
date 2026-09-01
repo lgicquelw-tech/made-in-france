@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2, Sparkles, MapPin, Package, Building2 } from 'lucide-react';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 
 interface Product {
   id: string;
@@ -76,7 +77,7 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:4000/api/v1/chat', {
+      const response = await fetch(`${API_URL}/api/v1/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

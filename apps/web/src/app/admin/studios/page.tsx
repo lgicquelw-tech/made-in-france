@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Building2, Crown, Star, ExternalLink, Eye, Settings, Image, Package, Users, TrendingUp } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Brand {
   id: string;

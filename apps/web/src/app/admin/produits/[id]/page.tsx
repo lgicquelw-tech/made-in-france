@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 import {
   ArrowLeft,
   Save,
@@ -18,7 +19,6 @@ import {
   Package
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Product {
   id: string;

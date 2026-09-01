@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Building2, ShoppingBag, Loader2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 interface SearchBrand {
   type: 'brand';
@@ -57,7 +58,7 @@ export default function RecherchePage() {
 
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:4000/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=20`);
+        const res = await fetch(`${API_URL}/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=20`);
         const data = await res.json();
         setResults({ brands: data.brands || [], products: data.products || [] });
       } catch (error) {

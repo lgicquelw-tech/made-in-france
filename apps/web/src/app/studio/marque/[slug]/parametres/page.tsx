@@ -45,8 +45,8 @@ import {
   Navigation
 } from 'lucide-react';
 import { RichEditor } from '@/components/ui/rich-editor';
+import { API_URL } from '@/lib/api';
 
-const API_URL = 'http://localhost:4000';
 
 type SubscriptionTier = 'FREE' | 'PREMIUM' | 'ROYALE';
 

@@ -15,6 +15,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 interface Product {
   id: string;
@@ -70,7 +71,7 @@ export default function ProduitsPage() {
   useEffect(() => {
     async function fetchSectors() {
       try {
-        const res = await fetch('http://localhost:4000/api/v1/sectors/with-counts');
+        const res = await fetch(`${API_URL}/api/v1/sectors/with-counts`);
         const data = await res.json();
         setSectors(data.data || []);
       } catch (error) {
@@ -93,7 +94,7 @@ export default function ProduitsPage() {
         if (priceMin) params.set('priceMin', priceMin);
         if (priceMax) params.set('priceMax', priceMax);
 
-        const res = await fetch(`http://localhost:4000/api/v1/products?${params}`);
+        const res = await fetch(`${API_URL}/api/v1/products?${params}`);
         const data = await res.json();
         setProducts(data.data || []);
         setTotalProducts(data.pagination?.total || 0);

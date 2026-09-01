@@ -36,8 +36,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { RichEditor } from '@/components/ui/rich-editor';
 import { IconPicker, AVAILABLE_ICONS, IconName, getIconComponent } from '@/components/ui/icon-picker';
+import { API_URL } from '@/lib/api';
 
-const API_URL = 'http://localhost:4000';
 
 // --- INTERFACES ---
 

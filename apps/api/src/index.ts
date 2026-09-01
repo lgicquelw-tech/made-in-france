@@ -5,6 +5,8 @@ import express from 'express';
 import cors from 'cors';
 import { Prisma, PrismaClient } from '@prisma/client';
 import rateLimit from 'express-rate-limit';
+
+import { logger } from './logger';
 import bcrypt from 'bcryptjs';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
@@ -109,8 +111,8 @@ app.get('/api/v1/stats', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching stats:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -169,8 +171,8 @@ app.get('/api/v1/brands', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching brands:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching brands:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -212,8 +214,8 @@ app.get('/api/v1/brands/with-coords', async (req, res) => {
       total: brands.length,
     });
   } catch (error) {
-    console.error('Error fetching brands with coords:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching brands with coords:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -273,8 +275,8 @@ app.get('/api/v1/brands/with-coords-and-labels', async (req, res) => {
       total: brands.length,
     });
   } catch (error) {
-    console.error('Error fetching brands with coords and labels:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching brands with coords and labels:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -312,8 +314,8 @@ app.get('/api/v1/brands/random', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching random brand:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching random brand:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -405,8 +407,8 @@ app.get('/api/v1/brands/weekly', async (req, res) => {
       weekNumber,
     });
   } catch (error) {
-    console.error('Error fetching weekly brand:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching weekly brand:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -459,8 +461,8 @@ app.get('/api/v1/brands/featured', async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error fetching featured brands:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching featured brands:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -536,8 +538,8 @@ app.get('/api/v1/brands/trending', async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error fetching trending brands:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching trending brands:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -577,7 +579,7 @@ app.get('/api/v1/brands/search', async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Search error:', error);
+    logger.error({ err: error }, 'Search error:');
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -604,8 +606,8 @@ app.get('/api/v1/brands/:slug', async (req, res) => {
 
     res.json({ data: brand });
   } catch (error) {
-    console.error('Error fetching brand:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching brand:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -644,8 +646,8 @@ app.get('/api/v1/collections', async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error fetching collections:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching collections:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -696,8 +698,8 @@ app.get('/api/v1/collections/:slug', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching collection:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching collection:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -823,8 +825,8 @@ app.get('/api/v1/search', async (req, res) => {
       query,
     });
   } catch (error) {
-    console.error('Error searching:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error searching:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -838,8 +840,8 @@ app.get('/api/v1/regions', async (req, res) => {
     });
     res.json({ data: regions });
   } catch (error) {
-    console.error('Error fetching regions:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching regions:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -863,8 +865,8 @@ app.get('/api/v1/regions/with-counts', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error fetching regions with counts:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching regions with counts:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -875,8 +877,8 @@ app.get('/api/v1/sectors', async (req, res) => {
     });
     res.json({ data: sectors });
   } catch (error) {
-    console.error('Error fetching sectors:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching sectors:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -902,8 +904,8 @@ app.get('/api/v1/sectors/with-counts', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error fetching sectors with counts:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching sectors with counts:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -1083,8 +1085,8 @@ app.get('/api/v1/products', async (req, res) => {
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     });
   } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching products:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -1150,8 +1152,8 @@ app.get('/api/v1/products/trending', async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error fetching trending products:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching trending products:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -1209,8 +1211,8 @@ app.get('/api/v1/products/:slug', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching product:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching product:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -1255,8 +1257,8 @@ app.get('/api/v1/brands/:slug/products', async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error fetching brand products:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching brand products:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -1302,8 +1304,8 @@ app.get('/api/v1/brands/:slug/products/all', async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error fetching all brand products:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error fetching all brand products:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -1436,8 +1438,8 @@ app.get('/api/v1/search/all', async (req, res) => {
       query,
     });
   } catch (error) {
-    console.error('Error in unified search:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
+    logger.error({ err: error }, 'Error in unified search:');
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -1592,7 +1594,7 @@ async function executeSearchProducts(params: {
     `;
     return products;
   } catch (e) {
-    console.error('Search products error:', e);
+    logger.error({ err: e }, 'Search products error:');
     return [];
   }
 }
@@ -1652,7 +1654,7 @@ async function executeSearchBrands(params: {
     // retiré : il polluait la sortie sans rien apprendre.
     return brands;
   } catch (e) {
-    console.error('Search brands error:', e);
+    logger.error({ err: e }, 'Search brands error:');
     return [];
   }
 }
@@ -1707,7 +1709,6 @@ app.post('/api/v1/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message requis' });
     }
 
-    console.log('💬 Chat request:', message);
 
     // Charger les settings IA depuis la BDD
     let aiSettings: any = null;
@@ -1719,7 +1720,6 @@ app.post('/api/v1/chat', async (req, res) => {
         aiSettings = setting.value as any;
       }
     } catch (e) {
-      console.log('⚠️ Pas de settings IA en BDD, utilisation des valeurs par défaut');
     }
 
     // Utiliser les settings ou les valeurs par défaut
@@ -1733,7 +1733,6 @@ app.post('/api/v1/chat', async (req, res) => {
     const lowerMessage = message.toLowerCase();
     for (const rule of rules) {
       if (rule.enabled && lowerMessage.includes(rule.keyword.toLowerCase())) {
-        console.log('📋 Règle appliquée:', rule.keyword);
         return res.json({
           message: rule.response,
           products: [],
@@ -1789,8 +1788,7 @@ app.post('/api/v1/chat', async (req, res) => {
       messages,
     });
 
-    console.log('🤖 Claude response:', response.stop_reason, '| Model:', model);
-    console.log('📋 Response content types:', response.content.map(b => b.type).join(', '));
+    logger.debug({ stopReason: response.stop_reason, model }, 'reponse du modele');
 
     let relevantProducts: any[] = [];
     let relevantBrands: any[] = [];
@@ -1802,22 +1800,19 @@ app.post('/api/v1/chat', async (req, res) => {
       );
 
       if (!toolUseBlock) break;
-
-      console.log('🔧 Tool call:', toolUseBlock.name, JSON.stringify(toolUseBlock.input));
+        logger.debug({ tool: toolUseBlock.name }, 'appel d outil');
 
       let toolResult: any;
 
       if (toolUseBlock.name === 'search_products') {
         const products = await executeSearchProducts(toolUseBlock.input as any);
         relevantProducts = products;
-        console.log('📦 Products found:', products.length);
         toolResult = products.length > 0
           ? `Trouvé ${products.length} produits: ${products.map((p: any) => `${p.name} (${p.brand_name}) - ${p.price_min}€`).join(', ')}`
           : 'Aucun produit trouvé';
       } else if (toolUseBlock.name === 'search_brands') {
         const brands = await executeSearchBrands(toolUseBlock.input as any);
         relevantBrands = brands;
-        console.log('🏢 Brands found:', brands.length);
         toolResult = brands.length > 0
           ? `Trouvé ${brands.length} marques: ${brands.map((b: any) => `${b.name} (${b.sector_name || 'N/A'})`).join(', ')}`
           : 'Aucune marque trouvée';
@@ -1889,13 +1884,6 @@ app.post('/api/v1/chat', async (req, res) => {
       productCount: Number(b.product_count) || 0,
     }));
 
-    console.log('✅ Final response:', {
-      messageLength: finalMessage.length,
-      productsCount: formattedProducts.length,
-      brandsCount: formattedBrands.length,
-      brandsWithWebsiteUrl: formattedBrands.filter((b: any) => b.websiteUrl).length,
-      sampleBrands: formattedBrands.slice(0, 3).map((b: any) => ({ name: b.name, websiteUrl: b.websiteUrl }))
-    });
 
     res.json({
       message: finalMessage,
@@ -1903,7 +1891,7 @@ app.post('/api/v1/chat', async (req, res) => {
       brands: formattedBrands,
     });
   } catch (error) {
-    console.error('❌ Chat error:', error);
+    logger.error({ err: error }, '❌ Chat error:');
     res.status(500).json({ error: 'Erreur du chat IA' });
   }
 });
@@ -1930,7 +1918,7 @@ app.get('/api/v1/labels', async (req, res) => {
     });
     res.json({ data: labels });
   } catch (error) {
-    console.error('Get labels error:', error);
+    logger.error({ err: error }, 'Get labels error:');
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -1973,7 +1961,7 @@ app.get('/api/v1/products/:id/labels', async (req, res) => {
     const labels = product.labels.map(pl => pl.label);
     res.json({ data: labels });
   } catch (error) {
-    console.error('Get product labels error:', error);
+    logger.error({ err: error }, 'Get product labels error:');
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -1998,7 +1986,7 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
   // abonnement Royale sur n'importe quelle marque. Un webhook non verifiable
   // doit echouer, jamais etre cru sur parole.
   if (!webhookSecret) {
-    console.error('[stripe] STRIPE_WEBHOOK_SECRET absent : webhook refuse.');
+    logger.error('[stripe] STRIPE_WEBHOOK_SECRET absent : webhook refuse.');
     return res.status(500).send('Webhook non configure');
   }
 
@@ -2007,7 +1995,7 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err: any) {
-    console.error('[stripe] signature du webhook invalide:', err.message);
+    logger.error({ err: err.message }, '[stripe] signature du webhook invalide:');
     return res.status(400).send('Signature invalide');
   }
 
@@ -2025,7 +2013,7 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
             stripeSubscriptionId: session.subscription as string,
           },
         });
-        console.log(`✅ Brand ${brandId} upgraded to ${plan}`);
+        logger.info({ brandId, plan }, 'abonnement active');
       }
       break;
     }
@@ -2043,7 +2031,7 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
             where: { id: brand.id },
             data: { subscriptionTier: 'FREE' },
           });
-          console.log(`⚠️ Brand ${brand.id} subscription inactive, downgraded to FREE`);
+          logger.info({ brandId: brand.id }, 'abonnement inactif, retour au palier gratuit');
         }
       }
       break;
@@ -2063,7 +2051,7 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
             stripeSubscriptionId: null,
           },
         });
-        console.log(`🔴 Brand ${brand.id} subscription canceled, downgraded to FREE`);
+        logger.info({ brandId: brand.id }, 'abonnement resilie, retour au palier gratuit');
       }
       break;
     }
@@ -2081,6 +2069,24 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
 // ===========================================
 // START SERVER
 // ===========================================
+// ===========================================
+// GESTIONNAIRE D'ERREURS CENTRALISÉ (REBUILD.md T3.22)
+// ===========================================
+// Il n'y en avait aucun. Chaque route renvoyait ses propres erreurs, et
+// plusieurs incluaient `details: String(error)` — donc le message d'exception
+// Prisma, avec le nom des tables et des colonnes, directement au client.
+// Ici : le détail est journalisé côté serveur, le client reçoit une 500 nue.
+app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  logger.error({ err, method: req.method, path: req.path }, 'erreur non geree');
+  if (res.headersSent) return;
+  res.status(500).json({ error: 'Erreur serveur' });
+});
+
+// Toute route inconnue : une 404 en JSON, pas la page HTML d'Express.
+app.use((req: express.Request, res: express.Response) => {
+  res.status(404).json({ error: 'Route inconnue' });
+});
+
 app.listen(PORT, () => {
-  console.log(`\n🚀 API server running on http://localhost:${PORT}\n`);
+  logger.info({ port: PORT }, 'API demarree');
 });

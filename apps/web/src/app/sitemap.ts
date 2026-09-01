@@ -1,10 +1,11 @@
 import { MetadataRoute } from 'next';
+import { API_URL } from '@/lib/api';
 
 const BASE_URL = 'https://madeinfrance.fr';
 
 async function getBrands() {
   try {
-    const res = await fetch('http://localhost:4000/api/v1/brands?limit=1000');
+    const res = await fetch(`${API_URL}/api/v1/brands?limit=1000`);
     const data = await res.json();
     return data.data || [];
   } catch {
@@ -14,7 +15,7 @@ async function getBrands() {
 
 async function getRegions() {
   try {
-    const res = await fetch('http://localhost:4000/api/v1/regions');
+    const res = await fetch(`${API_URL}/api/v1/regions`);
     const data = await res.json();
     return data.data || [];
   } catch {

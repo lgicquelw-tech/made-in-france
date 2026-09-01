@@ -13,6 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 interface Product {
   id: string;
@@ -66,7 +67,7 @@ export default function BrandProductsPage() {
     async function fetchData() {
       try {
         // Charger la marque
-        const brandRes = await fetch(`http://localhost:4000/api/v1/brands/${brandSlug}`);
+        const brandRes = await fetch(`${API_URL}/api/v1/brands/${brandSlug}`);
         if (!brandRes.ok) {
           setError('Marque non trouvée');
           return;
@@ -75,7 +76,7 @@ export default function BrandProductsPage() {
         setBrand(brandData.data);
 
         // Charger tous les produits
-        const productsRes = await fetch(`http://localhost:4000/api/v1/brands/${brandSlug}/products`);
+        const productsRes = await fetch(`${API_URL}/api/v1/brands/${brandSlug}/products`);
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           setProducts(productsData.data || []);

@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Label {
   id: string;

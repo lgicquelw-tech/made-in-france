@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 import {
   Building2,
   BarChart3,
@@ -30,7 +31,6 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 type SubscriptionTier = 'FREE' | 'PREMIUM' | 'ROYALE';
 

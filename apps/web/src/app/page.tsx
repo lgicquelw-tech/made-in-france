@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import Image from 'next/image';
+import { API_URL } from '@/lib/api';
 
 interface WeeklyBrand {
   id: string; name: string; slug: string; description: string | null;
@@ -31,7 +32,6 @@ interface Sector {
   icon: string | null; brandCount: number;
 }
 
-const API_URL = 'http://localhost:4000';
 
 const COLLECTIONS = [
   { id: '1', title: 'Noël Made in France', slug: 'noel', count: 48, image: 'https://images.unsplash.com/photo-1512909006721-3d6018887383?w=600&q=80', color: '#BD3A3A' },

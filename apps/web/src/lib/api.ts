@@ -15,7 +15,18 @@ import type {
   PaginatedResponse,
 } from '@mif/shared';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+/**
+ * **Source unique de l'URL de l'API** (CLAUDE.md, règle 10).
+ *
+ * 26 fichiers redéclaraient leur propre `const API_URL = 'http://localhost:4000'`,
+ * en dur : changer d'environnement demandait de les éditer un par un, et le
+ * moindre oubli passait inaperçu jusqu'en production.
+ *
+ * ⚠️ N'utiliser que pour les routes encore servies par Express — c'est-à-dire
+ * les lectures publiques. Tout ce qui demande une session doit être appelé en
+ * **URL relative**, sinon le cookie ne part pas.
+ */
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 class ApiError extends Error {
   constructor(

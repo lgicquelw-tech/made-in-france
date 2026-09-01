@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { API_URL } from '@/lib/api';
 
 // Composant pour l'icône IA avec animation
 function AIIcon({ className = "h-4 w-4", animated = true }: { className?: string; animated?: boolean }) {
@@ -109,7 +110,7 @@ export function Header() {
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:4000/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=5`);
+        const res = await fetch(`${API_URL}/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=5`);
         const data = await res.json();
         setSearchResults({ brands: data.brands || [], products: data.products || [] });
         setShowResults(true);
@@ -154,7 +155,7 @@ export function Header() {
       setIsAILoading(true);
       setShowResults(true);
       try {
-        const res = await fetch('http://localhost:4000/api/v1/chat', {
+        const res = await fetch(`${API_URL}/api/v1/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: searchQuery }),

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CreditCard, TrendingUp, Crown, Star, DollarSign, ExternalLink, CheckCircle, XCircle, Clock, Building2 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Subscription {
   id: string;

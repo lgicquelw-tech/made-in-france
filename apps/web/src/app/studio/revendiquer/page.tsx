@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 import {
   Building2,
   Search,
@@ -15,7 +16,6 @@ import {
   Info
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Brand {
   id: string;

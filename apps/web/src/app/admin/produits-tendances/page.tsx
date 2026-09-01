@@ -34,7 +34,6 @@ interface Product {
   };
 }
 
-const API_URL = 'http://localhost:4000';
 
 // Fonction de debounce
 function useDebounce<T>(value: T, delay: number): T {

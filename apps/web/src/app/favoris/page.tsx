@@ -6,6 +6,7 @@ import { Heart, ArrowRight, Sparkles } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 function getFaviconUrl(websiteUrl: string | null): string | null {
   if (!websiteUrl) return null;
@@ -98,7 +99,7 @@ export default function FavorisPage() {
               </Link>
               <Link href="/api/v1/brands/random" onClick={(e) => {
                 e.preventDefault();
-                fetch('http://localhost:4000/api/v1/brands/random')
+                fetch(`${API_URL}/api/v1/brands/random`)
                   .then(res => res.json())
                   .then(data => {
                     if (data.data?.slug) {

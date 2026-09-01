@@ -25,7 +25,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { useFavorites } from '@/hooks/useFavorites';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 // Email admin autorisé
 const ADMIN_EMAIL = 'lgicquelw@gmail.com';

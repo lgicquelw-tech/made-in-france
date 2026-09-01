@@ -22,8 +22,8 @@ import {
   X
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
+import { API_URL } from '@/lib/api';
 
-const API_URL = 'http://localhost:4000';
 
 interface Brand {
   id: string;

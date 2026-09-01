@@ -21,7 +21,6 @@ import {
   Sparkles
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Brand {
   id: string;

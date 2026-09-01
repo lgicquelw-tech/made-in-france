@@ -27,7 +27,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Stats {
   brands: { total: number; active: number; pending: number; thisMonth: number };

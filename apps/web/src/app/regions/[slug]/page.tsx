@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 interface Brand {
   id: string;
@@ -37,7 +38,7 @@ export default function RegionDetailPage() {
       setLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:4000/api/v1/brands?region=${slug}&page=${currentPage}&limit=12`
+          `${API_URL}/api/v1/brands?region=${slug}&page=${currentPage}&limit=12`
         );
         const data = await response.json();
         setBrands(data.data || []);

@@ -45,8 +45,6 @@ export default function ConnexionProPage() {
       }
 
       // Récupérer les marques de l'utilisateur pour rediriger vers le dashboard
-      const API_URL = 'http://localhost:4000';
-      console.log('Fetching brands for:', email);
       
       try {
         const res = await fetch(`/api/v1/user/brands`);

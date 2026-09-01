@@ -18,6 +18,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/lib/api';
 
 interface Product {
   id: string;
@@ -95,7 +96,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     async function fetchProduct() {
       try {
-        const response = await fetch(`http://localhost:4000/api/v1/products/${slug}`);
+        const response = await fetch(`${API_URL}/api/v1/products/${slug}`);
         if (!response.ok) {
           if (response.status === 404) {
             setError('Produit non trouvé');
@@ -109,7 +110,7 @@ export default function ProductDetailPage() {
 
         // Charger les produits similaires (même marque)
         if (data.data.brand?.slug) {
-          const similarRes = await fetch(`http://localhost:4000/api/v1/brands/${data.data.brand.slug}/products?limit=5`);
+          const similarRes = await fetch(`${API_URL}/api/v1/brands/${data.data.brand.slug}/products?limit=5`);
           const similarData = await similarRes.json();
           setSimilarProducts(
             (similarData.data || [])

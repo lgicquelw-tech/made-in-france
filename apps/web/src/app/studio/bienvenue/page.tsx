@@ -17,7 +17,6 @@ import {
   Rocket
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
 
 interface Brand {
   name: string;

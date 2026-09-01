@@ -29,6 +29,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { getIconComponent } from '@/components/ui/icon-picker';
+import { API_URL } from '@/lib/api';
 
 // Composant pour les produits
 function ProductsSection({ brandSlug, sectorColor }: { brandSlug: string; sectorColor: string }) {
@@ -38,7 +39,7 @@ function ProductsSection({ brandSlug, sectorColor }: { brandSlug: string; sector
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const res = await fetch(`http://localhost:4000/api/v1/brands/${brandSlug}/products`);
+        const res = await fetch(`${API_URL}/api/v1/brands/${brandSlug}/products`);
         if (res.ok) {
           const data = await res.json();
           setProducts(data.data || []);
@@ -426,7 +427,7 @@ export default function MarqueDetailPage() {
   useEffect(() => {
     async function fetchBrand() {
       try {
-        const response = await fetch(`http://localhost:4000/api/v1/brands/${slug}`);
+        const response = await fetch(`${API_URL}/api/v1/brands/${slug}`);
         if (!response.ok) {
           if (response.status === 404) {
             setError('Marque non trouvée');
@@ -440,7 +441,7 @@ export default function MarqueDetailPage() {
 
         // Charger les marques similaires (même secteur)
         if (data.data.sector?.slug) {
-          const similarRes = await fetch(`http://localhost:4000/api/v1/brands?sector=${data.data.sector.slug}&limit=4`);
+          const similarRes = await fetch(`${API_URL}/api/v1/brands?sector=${data.data.sector.slug}&limit=4`);
           const similarData = await similarRes.json();
           setSimilarBrands(
             (similarData.data || [])
