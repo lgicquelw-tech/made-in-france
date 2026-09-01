@@ -8,13 +8,21 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@mif/database": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "multer": "^2.0.2",
+    "stripe": "^20.1.2"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/multer": "^2.0.0",
     "@types/node": "^20.14.0",
     "tsup": "^8.1.0",
     "tsx": "^4.15.1",

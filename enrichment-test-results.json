@@ -1,0 +1,274 @@
+[
+  {
+    "id": "23f9da53-8d36-4ab3-a1c0-755029ecd2dd",
+    "name": "Paille",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "éco-responsable",
+        "artisanal",
+        "quotidien"
+      ],
+      "target": "mixte",
+      "priceRange": "budget",
+      "materials": [
+        "bambou",
+        "acier inoxydable"
+      ],
+      "occasions": [
+        "quotidien",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit durable et réutilisable",
+        "Fabriqué en France",
+        "Contribue à réduire les déchets plastiques"
+      ]
+    }
+  },
+  {
+    "id": "1a22f4d7-6fcd-4a57-b65d-36abe68476fd",
+    "name": "Marguerite",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanat",
+        "éco-responsable",
+        "luxe"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [],
+      "occasions": [
+        "quotidien",
+        "cérémonie",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit Made in France",
+        "Design unique et élégant",
+        "Engagement pour l'environnement"
+      ]
+    }
+  },
+  {
+    "id": "740cbeeb-f39c-41c4-8cc9-2e51224db72d",
+    "name": "Pondichéry",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanat",
+        "éco-responsable",
+        "luxe"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [],
+      "occasions": [
+        "quotidien",
+        "bureau",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit Made in France",
+        "Design unique",
+        "Qualité artisanale"
+      ]
+    }
+  },
+  {
+    "id": "ba314778-a7da-4f40-8d6e-6859e84abe04",
+    "name": "Vichy Rouge (Int. Bleu)",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanat",
+        "éco-responsable",
+        "design",
+        "unique"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [],
+      "occasions": [
+        "quotidien",
+        "bureau",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit Made in France",
+        "Design moderne et élégant",
+        "Idéal pour embellir votre intérieur"
+      ]
+    }
+  },
+  {
+    "id": "52cf5e46-c401-4303-b8e4-95b04ee9e285",
+    "name": "Tomettes",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanat",
+        "éco-responsable",
+        "intemporel"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [
+        "terre cuite"
+      ],
+      "occasions": [
+        "quotidien",
+        "cérémonie",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Fabrication artisanale",
+        "Design authentique",
+        "Durabilité et qualité"
+      ]
+    }
+  },
+  {
+    "id": "7520bac4-3743-410b-86b3-f2c0622fca25",
+    "name": "Pois du jardin",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "alimentation",
+      "tags": [
+        "bio",
+        "local",
+        "éco-responsable",
+        "sain",
+        "naturel"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [
+        "légumes"
+      ],
+      "occasions": [
+        "quotidien",
+        "cuisine",
+        "repas"
+      ],
+      "sellingPoints": [
+        "Produit frais et local",
+        "Cultivé en France",
+        "Idéal pour des plats sains"
+      ]
+    }
+  },
+  {
+    "id": "71481957-692a-4ffa-afc2-d2709e59c999",
+    "name": "Vichy Rose",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanat",
+        "éco-responsable",
+        "luxe"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [],
+      "occasions": [
+        "quotidien",
+        "cérémonie",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit 100% Made in France",
+        "Design unique et élégant",
+        "Parfait pour embellir votre intérieur"
+      ]
+    }
+  },
+  {
+    "id": "28e4043e-f6ba-4fbb-b23d-c557b876a246",
+    "name": "Moby Dick",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanat",
+        "éco-responsable",
+        "design",
+        "unique"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [],
+      "occasions": [
+        "quotidien",
+        "bureau",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit fabriqué en France",
+        "Design original et unique",
+        "Engagement pour l'éco-responsabilité"
+      ]
+    }
+  },
+  {
+    "id": "3d83c452-fb93-4b91-96d2-b00fae054acc",
+    "name": "Harry",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanat",
+        "éco-responsable",
+        "design",
+        "qualité",
+        "made in France"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [],
+      "occasions": [
+        "quotidien",
+        "bureau",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit 100% Made in France",
+        "Design unique et moderne",
+        "Engagement pour l'environnement"
+      ]
+    }
+  },
+  {
+    "id": "f46b906a-2b81-4486-bbe4-43f3dfeae303",
+    "name": "Flower Power",
+    "brand": "ROULE SANDWICH",
+    "enrichment": {
+      "category": "maison-decoration",
+      "tags": [
+        "artisanal",
+        "éco-responsable",
+        "luxe"
+      ],
+      "target": "mixte",
+      "priceRange": "moyen",
+      "materials": [],
+      "occasions": [
+        "quotidien",
+        "cérémonie",
+        "weekend"
+      ],
+      "sellingPoints": [
+        "Produit Made in France",
+        "Design unique et moderne",
+        "Idéal pour embellir votre intérieur"
+      ]
+    }
+  }
+]

@@ -2,9 +2,6 @@
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "vector";
-
--- CreateExtension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- CreateEnum
@@ -18,9 +15,6 @@ CREATE TYPE "ProductStatus" AS ENUM ('DRAFT', 'ACTIVE', 'OUT_OF_STOCK', 'DISCONT
 
 -- CreateEnum
 CREATE TYPE "SubscriptionTier" AS ENUM ('FREE', 'STARTER', 'STANDARD', 'PREMIUM');
-
--- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('CONSUMER', 'BRAND_OWNER', 'BRAND_MANAGER', 'ADMIN', 'SUPER_ADMIN');
 
 -- CreateEnum
 CREATE TYPE "EventType" AS ENUM ('BRAND_PAGE_VIEW', 'PRODUCT_PAGE_VIEW', 'SEARCH_RESULTS_VIEW', 'SEARCH_QUERY', 'FILTER_APPLIED', 'MAP_INTERACTION', 'CLICK_OUT', 'AFFILIATE_CLICK', 'ADD_TO_FAVORITES', 'AI_CONVERSATION', 'AI_RECOMMENDATION_SHOWN', 'AI_RECOMMENDATION_CLICKED', 'BRAND_DASHBOARD_VIEW', 'CAMPAIGN_CREATED');
@@ -137,7 +131,6 @@ CREATE TABLE "brands" (
     "seo_title" TEXT,
     "seo_description" TEXT,
     "ai_generated_content" JSONB NOT NULL DEFAULT '{}',
-    "embedding" vector(1536),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "published_at" TIMESTAMP(3),
@@ -189,7 +182,6 @@ CREATE TABLE "products" (
     "seo_title" TEXT,
     "seo_description" TEXT,
     "ai_selling_points" JSONB NOT NULL DEFAULT '[]',
-    "embedding" vector(1536),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -207,18 +199,15 @@ CREATE TABLE "product_labels" (
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "email_verified" BOOLEAN NOT NULL DEFAULT false,
-    "password_hash" TEXT,
+    "name" TEXT,
+    "email" TEXT,
+    "email_verified" TIMESTAMP(3),
+    "image" TEXT,
     "first_name" TEXT,
     "last_name" TEXT,
-    "avatar_url" TEXT,
-    "role" "UserRole" NOT NULL DEFAULT 'CONSUMER',
-    "oauth_provider" TEXT,
-    "oauth_id" TEXT,
+    "points" INTEGER NOT NULL DEFAULT 0,
+    "rank" TEXT NOT NULL DEFAULT 'Explorateur',
     "preferences" JSONB NOT NULL DEFAULT '{}',
-    "favorite_categories" JSONB NOT NULL DEFAULT '[]',
-    "favorite_regions" JSONB NOT NULL DEFAULT '[]',
     "last_login_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -227,28 +216,58 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
-CREATE TABLE "brand_members" (
+CREATE TABLE "accounts" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
-    "brand_id" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'member',
-    "permissions" JSONB NOT NULL DEFAULT '{}',
-    "invited_by" TEXT,
-    "accepted_at" TIMESTAMP(3),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "provider_account_id" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
 
-    CONSTRAINT "brand_members_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "accounts_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "user_favorites" (
+CREATE TABLE "sessions" (
+    "id" TEXT NOT NULL,
+    "session_token" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "sessions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "verification_tokens" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "favorites" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
-    "brand_id" TEXT,
-    "product_id" TEXT,
+    "brand_id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "user_favorites_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "favorites_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "brand_views" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "brand_id" TEXT NOT NULL,
+    "viewed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "brand_views_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -397,6 +416,93 @@ CREATE TABLE "invoices" (
     CONSTRAINT "invoices_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "admin_users" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password_hash" TEXT NOT NULL,
+    "name" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'admin',
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "last_login_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "admin_users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "collections" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "description" TEXT,
+    "image_url" TEXT,
+    "color" TEXT,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "start_date" TIMESTAMP(3),
+    "end_date" TIMESTAMP(3),
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "collections_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "collection_brands" (
+    "collection_id" TEXT NOT NULL,
+    "brand_id" TEXT NOT NULL,
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "added_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "collection_brands_pkey" PRIMARY KEY ("collection_id","brand_id")
+);
+
+-- CreateTable
+CREATE TABLE "featured_brands" (
+    "id" TEXT NOT NULL,
+    "brand_id" TEXT NOT NULL,
+    "title" TEXT,
+    "description" TEXT,
+    "image_url" TEXT,
+    "featured_type" TEXT NOT NULL DEFAULT 'weekly',
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "start_date" TIMESTAMP(3) NOT NULL,
+    "end_date" TIMESTAMP(3) NOT NULL,
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "featured_brands_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "trending_brands" (
+    "id" TEXT NOT NULL,
+    "brand_id" TEXT NOT NULL,
+    "trend_score" INTEGER NOT NULL DEFAULT 0,
+    "reason" TEXT,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "start_date" TIMESTAMP(3),
+    "end_date" TIMESTAMP(3),
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "trending_brands_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "site_settings" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "value" JSONB NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "site_settings_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "regions_name_key" ON "regions"("name");
 
@@ -458,7 +564,22 @@ CREATE UNIQUE INDEX "products_brand_id_slug_key" ON "products"("brand_id", "slug
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "brand_members_user_id_brand_id_key" ON "brand_members"("user_id", "brand_id");
+CREATE UNIQUE INDEX "accounts_provider_provider_account_id_key" ON "accounts"("provider", "provider_account_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "sessions_session_token_key" ON "sessions"("session_token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_token_key" ON "verification_tokens"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "verification_tokens"("identifier", "token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "favorites_user_id_brand_id_key" ON "favorites"("user_id", "brand_id");
+
+-- CreateIndex
+CREATE INDEX "brand_views_user_id_viewed_at_idx" ON "brand_views"("user_id", "viewed_at" DESC);
 
 -- CreateIndex
 CREATE INDEX "events_brand_id_created_at_idx" ON "events"("brand_id", "created_at" DESC);
@@ -483,6 +604,15 @@ CREATE UNIQUE INDEX "ai_prompts_name_version_key" ON "ai_prompts"("name", "versi
 
 -- CreateIndex
 CREATE UNIQUE INDEX "subscription_plans_tier_key" ON "subscription_plans"("tier");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "admin_users_email_key" ON "admin_users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "collections_slug_key" ON "collections"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "site_settings_key_key" ON "site_settings"("key");
 
 -- AddForeignKey
 ALTER TABLE "departments" ADD CONSTRAINT "departments_region_id_fkey" FOREIGN KEY ("region_id") REFERENCES "regions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -527,25 +657,22 @@ ALTER TABLE "product_labels" ADD CONSTRAINT "product_labels_product_id_fkey" FOR
 ALTER TABLE "product_labels" ADD CONSTRAINT "product_labels_label_id_fkey" FOREIGN KEY ("label_id") REFERENCES "labels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "brand_members" ADD CONSTRAINT "brand_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "brand_members" ADD CONSTRAINT "brand_members_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "brand_members" ADD CONSTRAINT "brand_members_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "favorites" ADD CONSTRAINT "favorites_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_favorites" ADD CONSTRAINT "user_favorites_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "favorites" ADD CONSTRAINT "favorites_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_favorites" ADD CONSTRAINT "user_favorites_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "brand_views" ADD CONSTRAINT "brand_views_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_favorites" ADD CONSTRAINT "user_favorites_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "events" ADD CONSTRAINT "events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "brand_views" ADD CONSTRAINT "brand_views_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "events" ADD CONSTRAINT "events_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -561,3 +688,15 @@ ALTER TABLE "campaigns" ADD CONSTRAINT "campaigns_brand_id_fkey" FOREIGN KEY ("b
 
 -- AddForeignKey
 ALTER TABLE "ai_conversations" ADD CONSTRAINT "ai_conversations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "collection_brands" ADD CONSTRAINT "collection_brands_collection_id_fkey" FOREIGN KEY ("collection_id") REFERENCES "collections"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "collection_brands" ADD CONSTRAINT "collection_brands_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "featured_brands" ADD CONSTRAINT "featured_brands_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "trending_brands" ADD CONSTRAINT "trending_brands_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;

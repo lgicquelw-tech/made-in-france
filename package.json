@@ -31,6 +31,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20.14.0",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.5",
@@ -49,6 +50,10 @@
     ]
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
+    "openai": "^6.15.0",
     "xlsx": "^0.18.5"
   }
 }

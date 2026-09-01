@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, MapPin, ExternalLink, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react';
+import { Search, MapPin, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 
 interface Brand {
   id: string;
@@ -16,6 +17,8 @@ interface Brand {
   city: string | null;
   region: string | null;
   sector: string | null;
+  sectorSlug: string | null;
+  sectorColor: string | null;
 }
 
 interface Region {
@@ -300,41 +303,67 @@ export default function MarquesPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {brands.map((brand) => (
-                <Link
-                  href={`/marques/${brand.slug}`}
+                <div
                   key={brand.id}
-                  className="group bg-white rounded-2xl p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
+                  className="group bg-white rounded-2xl p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1 relative"
                 >
-                  <div className="relative h-16 w-full mb-4 flex items-center justify-center bg-gray-100 rounded-xl">
-                    <div className="text-2xl font-bold text-france-blue">
-                      {brand.name.charAt(0)}
+                  {/* Bouton favori */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <FavoriteButton brandId={brand.id} size="sm" />
+                  </div>
+
+                  <Link href={`/marques/${brand.slug}`}>
+                    <div 
+                      className="relative h-16 w-full mb-4 flex items-center justify-center rounded-xl"
+                      style={{ backgroundColor: brand.sectorColor ? `${brand.sectorColor}15` : '#f3f4f6' }}
+                    >
+                      {brand.websiteUrl ? (
+                        <img 
+                          src={`https://www.google.com/s2/favicons?domain=${new URL(brand.websiteUrl).hostname}&sz=64`}
+                          alt={brand.name}
+                          className="w-10 h-10 object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className={`text-2xl font-bold ${brand.websiteUrl ? 'hidden' : ''}`}
+                        style={{ color: brand.sectorColor || '#002395' }}
+                      >
+                        {brand.name.charAt(0)}
+                      </div>
                     </div>
-                  </div>
 
-                  <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                    {brand.name}
-                  </h3>
-                  
-                  {brand.description && (
-                    <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                      {brand.description}
-                    </p>
-                  )}
+                    <h3 className="font-semibold text-gray-900 text-lg mb-2 pr-8">
+                      {brand.name}
+                    </h3>
+                    
+                    {brand.description && (
+                      <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                        {brand.description}
+                      </p>
+                    )}
 
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-4">
-                    {brand.city && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {brand.city}
-                      </span>
-                    )}
-                    {brand.region && (
-                      <span className="bg-blue-50 text-france-blue px-2 py-0.5 rounded-full">
-                        {brand.region}
-                      </span>
-                    )}
-                  </div>
-                </Link>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                      {brand.city && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {brand.city}
+                        </span>
+                      )}
+                      {brand.sector && (
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-white"
+                          style={{ backgroundColor: brand.sectorColor || '#002395' }}
+                        >
+                          {brand.sector}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                </div>
               ))}
             </div>
 
