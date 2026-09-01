@@ -1,10 +1,17 @@
 node_modules/
 .next/
 .DS_Store
-.env
-.env.local
-.env*.local
 .turbo/
-*.backup
+*.tsbuildinfo
 tsconfig.tsbuildinfo
-madeinfrance-hostinger 2/
+*.backup
+"madeinfrance-hostinger 2/"
+
+# Secrets — tout .env sauf l'exemple (REBUILD.md T0.3)
+.env
+.env.*
+!.env.example
+
+# Sauvegardes de base
+*.dump
+*.sql.gz

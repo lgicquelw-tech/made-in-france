@@ -14,9 +14,7 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
-  Key,
-  Eye,
-  EyeOff
+  Key
 } from 'lucide-react';
 
 const API_URL = 'http://localhost:4000';
@@ -26,9 +24,6 @@ interface AISettings {
   prompt: string;
   temperature: number;
   maxTokens: number;
-  anthropicApiKey: string;
-  openaiApiKey: string;
-  mistralApiKey: string;
   rules: Array<{ id: string; keyword: string; response: string; enabled: boolean }>;
 }
 
@@ -63,9 +58,6 @@ export default function AdminIAPage() {
     prompt: DEFAULT_PROMPT,
     temperature: 0.7,
     maxTokens: 1024,
-    anthropicApiKey: '',
-    openaiApiKey: '',
-    mistralApiKey: '',
     rules: []
   });
   const [saving, setSaving] = useState(false);
@@ -73,9 +65,6 @@ export default function AdminIAPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [newRule, setNewRule] = useState({ keyword: '', response: '' });
-  const [showAnthropicKey, setShowAnthropicKey] = useState(false);
-  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
-  const [showMistralKey, setShowMistralKey] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -203,62 +192,19 @@ export default function AdminIAPage() {
         </div>
       )}
 
-      {/* Clés API */}
+      {/* Clés API — REBUILD.md T0.5 : jamais saisies ni affichées ici */}
       <div className="bg-white rounded-2xl p-6 shadow-sm">
-        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
           <Key className="w-5 h-5 text-amber-500" />
           Clés API
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Clé Anthropic (Claude)</label>
-            <div className="relative">
-              <input
-                type={showAnthropicKey ? 'text' : 'password'}
-                value={settings.anthropicApiKey}
-                onChange={(e) => setSettings(prev => ({ ...prev, anthropicApiKey: e.target.value }))}
-                placeholder="sk-ant-api03-..."
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
-              />
-              <button type="button" onClick={() => setShowAnthropicKey(!showAnthropicKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {showAnthropicKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Requis pour Claude Haiku / Sonnet</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Clé OpenAI (GPT)</label>
-            <div className="relative">
-              <input
-                type={showOpenaiKey ? 'text' : 'password'}
-                value={settings.openaiApiKey}
-                onChange={(e) => setSettings(prev => ({ ...prev, openaiApiKey: e.target.value }))}
-                placeholder="sk-proj-..."
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
-              />
-              <button type="button" onClick={() => setShowOpenaiKey(!showOpenaiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {showOpenaiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Requis pour GPT-4o / GPT-4o Mini</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Clé Mistral</label>
-            <div className="relative">
-              <input
-                type={showMistralKey ? 'text' : 'password'}
-                value={settings.mistralApiKey}
-                onChange={(e) => setSettings(prev => ({ ...prev, mistralApiKey: e.target.value }))}
-                placeholder="sk-..."
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
-              />
-              <button type="button" onClick={() => setShowMistralKey(!showMistralKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                {showMistralKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Requis pour Mistral Small / Large</p>
-          </div>
-        </div>
+        <p className="text-sm text-gray-600">
+          Les clés des fournisseurs d'IA sont lues uniquement dans l'environnement du
+          serveur (<code className="font-mono text-xs">ANTHROPIC_API_KEY</code>,{' '}
+          <code className="font-mono text-xs">OPENAI_API_KEY</code>). Elles ne transitent
+          pas par cette interface et ne sont pas stockées en base. Pour en changer une,
+          modifier la variable d'environnement puis redémarrer l'API.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -2363,38 +2363,14 @@ app.get('/api/v1/brands/:slug/products/all', async (req, res) => {
 // ===========================================
 // CREATE ADMIN USER (à exécuter une seule fois)
 // ===========================================
-app.post('/api/admin/setup', async (req, res) => {
-  try {
-    const { email, password, name } = req.body;
-
-    const existingAdmin = await prisma.adminUser.findFirst();
-    if (existingAdmin) {
-      return res.status(400).json({ error: 'Un admin existe déjà' });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const admin = await prisma.adminUser.create({
-      data: {
-        email,
-        passwordHash,
-        name,
-        role: 'super_admin',
-      },
-    });
-
-    res.json({
-      data: {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name,
-      },
-      message: 'Admin créé avec succès',
-    });
-  } catch (error) {
-    console.error('Error creating admin:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
+// DESACTIVE — REBUILD.md T0.6.
+// Cette route creait un compte super_admin sans aucune authentification ;
+// le seul garde-fou etait « un admin existe deja ». A remplacer par une
+// commande CLI protegee en phase 3 (T3.15).
+app.post('/api/admin/setup', async (_req, res) => {
+  return res.status(410).json({
+    error: "Route desactivee. Creer un administrateur via la commande CLI (voir REBUILD.md T3.15).",
+  });
 });
 
 // ===========================================
@@ -3981,7 +3957,6 @@ const PRICE_IDS = {
 // Créer une session de paiement Stripe
 app.post('/api/v1/stripe/create-checkout-session', async (req, res) => {
   try {
-    console.log('STRIPE_SECRET_KEY length:', process.env.STRIPE_SECRET_KEY?.length, 'value:', process.env.STRIPE_SECRET_KEY);
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2024-12-18.acacia',
     });
@@ -4321,6 +4296,16 @@ app.get('/api/v1/brands/:slug/images', async (req, res) => {
 // AI SETTINGS ROUTES
 // ===========================================
 
+// Les cles d'API vivent uniquement dans l'environnement du serveur (CLAUDE.md, regle 4).
+// Elles ne sont ni renvoyees dans une reponse HTTP, ni stockees en base.
+const AI_SECRET_FIELD = /(apikey|api_key|secret|token|password)/i;
+function sanitizeAiSettings(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(([k]) => !AI_SECRET_FIELD.test(k))
+  );
+}
+
 // GET - Charger les settings IA
 app.get('/api/admin/ai/settings', async (req, res) => {
   try {
@@ -4329,7 +4314,7 @@ app.get('/api/admin/ai/settings', async (req, res) => {
     });
     
     if (setting) {
-      res.json({ data: setting.value });
+      res.json({ data: sanitizeAiSettings(setting.value) });
     } else {
       // Retourner les valeurs par défaut
       res.json({ data: {
@@ -4337,8 +4322,6 @@ app.get('/api/admin/ai/settings', async (req, res) => {
         prompt: '',
         temperature: 0.7,
         maxTokens: 1024,
-        anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
-        openaiApiKey: process.env.OPENAI_API_KEY || '',
         rules: []
       }});
     }
@@ -4351,24 +4334,14 @@ app.get('/api/admin/ai/settings', async (req, res) => {
 // PUT - Sauvegarder les settings IA
 app.put('/api/admin/ai/settings', async (req, res) => {
   try {
-    const settings = req.body;
-    
+    // Les cles eventuellement envoyees par le client sont ignorees, pas persistees.
+    const settings = sanitizeAiSettings(req.body) as Record<string, unknown>;
+
     await prisma.siteSetting.upsert({
       where: { key: 'ai_settings' },
-      update: { value: settings },
-      create: { key: 'ai_settings', value: settings }
+      update: { value: settings as any },
+      create: { key: 'ai_settings', value: settings as any }
     });
-    
-    // Mettre à jour les variables d'environnement en mémoire
-    if (settings.anthropicApiKey) {
-      process.env.ANTHROPIC_API_KEY = settings.anthropicApiKey;
-    }
-    if (settings.openaiApiKey) {
-      process.env.OPENAI_API_KEY = settings.openaiApiKey;
-    }
-    if (settings.model) {
-      process.env.ANTHROPIC_MODEL = settings.model;
-    }
     
     console.log('✅ AI settings saved:', { model: settings.model });
     res.json({ success: true });
