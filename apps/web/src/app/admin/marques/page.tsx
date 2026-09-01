@@ -65,7 +65,7 @@ export default function MarquesPage() {
         params.append('search', search);
       }
 
-      const res = await fetch(`${API_URL}/api/admin/brands?${params}`);
+      const res = await fetch(`/api/admin/brands?${params}`);
       if (res.ok) {
         const data = await res.json();
         setBrands(data.data || []);

@@ -254,7 +254,7 @@ export default function EditBrandPage() {
             setAllLabels(labelsData.data || []);
 
             if (!isNew) {
-                const brandRes = await fetch(`${API_URL}/api/admin/brands/${params.id}`);
+                const brandRes = await fetch(`/api/admin/brands/${params.id}`);
                 const brandData = await brandRes.json();
                 setBrand({
                     ...brandData.data,
@@ -296,11 +296,11 @@ export default function EditBrandPage() {
                 setBrandTags(aiContent.tags || []);
 
                 // Charger les labels de la marque
-                const brandLabelsRes = await fetch(`${API_URL}/api/admin/brands/${params.id}/labels`);
+                const brandLabelsRes = await fetch(`/api/admin/brands/${params.id}/labels`);
                 const brandLabelsData = await brandLabelsRes.json();
                 setBrandLabels(brandLabelsData.data || []);
 
-                const productsRes = await fetch(`${API_URL}/api/admin/brands/${params.id}/products`);
+                const productsRes = await fetch(`/api/admin/brands/${params.id}/products`);
                 const productsData = await productsRes.json();
                 setProducts(productsData.data || []);
             }
@@ -436,8 +436,8 @@ export default function EditBrandPage() {
         try {
             const method = isNew ? 'POST' : 'PUT';
             const url = isNew
-                ? `${API_URL}/api/admin/brands`
-                : `${API_URL}/api/admin/brands/${params.id}`;
+                ? `/api/admin/brands`
+                : `/api/admin/brands/${params.id}`;
 
             const res = await fetch(url, {
                 method,
@@ -475,7 +475,7 @@ export default function EditBrandPage() {
         if (!brand.id) return;
         setAddingLabel(true);
         try {
-            const res = await fetch(`${API_URL}/api/admin/brands/${brand.id}/labels`, {
+            const res = await fetch(`/api/admin/brands/${brand.id}/labels`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ labelId }),
@@ -500,7 +500,7 @@ export default function EditBrandPage() {
         if (!brand.id) return;
         setAddingLabel(true);
         try {
-            const res = await fetch(`${API_URL}/api/admin/brands/${brand.id}/labels/${labelId}`, {
+            const res = await fetch(`/api/admin/brands/${brand.id}/labels/${labelId}`, {
                 method: 'DELETE',
             });
             if (res.ok) {
@@ -610,7 +610,7 @@ export default function EditBrandPage() {
             if (res.ok) {
                 setShowProductModal(false);
                 setEditingProduct(null);
-                const productsRes = await fetch(`${API_URL}/api/admin/brands/${params.id}/products`);
+                const productsRes = await fetch(`/api/admin/brands/${params.id}/products`);
                 const productsData = await productsRes.json();
                 setProducts(productsData.data || []);
             } else {

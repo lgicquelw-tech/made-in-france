@@ -93,7 +93,7 @@ produit se reconstruit par les scrapers en phase 5, et les phases 5 et 6 changen
 | # | Constat | Preuve |
 |---|---|---|
 | 1 | **L'API n'a aucune authentification.** ~85 routes ouvertes, dont `DELETE /api/admin/brands/:id`, les uploads et Stripe. Zéro middleware. | `apps/api/src/index.ts` — 0 occurrence de `requireAuth`/`verifyToken`/`Bearer` |
-| 2 | **L'admin est « protégé » par le navigateur.** Une ligne dans la console suffit. | `apps/web/src/app/admin/layout.tsx:47` → `localStorage.getItem('admin')` |
+| 2 | ~~**L'admin est « protégé » par le navigateur.**~~ **Corrigé le 1er septembre 2026.** Le garde du navigateur a été remplacé par `useSession` (affichage) + le middleware (routage) + `requireAdmin` (autorisation, relue en base). Aggravant découvert au passage : le middleware ne s'exécutait même pas, mauvais emplacement de fichier. |
 | 3 | **L'identité circule en query string.** N'importe qui passe n'importe quel `userId` et édite n'importe quelle marque. | `index.ts:2972` (ownership), `:3012` et `:3104` (dashboard GET/PUT) |
 | 4 | **Injection SQL, chemin public.** Les mots-clés du chat sont concaténés dans la requête. | `index.ts:2643` → `p.name ILIKE '%${k}%'` puis `:2662` `$queryRawUnsafe(query)` ; même motif `:2723` |
 | 5 | **La clé secrète Stripe est journalisée en clair.** | `index.ts:3569` → `console.log(…, 'value:', process.env.STRIPE_SECRET_KEY)` |
@@ -293,7 +293,7 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 ### 3a — Découpage
 
 - [ ] **T3.1** — Créer la structure de modules : `catalogue-marques`, `catalogue-produits`, `recherche`, `comptes-sessions`, `administration`, `espace-marque`, `import-synchronisation`, `medias`, `paiements`, `ia`.
-- [ ] **T3.2** — Migrer les routes marques. Routes fines, logique en services, aucun fichier > 300 lignes.
+- [~] **T3.2** — **Arbre `/api/admin/brands/*` migré** (9 routes) vers des Route Handlers Next.js, tous derrière `requireAdmin` — `DELETE` derrière `requireSuperAdmin`, car il emporte en cascade produits, images, propriétaires et demandes de revendication. Aucun fichier ne dépasse 115 lignes. Les routes marques **publiques** restent à migrer.
 - [ ] **T3.3** — Migrer les routes produits.
 - [ ] **T3.4** — Migrer la recherche.
 - [ ] **T3.5** — Migrer l'administration.
@@ -312,7 +312,7 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   ```bash
   grep -rn "userId" apps/api/src | grep -i "query\|req.query"   # doit devenir vide
   ```
-- [ ] **T3.13** — Vérifier l'appartenance à la marque pour **chaque** action B2B en écriture.
+- [~] **T3.13** — Le socle existe (`requireBrandOwner`, vérification en base, `VIEWER` exclu) mais aucune route B2B ne l'utilise encore : l'espace marque n'est pas migré.
 - [ ] **T3.14** — Piste d'audit : qui a modifié quoi, quand, sur les fiches marque.
 - [x] **T3.15** — Remplacé par une commande locale : **`pnpm admin:create`** (`scripts/create-admin.ts`). Une commande locale n'est appelable que par quelqu'un qui a déjà accès au serveur et à la base : c'est le bon niveau de privilège pour créer un administrateur.
   Le mot de passe est saisi sans écho et **jamais passé en argument** — il finirait sinon dans l'historique du shell et dans la liste des processus. Minimum 12 caractères, confirmation exigée, hachage bcrypt en 12 tours. Le premier compte est `SUPER_ADMIN`, les suivants `ADMIN` ; un compte existant est promu plutôt que refusé.
@@ -385,7 +385,7 @@ Transversal à ces six étapes :
 - [ ] **T4.10** — Migrer les 40 `<img>` vers `next/image` et déclarer les hôtes réels dans `next.config.js` : `cdn.shopify.com`, `res.cloudinary.com`, `www.google.com`, les domaines WordPress. **Aucun n'y figure aujourd'hui** (seulement AWS, Cloudflare et Unsplash).
 - [ ] **T4.11** — JSON-LD : `Organization` sur les marques, `Product` sur les produits.
 - [ ] **T4.12** — `sitemap.ts` alimenté par la base + `robots.ts`.
-- [ ] **T4.13** — Rétablir une protection réelle des routes `/admin` et `/studio` dans `middleware.ts`.
+- [x] **T4.13** — **Le middleware ne s'exécutait pas du tout.** Il était dans `apps/web/middleware.ts` alors que le projet utilise un répertoire `src/`, où Next.js attend `apps/web/src/middleware.ts`. Vérifié : l'en-tête `x-pathname` qu'il prétendait poser n'apparaissait dans aucune réponse — `/admin` et `/studio` étaient donc entièrement ouverts. Déplacé et rendu effectif : anonyme → redirection vers `/connexion`, connecté sans droits → 404, administrateur → 200. `/studio/connexion`, `/studio/inscription` et `/studio/revendiquer` restent ouverts, sinon personne ne pourrait plus se connecter.
 
 **Critère de sortie**
 ```bash

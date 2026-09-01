@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   Package,
@@ -24,8 +25,6 @@ import {
   Award
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000';
-
 const menuItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
   { label: 'Marques', href: '/admin/marques', icon: Package },
@@ -42,45 +41,38 @@ const menuItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  useEffect(() => {
-    const adminData = localStorage.getItem('admin');
-    setIsLoggedIn(!!adminData);
-  }, []);
+  // Le garde precedent tenait dans une valeur du stockage local du navigateur :
+  // une ligne dans la console suffisait a se declarer administrateur
+  // (constat n°2). Ce test-ci ne sert plus qu'a l'affichage — la vraie
+  // autorisation est verifiee cote serveur par `requireAdmin` dans chaque
+  // Route Handler, et par le middleware avant meme le rendu de la page.
+  const role = session?.user?.role;
+  const isLoggedIn =
+    status === 'loading' ? null : role === 'ADMIN' || role === 'SUPER_ADMIN';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
-    try {
-      const res = await fetch(`${API_URL}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setLoginError(data.error || 'Erreur de connexion');
-        return;
-      }
-
-      localStorage.setItem('admin', JSON.stringify(data.data));
-      setIsLoggedIn(true);
-    } catch (error) {
-      setLoginError('Erreur de connexion au serveur');
+    if (!result || result.error) {
+      setLoginError('Email ou mot de passe incorrect');
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('admin');
-    setIsLoggedIn(false);
+    void signOut({ callbackUrl: '/' });
   };
 
   const isActive = (href: string, exact?: boolean) => {

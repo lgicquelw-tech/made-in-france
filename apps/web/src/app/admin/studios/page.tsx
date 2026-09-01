@@ -31,7 +31,7 @@ export default function StudiosPage() {
   const loadBrands = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/brands?search=${search}&tier=${tierFilter}`);
+      const res = await fetch(`/api/admin/brands?search=${search}&tier=${tierFilter}`);
       if (res.ok) {
         const data = await res.json();
         setBrands(data.data);

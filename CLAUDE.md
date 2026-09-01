@@ -59,7 +59,7 @@ les lise comme une source.
 | Monorepo | pnpm workspaces + Turborepo |
 | Node | >= 20 (testé en v22), `packageManager: pnpm@9.1.0` |
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
-| Backend | **Express 4** (pas NestJS) — un seul fichier de 4 358 lignes, 92 routes |
+| Backend | **En cours de migration vers Next.js** (option A, T0.1). Express 4 ne sert plus que 82 routes ; l'arbre `/api/admin/brands/*` est passé en Route Handlers. |
 | Base | PostgreSQL 16.15 (Homebrew) + Prisma 5.22 |
 | Recherche | PostgreSQL `pg_trgm` (pas Meilisearch) |
 | Auth | NextAuth v4 (Google, Email, Credentials) côté web uniquement |
@@ -88,7 +88,8 @@ made-in-france/
 │   │       │   ├── entreprises/  # landing marketing B2B UNIQUEMENT (plus d'inscription)
 │   │       │   ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
 │   │       │   ├── admin/labels/ # fonctionnalité labels (absente de la copie locale de janvier)
-│   │       │   └── api/auth/[...nextauth]/route.ts   # SEULE route API côté web
+│   │       │   ├── api/auth/[...nextauth]/route.ts
+│   │       │   └── api/admin/brands/**             # migré depuis Express, derrière requireAdmin
 │   │       ├── components/       # header, footer, home/*, ui/*, ChatBot
 │   │       ├── hooks/  lib/api.ts  styles/
 │   └── api/
@@ -217,6 +218,8 @@ chemins commençant par `../`.
 | Webhook Stripe | Le corps brut doit rester non parsé — le contournement existe déjà `index.ts:23-29`, ne pas le casser |
 | Dépôt public | `github.com/lgicquelw-tech/made-in-france` est **public**. Tout commit est immédiatement visible. Vérifier avant chaque push. |
 | Identité | Un seul modèle : `User`, avec `role` (`USER`/`ADMIN`/`SUPER_ADMIN`) et `isActive`. `AdminUser` n'existe plus. L'autorisation passe par `apps/web/src/lib/guards.ts`, qui **relit le rôle en base** — jamais depuis le jeton seul. |
+| Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné. |
+| Appels admin depuis le front | **URL relative** (`/api/admin/...`), jamais `${API_URL}`. Le cookie de session n'est envoyé qu'en même origine : un appel vers `localhost:4000` ne peut pas être authentifié. |
 | Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |
 | Version d'API Stripe | Figée une seule fois dans `STRIPE_API_VERSION` (`index.ts`). Ne pas la redéclarer ailleurs. |
