@@ -1985,100 +1985,6 @@ app.get('/api/v1/products/:id/labels', async (req, res) => {
 // (l'import de Stripe est en tete de fichier — il etait duplique ici, ce qui
 //  empechait le fichier de compiler : REBUILD.md T3.18)
 
-// Prix des abonnements (à créer dans Stripe Dashboard)
-const PRICE_IDS = {
-  PREMIUM_MONTHLY: process.env.STRIPE_PRICE_PREMIUM_MONTHLY || '',
-  PREMIUM_YEARLY: process.env.STRIPE_PRICE_PREMIUM_YEARLY || '',
-  ROYALE_MONTHLY: process.env.STRIPE_PRICE_ROYALE_MONTHLY || '',
-  ROYALE_YEARLY: process.env.STRIPE_PRICE_ROYALE_YEARLY || '',
-};
-
-// Créer une session de paiement Stripe
-app.post('/api/v1/stripe/create-checkout-session', async (req, res) => {
-  try {
-    const stripe = stripeClient();
-    const { brandSlug, plan, billingCycle, userEmail } = req.body;
-
-    if (!brandSlug || !plan || !billingCycle) {
-      return res.status(400).json({ error: 'Paramètres manquants' });
-    }
-
-    const brand = await prisma.brand.findUnique({ where: { slug: brandSlug } });
-    if (!brand) {
-      return res.status(404).json({ error: 'Marque non trouvée' });
-    }
-
-    // Déterminer le prix
-    let priceId: string;
-    let amount: number;
-    
-    if (plan === 'PREMIUM') {
-      priceId = billingCycle === 'yearly' ? PRICE_IDS.PREMIUM_YEARLY : PRICE_IDS.PREMIUM_MONTHLY;
-      amount = billingCycle === 'yearly' ? 29000 : 2900; // en centimes
-    } else if (plan === 'ROYALE') {
-      priceId = billingCycle === 'yearly' ? PRICE_IDS.ROYALE_YEARLY : PRICE_IDS.ROYALE_MONTHLY;
-      amount = billingCycle === 'yearly' ? 99000 : 9900;
-    } else {
-      return res.status(400).json({ error: 'Plan invalide' });
-    }
-
-    // Créer ou récupérer le customer Stripe
-    let customerId = brand.stripeCustomerId;
-    
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: userEmail,
-        metadata: {
-          brandId: brand.id,
-          brandSlug: brand.slug,
-        },
-      });
-      customerId = customer.id;
-      
-      // Sauvegarder l'ID customer
-      await prisma.brand.update({
-        where: { id: brand.id },
-        data: { stripeCustomerId: customerId },
-      });
-    }
-
-    // Créer la session de checkout
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'eur',
-            product_data: {
-              name: `Made in France Studio - ${plan === 'PREMIUM' ? 'Premium' : 'Royale'}`,
-              description: billingCycle === 'yearly' ? 'Abonnement annuel' : 'Abonnement mensuel',
-            },
-            unit_amount: amount,
-            recurring: {
-              interval: billingCycle === 'yearly' ? 'year' : 'month',
-            },
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/studio/marque/${brandSlug}/abonnement?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/studio/marque/${brandSlug}/abonnement?canceled=true`,
-      metadata: {
-        brandId: brand.id,
-        brandSlug: brand.slug,
-        plan,
-        billingCycle,
-      },
-    });
-
-    res.json({ url: session.url });
-  } catch (error) {
-    console.error('Stripe checkout error:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de la session de paiement', details: error instanceof Error ? error.message : String(error) });
-  }
-});
 
 // Webhook Stripe pour gérer les événements
 app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -2086,17 +1992,23 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
   const sig = req.headers['stripe-signature'] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+  // ⚠️ Le repli `JSON.parse(req.body)` quand le secret manquait acceptait
+  // N'IMPORTE QUEL evenement non signe. Cette route met a jour
+  // subscriptionTier : une requete forgee suffisait a s'octroyer un
+  // abonnement Royale sur n'importe quelle marque. Un webhook non verifiable
+  // doit echouer, jamais etre cru sur parole.
+  if (!webhookSecret) {
+    console.error('[stripe] STRIPE_WEBHOOK_SECRET absent : webhook refuse.');
+    return res.status(500).send('Webhook non configure');
+  }
+
   let event: Stripe.Event;
 
   try {
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } else {
-      event = JSON.parse(req.body.toString()) as Stripe.Event;
-    }
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error('[stripe] signature du webhook invalide:', err.message);
+    return res.status(400).send('Signature invalide');
   }
 
   // Gérer les événements
@@ -2160,28 +2072,6 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
   res.json({ received: true });
 });
 
-// Créer un portail client pour gérer l'abonnement
-app.post('/api/v1/stripe/create-portal-session', async (req, res) => {
-  try {
-    const stripe = stripeClient();
-    const { brandSlug } = req.body;
-
-    const brand = await prisma.brand.findUnique({ where: { slug: brandSlug } });
-    if (!brand || !brand.stripeCustomerId) {
-      return res.status(404).json({ error: 'Aucun abonnement trouvé' });
-    }
-
-    const session = await stripe.billingPortal.sessions.create({
-      customer: brand.stripeCustomerId,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/studio/marque/${brandSlug}/abonnement`,
-    });
-
-    res.json({ url: session.url });
-  } catch (error) {
-    console.error('Portal session error:', error);
-    res.status(500).json({ error: 'Erreur lors de la création du portail' });
-  }
-});
 
 // ===========================================
 // CLOUDINARY UPLOAD

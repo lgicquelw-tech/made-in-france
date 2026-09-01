@@ -202,7 +202,7 @@ export default function StudioAbonnementPage() {
     setProcessingPlan(planId);
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/stripe/create-checkout-session`, {
+      const res = await fetch(`/api/v1/stripe/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

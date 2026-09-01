@@ -572,8 +572,11 @@ L'option 2 est la bonne, mais elle **suppose l'audit fait**. En attendant, ne pa
 - [ ] **T8.2** — **Instrumenter les vrais événements** : vues de fiche, clics sortants, mises en favori.
 - [ ] **T8.3** — Reconstruire le tableau de bord sur ces événements. Supprimer tous les `Math.random()` de `index.ts:3063-3067` et de `statistiques/page.tsx:68-69`.
 - [ ] **T8.4** — Définir ce que Premium apporte concrètement, une fois les vrais chiffres visibles.
-- [ ] **T8.5** — Stripe : autorisation de la marque vérifiée serveur, webhooks signés, tests des cas d'échec, portail client.
-- [ ] **T8.6** — **Le navigateur ne choisit jamais librement la marque ni le niveau d'abonnement à facturer.** Le serveur dérive les deux du token et de la propriété en base.
+- [~] **T8.5** — **Autorisation et signature faites** ; les tests des cas d'échec et le portail client restent à écrire. Trois défauts fermés le 1er septembre 2026 :
+  - `create-checkout-session` prenait `brandSlug`, `plan`, `billingCycle` **et `userEmail`** dans le corps, sans authentification. On pouvait ouvrir un paiement au nom de n'importe quelle marque et surtout **écraser son `stripeCustomerId`** — de quoi rattacher une marque à un client Stripe étranger.
+  - `create-portal-session` ouvrait le portail de facturation de n'importe quelle marque abonnée : moyens de paiement et historique compris.
+  - **Le webhook acceptait les événements non signés.** Quand `STRIPE_WEBHOOK_SECRET` était absent, il faisait `JSON.parse(req.body)` et croyait l'événement sur parole. Cette route écrit `subscriptionTier` : une requête forgée suffisait à s'octroyer un abonnement Royale. Un webhook non vérifiable échoue désormais.
+- [x] **T8.6** — **Le navigateur ne choisit plus rien.** La marque vient de la propriété vérifiée en base (`requireBrandOwner`), l'adresse e-mail de la session, et **le prix de la table `subscription_plans`** — il était auparavant écrit en dur dans le code (2900, 29000, 9900, 99000 centimes), sans lien avec les tarifs affichés au client. `PRICE_IDS` a été supprimé : ces quatre identifiants étaient calculés à chaque appel et **jamais utilisés**, la caisse passant par `price_data`.
 
 ### IA
 
