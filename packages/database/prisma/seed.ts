@@ -423,7 +423,10 @@ async function main() {
   // qui aurait derive, au lieu de la laisser en l'etat.
   for (const plan of plans) {
     const { tier, ...rest } = plan;
-    const data = { ...rest, features: JSON.stringify(rest.features) };
+    // `features` est une colonne Json : on y range le tableau tel quel.
+    // L'encodage en chaine y ecrivait du JSON DANS du JSON, que le front
+    // recevait sans pouvoir le parcourir.
+    const data = { ...rest };
     await prisma.subscriptionPlan.upsert({
       where: { tier },
       update: data,
@@ -582,7 +585,22 @@ async function main() {
   await Promise.all([
     prisma.product.upsert({
       where: { brandId_slug: { brandId: saintJames.id, slug: 'mariniere-guildo' } },
-      update: {},
+      update: {
+        brandId: saintJames.id,
+        name: 'Marinière Guildo',
+        slug: 'mariniere-guildo',
+        descriptionShort: 'La marinière authentique, icône du style breton.',
+        priceMin: 79,
+        priceMax: 89,
+        categoryId: vetementsCategory.id,
+        manufacturingLocation: 'Saint-James, Normandie',
+        materials: ['Coton', 'Laine vierge'],
+        madeInFranceLevel: MadeInFranceLevel.FABRICATION_100_FRANCE,
+        externalBuyUrl: 'https://www.saint-james.com/mariniere-guildo',
+        tags: ['iconique', 'coton', 'rayures', 'mixte'],
+        status: 'ACTIVE',
+        isFeatured: true,
+      },
       create: {
         brandId: saintJames.id,
         name: 'Marinière Guildo',
@@ -592,17 +610,32 @@ async function main() {
         priceMax: 89,
         categoryId: vetementsCategory.id,
         manufacturingLocation: 'Saint-James, Normandie',
-        materials: JSON.stringify(['Coton', 'Laine vierge']),
+        materials: ['Coton', 'Laine vierge'],
         madeInFranceLevel: MadeInFranceLevel.FABRICATION_100_FRANCE,
         externalBuyUrl: 'https://www.saint-james.com/mariniere-guildo',
-        tags: JSON.stringify(['iconique', 'coton', 'rayures', 'mixte']),
+        tags: ['iconique', 'coton', 'rayures', 'mixte'],
         status: 'ACTIVE',
         isFeatured: true,
       },
     }),
     prisma.product.upsert({
       where: { brandId_slug: { brandId: saintJames.id, slug: 'pull-binic' } },
-      update: {},
+      update: {
+        brandId: saintJames.id,
+        name: 'Pull Binic',
+        slug: 'pull-binic',
+        descriptionShort: 'Le pull marin authentique en pure laine vierge.',
+        priceMin: 159,
+        priceMax: 179,
+        categoryId: vetementsCategory.id,
+        manufacturingLocation: 'Saint-James, Normandie',
+        materials: ['Laine vierge'],
+        madeInFranceLevel: MadeInFranceLevel.FABRICATION_100_FRANCE,
+        externalBuyUrl: 'https://www.saint-james.com/pull-binic',
+        tags: ['laine', 'hiver', 'chaud', 'classique'],
+        status: 'ACTIVE',
+        isFeatured: true,
+      },
       create: {
         brandId: saintJames.id,
         name: 'Pull Binic',
@@ -612,10 +645,10 @@ async function main() {
         priceMax: 179,
         categoryId: vetementsCategory.id,
         manufacturingLocation: 'Saint-James, Normandie',
-        materials: JSON.stringify(['Laine vierge']),
+        materials: ['Laine vierge'],
         madeInFranceLevel: MadeInFranceLevel.FABRICATION_100_FRANCE,
         externalBuyUrl: 'https://www.saint-james.com/pull-binic',
-        tags: JSON.stringify(['laine', 'hiver', 'chaud', 'classique']),
+        tags: ['laine', 'hiver', 'chaud', 'classique'],
         status: 'ACTIVE',
         isFeatured: true,
       },

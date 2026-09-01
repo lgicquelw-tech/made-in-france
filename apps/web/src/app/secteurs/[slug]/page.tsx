@@ -1,60 +1,91 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MapPin, ExternalLink, ArrowLeft } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { API_URL } from '@/lib/api';
+import { prisma } from '@/lib/db';
+import { siteUrl } from '@/lib/site';
 
-const SECTORS: Record<string, { name: string; color: string; description: string }> = {
-  'mode-accessoires': { name: 'Mode & Accessoires', color: '#3B82F6', description: 'Vêtements, chaussures, maroquinerie, bijoux' },
-  'maison-jardin': { name: 'Maison & Jardin', color: '#10B981', description: 'Décoration, mobilier, linge, vaisselle, jardin' },
-  'gastronomie': { name: 'Gastronomie', color: '#F59E0B', description: 'Alimentation, boissons, épicerie fine' },
-  'cosmetique': { name: 'Cosmétique', color: '#EC4899', description: 'Cosmétiques, soins, parfums' },
-  'enfance': { name: 'Enfance', color: '#8B5CF6', description: 'Jouets, vêtements enfants, puériculture' },
-  'loisirs-sport': { name: 'Loisirs & Sport', color: '#06B6D4', description: 'Sport, jeux, outdoor' },
-  'animaux': { name: 'Animaux', color: '#8B4513', description: 'Accessoires et alimentation pour animaux' },
-  'sante-nutrition': { name: 'Santé & Nutrition', color: '#22C55E', description: 'Produits de santé, compléments alimentaires' },
-  'high-tech': { name: 'High-Tech', color: '#6366F1', description: 'Électronique, objets connectés' },
-};
+/**
+ * Page d'un secteur (REBUILD.md T4.3, T4.8).
+ *
+ * Deux défauts corrigés :
+ *  - la liste des secteurs était **écrite en dur ici**, en plus du seed, du
+ *    script d'import et de `sitemap.ts`. C'est exactement la divergence de
+ *    taxonomie qui avait laissé 687 marques sans secteur ; elle est lue en base.
+ *  - les marques venaient de l'API avec `?limit=100` : le secteur « Mode &
+ *    Accessoires » en compte **263**, dont 163 n'apparaissaient jamais.
+ */
 
-interface Brand {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  city: string | null;
-  region: string | null;
-  websiteUrl: string | null;
+export const revalidate = 3600;
+
+async function getSector(slug: string) {
+  return prisma.sector.findUnique({
+    where: { slug },
+    select: { id: true, name: true, slug: true, color: true },
+  });
 }
 
-async function getBrandsBySector(sectorSlug: string): Promise<Brand[]> {
-  try {
-    const res = await fetch(`${API_URL}/api/v1/brands?sector=${sectorSlug}&limit=100`, {
-      cache: 'no-store',
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.data || [];
-  } catch {
-    return [];
-  }
+export async function generateStaticParams() {
+  const sectors = await prisma.sector.findMany({ select: { slug: true } });
+  return sectors.map((sector) => ({ slug: sector.slug }));
 }
 
-export default async function SecteurDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const sector = SECTORS[slug];
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const sector = await getSector(params.slug);
+  if (!sector) return { title: 'Secteur introuvable' };
 
-  if (!sector) {
-    notFound();
-  }
+  const count = await prisma.brand.count({ where: { sectorId: sector.id } });
+  const title = `${sector.name} — marques françaises`;
+  const description = `${count} marque${count > 1 ? 's' : ''} française${count > 1 ? 's' : ''} du secteur ${sector.name}, fabriquant en France.`;
+  const url = `${siteUrl()}/secteurs/${sector.slug}`;
 
-  const brands = await getBrandsBySector(slug);
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      title: `${title} | Made in France`,
+      description,
+      url,
+      siteName: 'Made in France',
+      locale: 'fr_FR',
+    },
+  };
+}
+
+export default async function SecteurDetailPage({ params }: { params: { slug: string } }) {
+  const sector = await getSector(params.slug);
+  if (!sector) notFound();
+
+  const brands = await prisma.brand.findMany({
+    where: { sectorId: sector.id },
+    orderBy: { name: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      descriptionShort: true,
+      city: true,
+      websiteUrl: true,
+      region: { select: { name: true } },
+    },
+  });
+
+  const color = sector.color ?? '#002395';
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}
       <section 
         className="text-white py-16"
-        style={{ backgroundColor: sector.color }}
+        style={{ backgroundColor: color }}
       >
         <div className="max-w-7xl mx-auto px-4">
           <Link 
@@ -65,9 +96,6 @@ export default async function SecteurDetailPage({ params }: { params: Promise<{ 
             Tous les secteurs
           </Link>
           <h1 className="text-4xl font-bold mb-4">{sector.name}</h1>
-          <p className="text-xl text-white/90 max-w-2xl">
-            {sector.description}
-          </p>
           <p className="mt-4 text-white/80">
             {brands.length} marque{brands.length > 1 ? 's' : ''} dans ce secteur
           </p>
@@ -95,16 +123,16 @@ export default async function SecteurDetailPage({ params }: { params: Promise<{ 
                   {brand.name}
                 </h2>
                 
-                {brand.description && (
+                {brand.descriptionShort && (
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {brand.description}
+                    {brand.descriptionShort}
                   </p>
                 )}
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1 text-gray-500 text-sm">
                     <MapPin className="w-4 h-4" />
-                    <span>{brand.city || brand.region || 'France'}</span>
+                    <span>{brand.city || brand.region?.name || 'France'}</span>
                   </div>
                   
                   {brand.websiteUrl && (

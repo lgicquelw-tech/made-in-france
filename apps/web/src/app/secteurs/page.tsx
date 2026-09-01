@@ -1,39 +1,79 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Shirt, Home, UtensilsCrossed, Sparkles, Baby, Dumbbell, PawPrint, Heart, Cpu, ArrowRight, Grid3X3 } from 'lucide-react';
-import { API_URL } from '@/lib/api';
 
-const SECTORS = [
-  { slug: 'mode-accessoires', name: 'Mode & Accessoires', color: '#3B82F6', icon: Shirt, description: 'Vêtements, chaussures, maroquinerie, bijoux' },
-  { slug: 'maison-jardin', name: 'Maison & Jardin', color: '#10B981', icon: Home, description: 'Décoration, mobilier, linge, vaisselle, jardin' },
-  { slug: 'gastronomie', name: 'Gastronomie', color: '#F59E0B', icon: UtensilsCrossed, description: 'Alimentation, boissons, épicerie fine' },
-  { slug: 'cosmetique', name: 'Cosmétique', color: '#EC4899', icon: Sparkles, description: 'Cosmétiques, soins, parfums' },
-  { slug: 'enfance', name: 'Enfance', color: '#8B5CF6', icon: Baby, description: 'Jouets, vêtements enfants, puériculture' },
-  { slug: 'loisirs-sport', name: 'Loisirs & Sport', color: '#06B6D4', icon: Dumbbell, description: 'Sport, jeux, outdoor' },
-  { slug: 'animaux', name: 'Animaux', color: '#8B4513', icon: PawPrint, description: 'Accessoires et alimentation pour animaux' },
-  { slug: 'sante-nutrition', name: 'Santé & Nutrition', color: '#22C55E', icon: Heart, description: 'Produits de santé, compléments alimentaires' },
-  { slug: 'high-tech', name: 'High-Tech', color: '#6366F1', icon: Cpu, description: 'Électronique, objets connectés' },
-];
+import { prisma } from '@/lib/db';
+import { siteUrl } from '@/lib/site';
 
-async function getSectorCounts() {
-  try {
-    const res = await fetch(`${API_URL}/api/v1/sectors/with-counts`, {
-      cache: 'no-store',
-    });
-    if (!res.ok) return {};
-    const data = await res.json();
-    const counts: Record<string, number> = {};
-    data.data?.forEach((s: { slug: string; brandCount: number }) => {
-      counts[s.slug] = s.brandCount;
-    });
-    return counts;
-  } catch {
-    return {};
-  }
+/**
+ * Liste des secteurs (REBUILD.md T4.3, T4.8).
+ *
+ * La taxonomie était **écrite en dur ici**, comme dans la page d'un secteur,
+ * le seed et `sitemap.ts`. C'est la divergence qui avait laissé 687 marques
+ * sans secteur. Elle vient désormais de la base, avec ses compteurs.
+ *
+ * Ce qui reste ici est de la **présentation** — une icône et une phrase de
+ * description — et n'a rien à faire en base.
+ */
+
+export const revalidate = 3600;
+
+const PRESENTATION: Record<string, { icon: typeof Shirt; description: string }> = {
+  'mode-accessoires': { icon: Shirt, description: 'Vêtements, chaussures, maroquinerie, bijoux' },
+  'maison-jardin': { icon: Home, description: 'Décoration, mobilier, linge, vaisselle, jardin' },
+  gastronomie: { icon: UtensilsCrossed, description: 'Alimentation, boissons, épicerie fine' },
+  cosmetique: { icon: Sparkles, description: 'Cosmétiques, soins, parfums' },
+  enfance: { icon: Baby, description: 'Jouets, vêtements enfants, puériculture' },
+  'loisirs-sport': { icon: Dumbbell, description: 'Sport, jeux, outdoor' },
+  animaux: { icon: PawPrint, description: 'Accessoires et alimentation pour animaux' },
+  'sante-nutrition': { icon: Heart, description: 'Produits de santé, compléments alimentaires' },
+  'high-tech': { icon: Cpu, description: 'Électronique, objets connectés' },
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const total = await prisma.brand.count();
+  const title = 'Secteurs';
+  const description = `Parcourez ${total} marques françaises par secteur : mode, maison, gastronomie, cosmétique, enfance, sport, animaux, santé et high-tech.`;
+  const url = `${siteUrl()}/secteurs`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      title: `${title} | Made in France`,
+      description,
+      url,
+      siteName: 'Made in France',
+      locale: 'fr_FR',
+    },
+  };
 }
 
 export default async function SecteursPage() {
-  const counts = await getSectorCounts();
-  const totalBrands = Object.values(counts).reduce((a, b) => a + b, 0);
+  const rows = await prisma.sector.findMany({
+    orderBy: { name: 'asc' },
+    select: {
+      slug: true,
+      name: true,
+      color: true,
+      _count: { select: { brands: true } },
+    },
+  });
+
+  const SECTORS = rows.map((row) => ({
+    slug: row.slug,
+    name: row.name,
+    color: row.color ?? '#002395',
+    icon: PRESENTATION[row.slug]?.icon ?? Grid3X3,
+    description: PRESENTATION[row.slug]?.description ?? '',
+  }));
+
+  const counts: Record<string, number> = Object.fromEntries(
+    rows.map((row) => [row.slug, row._count.brands])
+  );
+  const totalBrands = rows.reduce((sum, row) => sum + row._count.brands, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">

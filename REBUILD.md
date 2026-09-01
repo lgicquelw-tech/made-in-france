@@ -495,8 +495,10 @@ Aucun fichier backend ne dépasse 300 lignes.
 - [x] **T4.2** — **Fiche marque en Server Component, avec SEO complet.** Elle était entièrement `'use client'` et chargeait la marque dans un `useEffect` : le HTML servi ne contenait qu'un « Chargement… ». Aucun titre, aucune description, aucun contenu — chaque fiche était invisible pour un moteur.
   Découpée en deux : `page.tsx` (serveur) lit la base directement, porte `generateMetadata`, `generateStaticParams` et le JSON-LD ; `brand-detail.tsx` reste client pour la visionneuse, le bouton favori et les sections dépliables, mais **reçoit ses données en props**. C'est ce qui change tout : un composant client est rendu côté serveur, à condition que ses données soient déjà là.
   Vérifié : 52 Ko de HTML contenant le nom, la ville, la région et la description ; `<title>`, `meta description`, canonique, Open Graph et JSON-LD présents ; une marque inconnue renvoie 404.
-- [ ] **T4.3** — Régions, secteurs, carte.
-- [ ] **T4.4** — Catalogue et fiche produit.
+- [~] **T4.3** — **Secteurs faits.** La liste des secteurs était **écrite en dur dans deux pages**, en plus du seed, du script d'import et de `sitemap.ts` — c'est la divergence de taxonomie qui avait laissé 687 marques sans secteur. Elle vient désormais de la base. La page d'un secteur plafonnait aussi à 100 marques : « Mode & Accessoires » en compte **263**, dont 163 n'apparaissaient jamais.
+  Ce qui reste dans le code est de la **présentation** — une icône et une phrase — et n'a rien à faire en base. Régions et carte restent à faire.
+- [~] **T4.4** — **Fiche produit en Server Component**, avec `generateMetadata`, canonique, Open Graph et JSON-LD `Product`. L'offre n'est déclarée que si le prix **et** le lien d'achat existent — annoncer un prix sans moyen d'acheter serait signalé comme donnée structurée invalide.
+  Bug trouvé au passage : `materials` et `tags` étaient **doublement encodés** — une chaîne JSON contenant du JSON, parce que le seed appliquait `JSON.stringify` à une colonne déjà `Json`. La page plantait sur `materials.join is not a function`. Corrigé à la source, et la page normalise malgré tout : les scrapers peuvent reproduire le défaut. Le catalogue produit (liste) reste à faire.
 - [ ] **T4.5** — Recherche unifiée marques + produits.
 - [ ] **T4.6** — Favoris et profil utilisateur.
 
