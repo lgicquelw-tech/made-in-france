@@ -3,7 +3,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
@@ -882,35 +882,38 @@ app.get('/api/v1/products', async (req, res) => {
 
     // Si recherche, utiliser pg_trgm pour fuzzy search
     if (query.trim()) {
+      // ⚠️ CONSTAT N°4 (deuxième foyer). Les termes de recherche étaient bien
+      // liés ($1..$6), mais le filtre de secteur était concaténé :
+      // `AND s.slug = '${sector}'`, avec `sector` venant de la query string
+      // d'une route PUBLIQUE. Tout passe désormais par `Prisma.sql`.
       const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      
-      let sectorFilter = '';
-      if (sector) {
-        sectorFilter = `AND s.slug = '${sector}'`;
-      }
-      
-      let priceFilter = '';
-      if (priceMin > 0) {
-        priceFilter += ` AND p.price_min >= ${priceMin}`;
-      }
-      if (priceMax > 0) {
-        priceFilter += ` AND p.price_max <= ${priceMax}`;
-      }
+      const like = `%${query}%`;
+      const likeNormalized = `%${normalizedQuery}%`;
 
-      let orderByClause = 'similarity DESC, p.name ASC';
-      switch (sort) {
-        case 'price-asc':
-          orderByClause = 'p.price_min ASC NULLS LAST';
-          break;
-        case 'price-desc':
-          orderByClause = 'p.price_min DESC NULLS LAST';
-          break;
-        case 'name-asc':
-          orderByClause = 'p.name ASC';
-          break;
-      }
+      const filters: Prisma.Sql[] = [Prisma.sql`p.status = 'ACTIVE'`];
+      if (sector) filters.push(Prisma.sql`s.slug = ${sector}`);
+      if (priceMin > 0) filters.push(Prisma.sql`p.price_min >= ${priceMin}`);
+      if (priceMax > 0) filters.push(Prisma.sql`p.price_max <= ${priceMax}`);
 
-      const products = await prisma.$queryRawUnsafe<Array<{
+      const matches = Prisma.sql`(
+        p.name ILIKE ${like} OR p.name ILIKE ${likeNormalized}
+        OR b.name ILIKE ${like} OR b.name ILIKE ${likeNormalized}
+        OR similarity(p.name, ${query}) > 0.2
+        OR similarity(p.name, ${normalizedQuery}) > 0.2
+        OR similarity(b.name, ${query}) > 0.2
+        OR similarity(b.name, ${normalizedQuery}) > 0.2
+      )`;
+      const where = Prisma.sql`${Prisma.join([...filters, matches], ' AND ')}`;
+
+      // Le tri vient d'une liste blanche : un ORDER BY ne peut pas être un
+      // paramètre lié, donc il ne doit jamais provenir de l'entrée telle quelle.
+      const orderBy =
+        sort === 'price-asc' ? Prisma.sql`p.price_min ASC NULLS LAST`
+        : sort === 'price-desc' ? Prisma.sql`p.price_min DESC NULLS LAST`
+        : sort === 'name-asc' ? Prisma.sql`p.name ASC`
+        : Prisma.sql`similarity DESC, p.name ASC`;
+
+      const products = await prisma.$queryRaw<Array<{
         id: string;
         name: string;
         slug: string;
@@ -920,66 +923,32 @@ app.get('/api/v1/products', async (req, res) => {
         brand_name: string;
         brand_slug: string;
         sector_color: string | null;
-        similarity: number;
-      }>>(`
-        SELECT 
-          p.id,
-          p.name,
-          p.slug,
-          p.image_url,
-          p.price_min,
-          p.price_max,
-          b.name as brand_name,
-          b.slug as brand_slug,
-          s.color as sector_color,
+      }>>`
+        SELECT
+          p.id, p.name, p.slug, p.image_url, p.price_min, p.price_max,
+          b.name as brand_name, b.slug as brand_slug, s.color as sector_color,
           GREATEST(
-            similarity(p.name, $1),
-            similarity(p.name, $2),
-            similarity(b.name, $1),
-            similarity(b.name, $2)
+            similarity(p.name, ${query}),
+            similarity(p.name, ${normalizedQuery}),
+            similarity(b.name, ${query}),
+            similarity(b.name, ${normalizedQuery})
           ) as similarity
         FROM products p
         JOIN brands b ON p.brand_id = b.id
         LEFT JOIN sectors s ON b.sector_id = s.id
-        WHERE 
-          p.status = 'ACTIVE'
-          ${sectorFilter}
-          ${priceFilter}
-          AND (
-            p.name ILIKE $3
-            OR p.name ILIKE $4
-            OR b.name ILIKE $3
-            OR b.name ILIKE $4
-            OR similarity(p.name, $1) > 0.2
-            OR similarity(p.name, $2) > 0.2
-            OR similarity(b.name, $1) > 0.2
-            OR similarity(b.name, $2) > 0.2
-          )
-        ORDER BY ${orderByClause}
-        LIMIT $5
-        OFFSET $6
-      `, query, normalizedQuery, `%${query}%`, `%${normalizedQuery}%`, limit, skip);
+        WHERE ${where}
+        ORDER BY ${orderBy}
+        LIMIT ${limit}
+        OFFSET ${skip}
+      `;
 
-      const countResult = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(`
+      const countResult = await prisma.$queryRaw<Array<{ count: bigint }>>`
         SELECT COUNT(*) as count
         FROM products p
         JOIN brands b ON p.brand_id = b.id
         LEFT JOIN sectors s ON b.sector_id = s.id
-        WHERE 
-          p.status = 'ACTIVE'
-          ${sectorFilter}
-          ${priceFilter}
-          AND (
-            p.name ILIKE $1
-            OR p.name ILIKE $2
-            OR b.name ILIKE $1
-            OR b.name ILIKE $2
-            OR similarity(p.name, $3) > 0.2
-            OR similarity(p.name, $4) > 0.2
-            OR similarity(b.name, $3) > 0.2
-            OR similarity(b.name, $4) > 0.2
-          )
-      `, `%${query}%`, `%${normalizedQuery}%`, query, normalizedQuery);
+        WHERE ${where}
+      `;
 
       const total = Number(countResult[0]?.count || 0);
 
@@ -1502,71 +1471,77 @@ async function executeSearchProducts(params: {
   target?: string;
   limit?: number;
 }) {
+  // ⚠️ CONSTAT N°4 — INJECTION SQL, CHEMIN PUBLIC.
+  // Cette fonction construisait sa requête par concaténation de chaînes
+  // (`p.name ILIKE '%${k}%'`) avant de la passer à `$queryRawUnsafe`. Ses
+  // paramètres viennent des arguments d'outil produits par le modèle, donc
+  // en dernier ressort de ce que l'utilisateur écrit dans le chat : une
+  // apostrophe suffisait à sortir de la chaîne.
+  // Tout passe désormais par `Prisma.sql`, où chaque `${...}` devient un
+  // paramètre lié — la valeur ne peut plus être interprétée comme du SQL.
   const limit = Math.min(params.limit || 32, 40);
 
-  // Fix encodage HTML
-  if (params.sector) params.sector = params.sector.replace(/&amp;/g, '&');
+  // Certains libellés de secteur arrivent encodés en HTML depuis le modèle.
+  const sector = params.sector?.replace(/&amp;/g, '&');
 
-  let whereConditions = [
-    `p.status = 'ACTIVE'`,
-    `p.price_min > 0`,
-    `p.price_min IS NOT NULL`,
-    `p.image_url IS NOT NULL`,
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`p.status = 'ACTIVE'`,
+    Prisma.sql`p.price_min > 0`,
+    Prisma.sql`p.price_min IS NOT NULL`,
+    Prisma.sql`p.image_url IS NOT NULL`,
   ];
 
-  if (params.max_price) {
-    whereConditions.push(`p.price_min <= ${params.max_price}`);
-  }
-  if (params.min_price) {
-    whereConditions.push(`p.price_min >= ${params.min_price}`);
-  }
-  if (params.sector) {
-    whereConditions.push(`s.name = '${params.sector}'`);
-  }
+  if (params.max_price) conditions.push(Prisma.sql`p.price_min <= ${params.max_price}`);
+  if (params.min_price) conditions.push(Prisma.sql`p.price_min >= ${params.min_price}`);
+  if (sector) conditions.push(Prisma.sql`s.name = ${sector}`);
   if (params.target) {
-    whereConditions.push(`(p.attributes->>'target' = '${params.target}' OR p.attributes->>'target' = 'mixte' OR p.attributes->>'target' IS NULL)`);
+    conditions.push(Prisma.sql`(
+      p.attributes->>'target' = ${params.target}
+      OR p.attributes->>'target' = 'mixte'
+      OR p.attributes->>'target' IS NULL
+    )`);
   }
 
-  // Recherche par mots-clés
-  const keywords = params.query.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+  const keywords = (params.query || '').toLowerCase().split(/\s+/).filter(k => k.length > 2);
   if (keywords.length > 0) {
-    const keywordConditions = keywords.map(k => `(
-      p.name ILIKE '%${k}%'
-      OR p.tags::text ILIKE '%${k}%'
-      OR p.materials::text ILIKE '%${k}%'
-      OR p.description_short ILIKE '%${k}%'
-      OR b.name ILIKE '%${k}%'
-    )`).join(' AND ');
-    whereConditions.push(`(${keywordConditions})`);
+    const keywordConditions = keywords.map(k => {
+      const like = `%${k}%`;
+      return Prisma.sql`(
+        p.name ILIKE ${like}
+        OR p.tags::text ILIKE ${like}
+        OR p.materials::text ILIKE ${like}
+        OR p.description_short ILIKE ${like}
+        OR b.name ILIKE ${like}
+      )`;
+    });
+    conditions.push(Prisma.sql`(${Prisma.join(keywordConditions, ' AND ')})`);
   }
 
-  const whereClause = whereConditions.join(' AND ');
-
-  // Requête avec diversification par marque (max 3 produits par marque, puis on mélange)
-  const query = `
-    WITH ranked_products AS (
-      SELECT
-        p.id, p.name, p.slug, p.description_short, p.image_url,
-        p.price_min, p.price_max, p.external_buy_url,
-        b.id as brand_id, b.name as brand_name, b.slug as brand_slug, b.city as brand_city,
-        s.name as sector_name, s.color as sector_color,
-        ROW_NUMBER() OVER (PARTITION BY b.id ORDER BY RANDOM()) as brand_rank
-      FROM products p
-      JOIN brands b ON p.brand_id = b.id
-      LEFT JOIN sectors s ON b.sector_id = s.id
-      WHERE ${whereClause}
-    )
-    SELECT id, name, slug, description_short, image_url, price_min, price_max,
-           external_buy_url, brand_name, brand_slug, brand_city, sector_name, sector_color
-    FROM ranked_products
-    WHERE brand_rank <= 3
-    ORDER BY RANDOM()
-    LIMIT ${limit}
-  `;
+  const where = Prisma.join(conditions, ' AND ');
 
   try {
-    const products = await prisma.$queryRawUnsafe(query);
-    return products as any[];
+    // Diversification : au plus 3 produits par marque, puis mélange.
+    const products = await prisma.$queryRaw<any[]>`
+      WITH ranked_products AS (
+        SELECT
+          p.id, p.name, p.slug, p.description_short, p.image_url,
+          p.price_min, p.price_max, p.external_buy_url,
+          b.id as brand_id, b.name as brand_name, b.slug as brand_slug, b.city as brand_city,
+          s.name as sector_name, s.color as sector_color,
+          ROW_NUMBER() OVER (PARTITION BY b.id ORDER BY RANDOM()) as brand_rank
+        FROM products p
+        JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN sectors s ON b.sector_id = s.id
+        WHERE ${where}
+      )
+      SELECT id, name, slug, description_short, image_url, price_min, price_max,
+             external_buy_url, brand_name, brand_slug, brand_city, sector_name, sector_color
+      FROM ranked_products
+      WHERE brand_rank <= 3
+      ORDER BY RANDOM()
+      LIMIT ${limit}
+    `;
+    return products;
   } catch (e) {
     console.error('Search products error:', e);
     return [];
@@ -1580,60 +1555,53 @@ async function executeSearchBrands(params: {
   region?: string;
   limit?: number;
 }) {
+  // Même correction que pour la recherche de produits : concaténation de
+  // chaînes remplacée par des paramètres liés (constat n°4).
   const limit = Math.min(params.limit || 8, 12);
-  
-  // Fix encodage HTML
-  if (params.sector) params.sector = params.sector.replace(/&amp;/g, '&');
-  
-  let whereConditions = [`b.status = 'ACTIVE'`];
-  
-  if (params.sector) {
-    whereConditions.push(`s.name = '${params.sector}'`);
-  }
-  if (params.region) {
-    whereConditions.push(`r.name ILIKE '%${params.region}%'`);
-  }
+  const sector = params.sector?.replace(/&amp;/g, '&');
 
-  // Recherche par mots-clés
-  const keywords = params.query.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+  const conditions: Prisma.Sql[] = [Prisma.sql`b.status = 'ACTIVE'`];
+
+  if (sector) conditions.push(Prisma.sql`s.name = ${sector}`);
+  if (params.region) conditions.push(Prisma.sql`r.name ILIKE ${`%${params.region}%`}`);
+
+  const keywords = (params.query || '').toLowerCase().split(/\s+/).filter(k => k.length > 2);
   if (keywords.length > 0) {
-    const keywordConditions = keywords.map(k => `(
-      b.name ILIKE '%${k}%'
-      OR b.description_short ILIKE '%${k}%'
-      OR s.name ILIKE '%${k}%'
-      OR (b.ai_generated_content->>'tags')::text ILIKE '%${k}%'
-    )`).join(' OR ');
-    whereConditions.push(`(${keywordConditions})`);
+    const keywordConditions = keywords.map(k => {
+      const like = `%${k}%`;
+      return Prisma.sql`(
+        b.name ILIKE ${like}
+        OR b.description_short ILIKE ${like}
+        OR s.name ILIKE ${like}
+        OR (b.ai_generated_content->>'tags')::text ILIKE ${like}
+      )`;
+    });
+    conditions.push(Prisma.sql`(${Prisma.join(keywordConditions, ' OR ')})`);
   }
 
-  const whereClause = whereConditions.join(' AND ');
-
-  const query = `
-    SELECT 
-      b.id, b.name, b.slug, b.description_short, b.logo_url, b.city,
-      b.website_url, b.year_founded,
-      s.name as sector_name, s.color as sector_color,
-      r.name as region_name,
-      (SELECT COUNT(*) FROM products p WHERE p.brand_id = b.id AND p.status = 'ACTIVE') as product_count
-    FROM brands b
-    LEFT JOIN sectors s ON b.sector_id = s.id
-    LEFT JOIN regions r ON b.region_id = r.id
-    WHERE ${whereClause}
-    ORDER BY 
-      CASE WHEN b.name ILIKE '%${keywords[0] || ''}%' THEN 0 ELSE 1 END,
-      b.name ASC
-    LIMIT ${limit}
-  `;
+  const where = Prisma.join(conditions, ' AND ');
+  const firstKeyword = `%${keywords[0] ?? ''}%`;
 
   try {
-    const brands = await prisma.$queryRawUnsafe(query);
-    // Log pour debug les website_url
-    console.log('🔍 Brands found with website_url:', (brands as any[]).map(b => ({
-      name: b.name,
-      website_url: b.website_url,
-      logo_url: b.logo_url
-    })));
-    return brands as any[];
+    const brands = await prisma.$queryRaw<any[]>`
+      SELECT
+        b.id, b.name, b.slug, b.description_short, b.logo_url, b.city,
+        b.website_url, b.year_founded,
+        s.name as sector_name, s.color as sector_color,
+        r.name as region_name,
+        (SELECT COUNT(*) FROM products p WHERE p.brand_id = b.id AND p.status = 'ACTIVE') as product_count
+      FROM brands b
+      LEFT JOIN sectors s ON b.sector_id = s.id
+      LEFT JOIN regions r ON b.region_id = r.id
+      WHERE ${where}
+      ORDER BY
+        CASE WHEN b.name ILIKE ${firstKeyword} THEN 0 ELSE 1 END,
+        b.name ASC
+      LIMIT ${limit}
+    `;
+    // Le journal qui déversait le détail de chaque marque trouvée a été
+    // retiré : il polluait la sortie sans rien apprendre.
+    return brands;
   } catch (e) {
     console.error('Search brands error:', e);
     return [];

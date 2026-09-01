@@ -182,7 +182,7 @@ chemins commençant par `../`.
 
 1. **Aucune route API ne part sans garde-fou d'authentification.** Toute route sous `/api/admin/*` exige un rôle admin vérifié **côté serveur**. Toute route sous `/api/v1/brands/:slug/*` en écriture exige la propriété de la marque, vérifiée en base.
 2. **L'identité vient de la session, jamais du client.** Un `userId`, un e-mail ou un rôle transmis dans la query string, le corps, un en-tête **ou le chemin** n'est pas une preuve d'identité. Fait le 1er septembre 2026 : `?userId=`, `?email=` et `:userId` ont tous disparu. Les routes utilisateur sont sous **`/api/v1/me/*`**, une forme où l'on ne peut pas exprimer l'identité autrement.
-3. **Jamais de `$queryRawUnsafe` avec de l'interpolation.** Requêtes paramétrées ou `Prisma.sql`. Si une requête dynamique est indispensable, les fragments variables doivent venir d'une liste blanche, jamais de l'entrée utilisateur.
+3. **Jamais de `$queryRawUnsafe`.** Il n'y en a plus une seule depuis le 1er septembre 2026 : `Prisma.sql` et `Prisma.join`, où chaque `${...}` devient un paramètre lié. Seule exception admise : une clause `ORDER BY`, qui ne peut pas être un paramètre lié — elle doit alors venir d'une **liste blanche** en dur, jamais de l'entrée.
 4. **Aucune clé d'API dans un log, une réponse HTTP, une table ou une interface d'administration.** Les secrets vivent dans l'environnement du serveur, point. Un réglage IA stocke un nom de modèle et une température, pas une clé.
 5. **Valider toute entrée avec Zod** avant de toucher la base. Zod est déjà dans les dépendances.
 6. **Ne jamais committer de `.env*`** autre que `.env.example`.

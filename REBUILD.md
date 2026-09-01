@@ -141,7 +141,7 @@ produit se reconstruit par les scrapers en phase 5, et les phases 5 et 6 changen
 | 1 | **L'API n'a aucune authentification.** ~85 routes ouvertes, dont `DELETE /api/admin/brands/:id`, les uploads et Stripe. Zéro middleware. | `apps/api/src/index.ts` — 0 occurrence de `requireAuth`/`verifyToken`/`Bearer` |
 | 2 | ~~**L'admin est « protégé » par le navigateur.**~~ **Corrigé le 1er septembre 2026.** Le garde du navigateur a été remplacé par `useSession` (affichage) + le middleware (routage) + `requireAdmin` (autorisation, relue en base). Aggravant découvert au passage : le middleware ne s'exécutait même pas, mauvais emplacement de fichier. |
 | 3 | ~~**L'identité circule en query string.**~~ **Corrigé le 1er septembre 2026** (T3.12). Elle circulait sous trois formes, dont une — `:userId` dans le chemin — que le constat d'origine ne mentionnait pas. |
-| 4 | **Injection SQL, chemin public.** Les mots-clés du chat sont concaténés dans la requête. | `index.ts:2643` → `p.name ILIKE '%${k}%'` puis `:2662` `$queryRawUnsafe(query)` ; même motif `:2723` |
+| 4 | ~~**Injection SQL, chemin public.**~~ **Corrigé le 1er septembre 2026** (T3.17). Il y avait **deux** foyers, pas un : les outils du chat, et `GET /api/v1/products`, où `?sector=` était concaténé. |
 | 5 | **La clé secrète Stripe est journalisée en clair.** | `index.ts:3569` → `console.log(…, 'value:', process.env.STRIPE_SECRET_KEY)` |
 | 6 | **Une route publique distribue les clés IA.** `GET` renvoie `anthropicApiKey` et `openaiApiKey` en clair, sans auth. Le `PUT` écrit `process.env` depuis `req.body`. | `index.ts:3910` (GET), `:3937` (PUT) |
 | 7 | **La création du premier `super_admin` est ouverte.** Seul garde-fou : « un admin existe déjà ». | `index.ts:2366` |
@@ -378,7 +378,14 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 ### 3c — Robustesse
 
 - [ ] **T3.16** — Schéma Zod en entrée de chaque endpoint, réponse typée.
-- [ ] **T3.17** — Éliminer les `$queryRawUnsafe` à interpolation (`:1884`, `:1934`, `:2662`, `:2723`).
+- [x] **T3.17** — **Plus aucun `$queryRawUnsafe` dans le projet.** Il y en avait quatre, réparties sur **deux** foyers, pas un seul comme le laissait croire le constat n°4 :
+  - `executeSearchProducts` et `executeSearchBrands` (outils du chat) : `p.name ILIKE '%${k}%'` concaténé, plus `sector`, `target` et les bornes de prix. Les arguments viennent du modèle, donc en dernier ressort de ce que l'utilisateur écrit.
+  - `GET /api/v1/products` : les termes de recherche **étaient** liés (`$1`…`$6`), mais `?sector=` était concaténé — sur une route publique, sans authentification.
+  Tout passe par `Prisma.sql` et `Prisma.join`, où chaque valeur devient un paramètre lié. Le `ORDER BY` reste construit en code — une clause de tri ne peut pas être un paramètre lié — mais depuis une liste blanche.
+  Vérifié avec de vraies charges : `' OR '1'='1`, `x'; DROP TABLE products; --`, `%' UNION SELECT NULL--` et `l'apostrophe` renvoient toutes une réponse vide sans erreur, tables intactes. Et la recherche fonctionne toujours : insensible aux accents, filtres secteur et prix, tris.
+  ```bash
+  grep -rn "queryRawUnsafe" apps/api/src   # plus aucune occurrence exécutable ✅
+  ```
   ```bash
   grep -rn "queryRawUnsafe" apps/api/src   # zéro, ou uniquement avec des paramètres liés
   ```
