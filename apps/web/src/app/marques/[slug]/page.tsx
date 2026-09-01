@@ -591,10 +591,10 @@ export default function MarqueDetailPage() {
                   {brand.name}
                 </h1>
                 {brand.isVerified && (
-                  <CheckCircle className="h-6 w-6 text-white" title="Marque vérifiée" />
+                  <CheckCircle className="h-6 w-6 text-white" role="img" aria-label="Marque vérifiée" />
                 )}
                 {brand.isFeatured && (
-                  <Star className="h-6 w-6 text-yellow-300 fill-yellow-300" title="Marque en vedette" />
+                  <Star className="h-6 w-6 text-yellow-300 fill-yellow-300" role="img" aria-label="Marque en vedette" />
                 )}
                 <FavoriteButton 
                   brandId={brand.id} 

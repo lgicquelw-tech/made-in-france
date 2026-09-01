@@ -236,7 +236,7 @@ async function fetchShopifyProducts(domain: string): Promise<ShopifyProduct[]> {
       const response = await fetch(url);
       if (!response.ok) break;
       
-      const data = await response.json();
+      const data = (await response.json()) as { products?: ShopifyProduct[] };
       if (!data.products || data.products.length === 0) break;
       
       allProducts.push(...data.products);

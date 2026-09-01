@@ -303,9 +303,11 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 
 ### 3b — Authentification et droits
 
-- [ ] **T3.9** — Une seule authentification cohérente pour utilisateurs, propriétaires de marque et administrateurs. Décider du sort du modèle `AdminUser`, aujourd'hui séparé de `User` : le fusionner dans `User` avec un rôle est plus simple à sécuriser.
-- [ ] **T3.10** — Rôles explicites en base + vérification serveur.
-- [ ] **T3.11** — Middlewares `requireUser`, `requireAdmin`, `requireBrandOwner(slug)`.
+- [x] **T3.9** — **Fusionné.** `AdminUser` (identité parallèle avec son propre mot de passe) a disparu ; `User` porte désormais un `role` (`USER` / `ADMIN` / `SUPER_ADMIN`) et un `isActive`. Migration `20260901084144_fusion_admin_user_dans_user`. Les trois tables (`users`, `admin_users`, `brand_owners`) étaient **vides** : c'était le moment le moins coûteux pour le faire, et il ne se représentera pas. La propriété de marque vivait déjà sur `User` via `ownedBrands`.
+- [~] **T3.10** — Rôles en base : fait (`UserRole`, index sur `role`). La vérification serveur existe (voir T3.11) mais n'est pas encore appliquée aux routes : c'est la migration des Route Handlers qui reste.
+- [x] **T3.11** — `apps/web/src/lib/guards.ts` : `requireUser`, `requireAdmin`, `requireSuperAdmin`, `requireBrandOwner(slug)`.
+  Deux partis pris : **le rôle est relu en base à chaque requête** (le JWT est signé donc infalsifiable, mais c'est une photographie prise à la connexion — un compte rétrogradé garderait ses droits jusqu'à expiration) ; et `requireBrandOwner` exclut explicitement le rôle `VIEWER`, qui est un rôle de lecture.
+  Fondations posées avec : `lib/db.ts` (singleton Prisma — `route.ts` faisait `new PrismaClient()` au niveau du module, ce qui ouvre une connexion par rechargement en dev et par invocation à froid en serverless), `lib/auth.ts` (`authOptions` extraits, réutilisables par `getServerSession`), `lib/api-response.ts` (`HttpError`, réponses uniformes, 500 générique qui ne fuite rien) et `types/next-auth.d.ts`.
 - [ ] **T3.12** — **Supprimer tout `?userId=`.** L'identité vient du token.
   ```bash
   grep -rn "userId" apps/api/src | grep -i "query\|req.query"   # doit devenir vide
@@ -321,7 +323,7 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   ```bash
   grep -rn "queryRawUnsafe" apps/api/src   # zéro, ou uniquement avec des paramètres liés
   ```
-- [ ] **T3.18** — Corriger l'import Stripe en double et figer la version d'API dans un seul module.
+- [x] **T3.18** — Import `Stripe` dédoublonné et version d'API figée dans une constante unique `STRIPE_API_VERSION`, utilisée par une fabrique `stripeClient()`. Elle était répétée à trois instanciations, sous une valeur de décembre 2024 que le SDK installé (stripe v20) **n'accepte plus** — le fichier ne compilait pas.
 - [ ] **T3.19** — **Aucun secret en base ni en réponse HTTP.** Les réglages IA ne stockent qu'un nom de modèle et une température.
 - [ ] **T3.20** — Uploads : type MIME réel, taille, propriété de la marque, quota par compte — tout vérifié serveur.
 - [ ] **T3.21** — Limitation de débit sur `/chat`, `/search`, `/upload`.
@@ -330,7 +332,26 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   ```bash
   grep -rn "localhost:4000" apps/web/src | grep -v "lib/api.ts"   # doit être vide
   ```
-- [ ] **T3.24** — Faire passer `pnpm typecheck` sur web et API.
+- [x] **T3.24** — **`pnpm typecheck` passe sur les 7 tâches du monorepo.**
+  Découverte au passage : `apps/api` et `scripts/` **n'avaient aucun script `typecheck`**. Turbo les comptait comme « réussis » parce que la tâche n'existait pas — les 4 358 lignes de l'API n'avaient jamais été vérifiées. Scripts ajoutés, plus un `tsconfig.json` pour `scripts/` qui n'en avait pas.
+  L'API révélait alors **44 erreurs**, dont 31 dues à `@prisma/client` non déclaré dans ses dépendances (même défaut que T2.3 côté web). Les 13 restantes étaient de vrais bugs, décrits ci-dessous.
+
+### Bugs révélés par le premier typecheck de l'API
+
+Aucun ne produisait d'erreur visible. Tous sont corrigés.
+
+| Bug | Effet réel |
+|---|---|
+| `prisma.brand.create({ email, phone })` | `Brand` n'a ni `email` ni `phone`. Prisma rejette un argument inconnu : **toute création de marque depuis l'administration échouait**. |
+| Tableau de bord Studio : `brand.description`, `brand.email`, `brand.phone`, `brand.photos` | Quatre champs inexistants, renvoyés en `undefined` depuis toujours. Corrigés en `descriptionShort` / `descriptionLong` / relation `images` ; `email` et `phone` retirés. |
+| `product.updateMany({ where: { status: 'INACTIVE' } })` | `INACTIVE` n'est pas un `ProductStatus` (`DRAFT`, `ACTIVE`, `OUT_OF_STOCK`, `DISCONTINUED`). La route « activer tous les produits » **ne faisait rien**. Ramenée à `DRAFT` — ni `OUT_OF_STOCK` (un fait de stock) ni `DISCONTINUED` (un retrait volontaire). |
+| Import `Stripe` en double + version d'API périmée | Le fichier ne compilait pas. Voir T3.18. |
+
+⚠️ **Écart de modèle à trancher.** La page `studio/marque/[slug]/parametres` propose des
+champs « e-mail » et « téléphone » liés à `brand.email` et `brand.phone`, **qui n'existent
+pas dans le schéma**. Ces champs sont vides depuis toujours et ne sauvegardent rien.
+Ajouter les colonnes serait ajouter une fonctionnalité : à décider explicitement, pas à
+glisser au passage.
 
 **Critère de sortie**
 ```bash

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "import:brands": "tsx import/import-brands.ts",
-    "import:brands:dry": "tsx import/import-brands.ts --dry-run"
+    "import:brands:dry": "tsx import/import-brands.ts --dry-run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@mif/database": "workspace:*",

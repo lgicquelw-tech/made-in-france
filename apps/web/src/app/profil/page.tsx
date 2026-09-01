@@ -353,9 +353,13 @@ export default function ProfilPage() {
                             ? 'bg-gray-50 hover:bg-gray-100'
                             : 'bg-gray-50 opacity-40'
                       }`}
-                      style={{
-                        ringColor: isCurrent ? rank.color : undefined
-                      }}
+                      // Tailwind lit la couleur de l'anneau dans cette
+                      // propriete personnalisee ; `ringColor` n'existe pas.
+                      style={
+                        isCurrent
+                          ? ({ '--tw-ring-color': rank.color } as React.CSSProperties)
+                          : undefined
+                      }
                     >
                       <div className={`text-2xl mb-1 ${!isCurrent && !isUnlocked ? 'grayscale' : ''}`}>{rank.icon}</div>
                       <div className={`text-xs font-medium ${isCurrent ? 'text-white' : 'text-gray-700'}`}>{rank.name}</div>

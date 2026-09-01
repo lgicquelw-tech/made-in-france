@@ -122,8 +122,7 @@ npx prisma studio  --schema=./packages/database/prisma/schema.prisma
 npx prisma migrate dev --schema=./packages/database/prisma/schema.prisma
 
 # Vérifications
-pnpm typecheck            # api, shared et database PASSENT.
-                          # web échoue encore sur 22 erreurs — voir REBUILD.md phase 3
+pnpm typecheck            # PASSE sur les 7 tâches du monorepo. Le garder au vert.
 pnpm lint
 
 # Données
@@ -212,7 +211,10 @@ chemins commençant par `../`.
 | Tiptap en SSR | `immediatelyRender: false` dans `useEditor` |
 | Webhook Stripe | Le corps brut doit rester non parsé — le contournement existe déjà `index.ts:23-29`, ne pas le casser |
 | Dépôt public | `github.com/lgicquelw-tech/made-in-france` est **public**. Tout commit est immédiatement visible. Vérifier avant chaque push. |
-| Import Stripe en double | `index.ts:11` **et** `index.ts:3944` — erreur de compilation TypeScript |
+| Identité | Un seul modèle : `User`, avec `role` (`USER`/`ADMIN`/`SUPER_ADMIN`) et `isActive`. `AdminUser` n'existe plus. L'autorisation passe par `apps/web/src/lib/guards.ts`, qui **relit le rôle en base** — jamais depuis le jeton seul. |
+| Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
+| `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |
+| Version d'API Stripe | Figée une seule fois dans `STRIPE_API_VERSION` (`index.ts`). Ne pas la redéclarer ailleurs. |
 | Clearbit | Mort. Les logos passent par Google Favicons |
 | **Taxonomie des secteurs** | Une seule liste fait foi, partagée par quatre endroits : `data/brands.xlsx`, `SECTOR_MAPPING` de `scripts/import/import-brands.ts`, le seed, et le front (`app/secteurs/page.tsx` + `sitemap.ts`). Les 9 slugs : `mode-accessoires`, `maison-jardin`, `gastronomie`, `cosmetique`, `enfance`, `loisirs-sport`, `animaux`, `sante-nutrition`, `high-tech`. **Modifier l'un sans les autres laisse des centaines de marques sans secteur, sans la moindre erreur.** C'est arrivé : 687 marques sur 903. |
 | Noms de marque numériques | `909`, `1083`, `1336` sont de vraies marques. XLSX lit leur nom comme un **nombre** : toute validation en `typeof === 'string'` les rejette silencieusement. |

@@ -12,8 +12,11 @@ async function geocodeCity(city: string): Promise<{ lat: number; lng: number } |
       return null;
     }
     
-    const data = await response.json();
-    
+    // Reponse de l'API Adresse (adresse.data.gouv.fr), format GeoJSON.
+    const data = (await response.json()) as {
+      features?: Array<{ geometry: { coordinates: [number, number] } }>;
+    };
+
     if (data.features && data.features.length > 0) {
       const [lng, lat] = data.features[0].geometry.coordinates;
       return { lat, lng };

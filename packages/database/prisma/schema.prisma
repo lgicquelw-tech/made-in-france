@@ -73,6 +73,15 @@ enum CampaignStatus {
   CANCELLED
 }
 
+// Un seul modele d'identite (REBUILD.md T3.9). Le modele AdminUser, separe de
+// User, imposait deux systemes de connexion, deux mots de passe et deux
+// endroits ou se tromper — pour un role qui tient dans un champ.
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
 enum BrandOwnerRole {
   OWNER
   ADMIN
@@ -388,6 +397,12 @@ model User {
   firstName     String?   @map("first_name")
   lastName      String?   @map("last_name")
   
+  // Le role est la SEULE source d'autorisation. Il n'est jamais lu depuis le
+  // client : il est resolu cote serveur a partir de la session (voir
+  // apps/web/src/lib/guards.ts).
+  role          UserRole  @default(USER)
+  isActive      Boolean   @default(true) @map("is_active")
+
   points        Int       @default(0)
   rank          String    @default("Explorateur")
   
@@ -404,6 +419,7 @@ model User {
   conversations AiConversation[]
   ownedBrands   BrandOwner[]
 
+  @@index([role])
   @@map("users")
 }
 
@@ -745,19 +761,6 @@ model Invoice {
 // BACK-OFFICE & ADMINISTRATION
 // ===========================================
 
-model AdminUser {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String?
-  role         String   @default("admin")
-  isActive     Boolean  @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@map("admin_users")
-}
 
 model Collection {
   id          String   @id @default(uuid())

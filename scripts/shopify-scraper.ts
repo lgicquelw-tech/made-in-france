@@ -109,14 +109,14 @@ async function fetchShopifyProducts(domain: string): Promise<ShopifyProduct[]> {
             throw new Error(`Failed to fetch: ${response.status}`);
           }
           
-          const altData: ShopifyResponse = await altResponse.json();
+          const altData = (await altResponse.json()) as ShopifyResponse;
           if (altData.products.length === 0) break;
           allProducts.push(...altData.products);
         } else {
           throw new Error(`Failed to fetch: ${response.status}`);
         }
       } else {
-        const data: ShopifyResponse = await response.json();
+        const data = (await response.json()) as ShopifyResponse;
         
         if (data.products.length === 0) break;
         
@@ -183,7 +183,7 @@ async function importProducts(brandSlug: string, products: ShopifyProduct[]): Pr
         imageUrl: imageUrl,
         galleryUrls: galleryUrls, // <-- AJOUT: toutes les images
         brandId: brand.id,
-        status: 'ACTIVE', // <-- AJOUT: actif par défaut
+        status: 'ACTIVE' as const, // actif par defaut (membre de l'enum ProductStatus)
 
         // Metadata Shopify (pour sync future)
         externalId: shopifyProduct.id.toString(),
@@ -245,7 +245,7 @@ async function isShopifySite(domain: string): Promise<boolean> {
   try {
     const response = await fetch(`https://${domain}/products.json?limit=1`);
     if (response.ok) {
-      const data = await response.json();
+      const data = (await response.json()) as Record<string, unknown>;
       return 'products' in data;
     }
     return false;

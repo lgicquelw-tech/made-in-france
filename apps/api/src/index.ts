@@ -10,6 +10,13 @@ import multer from 'multer';
 import Anthropic from '@anthropic-ai/sdk';
 import Stripe from 'stripe';
 
+// Version d'API Stripe figee en UN seul endroit (REBUILD.md T3.18). Elle etait
+// repetee a trois instanciations, sous une valeur de decembre 2024 que le SDK
+// installe (stripe v20) n'accepte plus.
+const STRIPE_API_VERSION = '2025-12-15.clover' as const;
+const stripeClient = () =>
+  new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: STRIPE_API_VERSION });
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -1062,17 +1069,26 @@ app.post('/api/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const admin = await prisma.adminUser.findUnique({ where: { email } });
-    if (!admin || !admin.isActive) {
+    // AdminUser a fusionne dans User : le role porte desormais l'autorisation
+    // (REBUILD.md T3.9).
+    // ⚠️ Cette route est un vestige : elle valide un mot de passe mais n'emet
+    // aucun jeton, et le client stocke le resultat dans localStorage
+    // (constat n°2). Elle disparait avec la migration des routes admin vers
+    // les Route Handlers Next.js, qui passent par NextAuth et requireAdmin.
+    const admin = await prisma.user.findUnique({ where: { email } });
+    const hasAdminRole =
+      admin !== null && (admin.role === 'ADMIN' || admin.role === 'SUPER_ADMIN');
+
+    if (!admin || !hasAdminRole || !admin.isActive || !admin.password) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
 
-    const isValid = await bcrypt.compare(password, admin.passwordHash);
+    const isValid = await bcrypt.compare(password, admin.password);
     if (!isValid) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
 
-    await prisma.adminUser.update({
+    await prisma.user.update({
       where: { id: admin.id },
       data: { lastLoginAt: new Date() },
     });
@@ -1227,8 +1243,10 @@ app.post('/api/admin/brands', async (req, res) => {
         latitude: data.latitude ? parseFloat(data.latitude) : null,
         longitude: data.longitude ? parseFloat(data.longitude) : null,
         yearFounded: data.yearFounded ? parseInt(data.yearFounded) : null,
-        email: data.email,
-        phone: data.phone,
+        // `email` et `phone` n'existent pas sur le modele Brand. Les passer a
+        // Prisma faisait echouer TOUTE creation de marque avec « Unknown
+        // argument ». Le formulaire d'administration les propose quand meme :
+        // ecart consigne dans REBUILD.md, a trancher avant la phase 8.
         sectorId: data.sectorId || null,
         regionId: data.regionId || null,
         socialLinks: data.socialLinks || {},
@@ -3025,6 +3043,7 @@ app.get('/api/v1/brands/:slug/dashboard', async (req, res) => {
         sector: true,
         region: true,
         labels: { include: { label: true } },
+        images: { select: { id: true, url: true, isPrimary: true } },
         owners: {
           where: { userId: userId as string, isActive: true },
           select: { role: true }
@@ -3072,12 +3091,14 @@ app.get('/api/v1/brands/:slug/dashboard', async (req, res) => {
         id: brand.id,
         name: brand.name,
         slug: brand.slug,
-        description: brand.description,
+        // Le modele expose descriptionShort / descriptionLong, pas `description`.
+        description: brand.descriptionShort,
+        descriptionLong: brand.descriptionLong,
         story: brand.story,
         logoUrl: brand.logoUrl,
         websiteUrl: brand.websiteUrl,
-        email: brand.email,
-        phone: brand.phone,
+        // `email` et `phone` n'existent pas sur Brand : ils etaient renvoyes
+        // en undefined. Retires plutot que faussement promis.
         address: brand.address,
         postalCode: brand.postalCode,
         city: brand.city,
@@ -3086,7 +3107,8 @@ app.get('/api/v1/brands/:slug/dashboard', async (req, res) => {
         labels: brand.labels.map(l => l.label),
         socialLinks: brand.socialLinks,
         aiGeneratedContent: brand.aiGeneratedContent,
-        photos: brand.photos,
+        // `photos` n'existait pas non plus ; la vraie relation s'appelle images.
+        photos: brand.images,
         createdAt: brand.createdAt,
         updatedAt: brand.updatedAt
       },
@@ -3233,8 +3255,13 @@ app.get('/api/v1/brands/:slug/owners', async (req, res) => {
 // Activer tous les produits (rendre visibles)
 app.post('/api/admin/products/activate-all', async (req, res) => {
   try {
+    // 'INACTIVE' n'existe pas dans l'enum ProductStatus (DRAFT, ACTIVE,
+    // OUT_OF_STOCK, DISCONTINUED) : ce filtre ne remontait jamais rien et la
+    // route ne faisait donc rien du tout. Le seul statut qu'il est legitime de
+    // publier en masse est DRAFT — ni OUT_OF_STOCK (un fait de stock) ni
+    // DISCONTINUED (un retrait volontaire).
     const result = await prisma.product.updateMany({
-      where: { status: 'INACTIVE' },
+      where: { status: 'DRAFT' },
       data: { status: 'ACTIVE' }
     });
 
@@ -3943,8 +3970,8 @@ app.post('/api/v1/labels/seed', async (req, res) => {
 // ===========================================
 // STRIPE PAYMENTS
 // ===========================================
-
-import Stripe from 'stripe';
+// (l'import de Stripe est en tete de fichier — il etait duplique ici, ce qui
+//  empechait le fichier de compiler : REBUILD.md T3.18)
 
 // Prix des abonnements (à créer dans Stripe Dashboard)
 const PRICE_IDS = {
@@ -3957,9 +3984,7 @@ const PRICE_IDS = {
 // Créer une session de paiement Stripe
 app.post('/api/v1/stripe/create-checkout-session', async (req, res) => {
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2024-12-18.acacia',
-    });
+    const stripe = stripeClient();
     const { brandSlug, plan, billingCycle, userEmail } = req.body;
 
     if (!brandSlug || !plan || !billingCycle) {
@@ -4045,9 +4070,7 @@ app.post('/api/v1/stripe/create-checkout-session', async (req, res) => {
 
 // Webhook Stripe pour gérer les événements
 app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-12-18.acacia',
-  });
+  const stripe = stripeClient();
   const sig = req.headers['stripe-signature'] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -4128,9 +4151,7 @@ app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), as
 // Créer un portail client pour gérer l'abonnement
 app.post('/api/v1/stripe/create-portal-session', async (req, res) => {
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2024-12-18.acacia',
-    });
+    const stripe = stripeClient();
     const { brandSlug } = req.body;
 
     const brand = await prisma.brand.findUnique({ where: { slug: brandSlug } });

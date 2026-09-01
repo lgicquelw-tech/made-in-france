@@ -59,7 +59,7 @@ async function fetchWooProducts(domain: string): Promise<WooProduct[]> {
 
       if (!response.ok) break;
 
-      const products: WooProduct[] = await response.json();
+      const products = (await response.json()) as WooProduct[];
 
       if (products.length === 0) break;
 
