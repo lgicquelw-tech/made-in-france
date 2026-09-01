@@ -593,8 +593,8 @@ export default function EditBrandPage() {
         try {
             const method = editingProduct.id ? 'PUT' : 'POST';
             const url = editingProduct.id
-                ? `${API_URL}/api/admin/products/${editingProduct.id}`
-                : `${API_URL}/api/admin/products`;
+                ? `/api/admin/products/${editingProduct.id}`
+                : `/api/admin/products`;
 
             const productData = {
                 ...editingProduct,
@@ -628,7 +628,7 @@ export default function EditBrandPage() {
         if (!confirm('Supprimer ce produit ?')) return;
 
         try {
-            await fetch(`${API_URL}/api/admin/products/${productId}`, { method: 'DELETE' });
+            await fetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
             setProducts(products.filter(p => p.id !== productId));
         } catch (error) {
             console.error('Error deleting product:', error);

@@ -60,16 +60,12 @@ export default function UsersPage() {
         setTotalPages(data.pagination?.totalPages || 1);
         setTotalUsers(data.pagination?.total || 0);
       } else {
-        // Fallback data
-        setUsers([
-          { id: '1', name: 'Jean Dupont', email: 'jean@example.com', image: null, points: 150, rank: 'Explorateur', createdAt: '2024-01-15', lastLoginAt: '2024-01-20', _count: { favorites: 12, brandViews: 45, ownedBrands: 0 } },
-          { id: '2', name: 'Marie Martin', email: 'marie@example.com', image: null, points: 520, rank: 'Ambassadeur', createdAt: '2023-11-10', lastLoginAt: '2024-01-19', _count: { favorites: 34, brandViews: 120, ownedBrands: 1 } },
-          { id: '3', name: 'Pierre Durand', email: 'pierre@example.com', image: null, points: 80, rank: 'Découvreur', createdAt: '2024-01-05', lastLoginAt: '2024-01-18', _count: { favorites: 5, brandViews: 20, ownedBrands: 0 } },
-          { id: '4', name: 'Sophie Bernard', email: 'sophie@leslipfrancais.fr', image: null, points: 1200, rank: 'Expert', createdAt: '2023-06-20', lastLoginAt: '2024-01-20', _count: { favorites: 8, brandViews: 200, ownedBrands: 2 } },
-          { id: '5', name: 'Lucas Petit', email: 'lucas@example.com', image: null, points: 45, rank: 'Novice', createdAt: '2024-01-18', lastLoginAt: null, _count: { favorites: 2, brandViews: 8, ownedBrands: 0 } },
-        ]);
-        setTotalPages(5);
-        setTotalUsers(89);
+        // Cinq utilisateurs fictifs, avec noms et adresses e-mail
+        // vraisemblables, etaient affiches des que l'appel echouait.
+        console.error('Chargement des utilisateurs impossible :', res.status);
+        setUsers([]);
+        setTotalPages(1);
+        setTotalUsers(0);
       }
     } catch (error) {
       console.error('Error loading users:', error);

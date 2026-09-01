@@ -77,6 +77,30 @@ sauvegardés.** Recherche exhaustive faite le 1er septembre 2026, résultat nég
 | Autre copie du projet sur le disque | une seule, sans rapport (page de portfolio) |
 | Dossier `madeinfrance-hostinger` (cité dans `.gitignore`) | introuvable |
 
+### D'où venait le chiffre de « 39 835 produits »
+
+Découvert le 1er septembre 2026 en migrant les routes produit : **il était écrit en dur
+dans le frontend.**
+
+- `apps/web/src/app/admin/produits/page.tsx` appelait `GET /api/admin/products` — une route
+  **qui n'a jamais existé** côté Express. L'appel échouait donc systématiquement, et la page
+  retombait sur cinq produits fictifs en affichant « 39 835 produits, 1992 pages ».
+- `apps/web/src/app/admin/page.tsx` contenait le même chiffre en dur
+  (`products: { total: 39835, active: 38500 }`), plus 902 marques, 1 847 utilisateurs,
+  45 230 vues et un fil d'activité entièrement inventé — affiché **même quand tout
+  fonctionnait**.
+- `apps/web/src/app/admin/utilisateurs/page.tsx` affichait cinq utilisateurs fictifs avec
+  noms et adresses e-mail vraisemblables.
+
+`PLAN.md` annonçait « 39 835 produits actifs ». Le raisonnement était circulaire : le
+document citait un chiffre que l'interface fabriquait.
+
+Cela ne prouve pas que les produits n'ont jamais existé — `enrichment-test-results.json`
+contient de vrais UUID Postgres. Mais **ce chiffre n'a jamais été une preuve de quoi que
+ce soit.** Toutes ces données inventées ont été supprimées : les pages affichent désormais
+un état vide et une erreur en console. Un tableau de bord vide est préférable à un tableau
+de bord qui ment.
+
 **Conclusion : sur cette machine, le catalogue produit est perdu.** Il ne peut subsister
 que sur une autre machine ou dans une sauvegarde distante. À confirmer par toi.
 
@@ -294,7 +318,9 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 
 - [ ] **T3.1** — Créer la structure de modules : `catalogue-marques`, `catalogue-produits`, `recherche`, `comptes-sessions`, `administration`, `espace-marque`, `import-synchronisation`, `medias`, `paiements`, `ia`.
 - [~] **T3.2** — **Arbre `/api/admin/brands/*` migré** (9 routes) vers des Route Handlers Next.js, tous derrière `requireAdmin` — `DELETE` derrière `requireSuperAdmin`, car il emporte en cascade produits, images, propriétaires et demandes de revendication. Aucun fichier ne dépasse 115 lignes. Les routes marques **publiques** restent à migrer.
-- [ ] **T3.3** — Migrer les routes produits.
+- [x] **T3.3** — **Les 9 routes produit migrées** derrière `requireAdmin` (`activate-all` derrière `requireSuperAdmin` : publier tout le catalogue d'un coup contredit T5.8). Express : 73 → 65 routes. Le piège d'ordre des routes Express — `/search` et `/trending` devant `/:id` — **disparaît** : en App Router, un segment statique prime toujours sur un segment dynamique.
+  La recherche reste en SQL brut (score de pertinence et `similarity()` de `pg_trgm`, donc l'index GIN de T2.9) mais en `$queryRaw` **balisé** : chaque valeur est un paramètre lié. Vérifié avec `q=l'apostrophe`.
+  Trois bugs corrigés : `GET /api/admin/products` n'existait pas (voir §1), une mise à jour partielle effaçait tags, matières, galerie et attributs, et un prix minimum supérieur au maximum était accepté sans rien dire.
 - [ ] **T3.4** — Migrer la recherche.
 - [~] **T3.5** — **Migré : tableau de bord, labels et labels de produit** (9 routes avec la route `setup` supprimée), derrière `requireAdmin` ; suppression d'un label derrière `requireSuperAdmin`, car elle le détache de toutes les marques et de tous les produits — et elle passe désormais par une **transaction**, sans quoi un échec en cours laissait des associations pointant un label disparu. Express : 82 → 73 routes.
   Deux chiffres faux corrigés : le tableau de bord comptait **toutes** les marques comme actives (`active: brandsTotal`, `pending: 0`), et `labels/:id/usage` renvoyait `totalProducts` calculé sur une liste tronquée à 50. Restent à migrer : produits, collections, mises en avant, réglages IA.

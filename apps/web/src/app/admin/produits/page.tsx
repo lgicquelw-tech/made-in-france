@@ -75,23 +75,22 @@ export default function ProductsPage() {
         sector: selectedSector
       });
       
-      const res = await fetch(`${API_URL}/api/admin/products?${params}`);
+      const res = await fetch(`/api/admin/products?${params}`);
       if (res.ok) {
         const data = await res.json();
         setProducts(data.data);
         setTotalPages(data.pagination?.totalPages || 1);
         setTotalProducts(data.pagination?.total || 0);
       } else {
-        // Fallback data
-        setProducts([
-          { id: '1', name: 'Slip Français Bleu', slug: 'slip-francais-bleu', descriptionShort: 'Le slip iconique made in France', imageUrl: null, priceMin: 35, priceMax: 35, status: 'ACTIVE', isFeatured: true, brand: { id: 'b1', name: 'Le Slip Français', slug: 'le-slip-francais' }, category: { id: 'c1', name: 'Sous-vêtements' } },
-          { id: '2', name: 'Marinière Saint James', slug: 'mariniere-saint-james', descriptionShort: 'La marinière authentique bretonne', imageUrl: null, priceMin: 89, priceMax: 120, status: 'ACTIVE', isFeatured: false, brand: { id: 'b2', name: 'Saint James', slug: 'saint-james' }, category: { id: 'c2', name: 'Vêtements' } },
-          { id: '3', name: 'Couteau Opinel N°8', slug: 'couteau-opinel-n8', descriptionShort: 'Le couteau pliant légendaire', imageUrl: null, priceMin: 15, priceMax: 25, status: 'ACTIVE', isFeatured: true, brand: { id: 'b3', name: 'Opinel', slug: 'opinel' }, category: { id: 'c3', name: 'Maison' } },
-          { id: '4', name: 'Savon de Marseille 300g', slug: 'savon-marseille-300g', descriptionShort: 'Savon traditionnel à l\'huile d\'olive', imageUrl: null, priceMin: 8, priceMax: 12, status: 'ACTIVE', isFeatured: false, brand: { id: 'b4', name: 'Marius Fabre', slug: 'marius-fabre' }, category: { id: 'c4', name: 'Beauté' } },
-          { id: '5', name: 'Espadrilles Basques', slug: 'espadrilles-basques', descriptionShort: 'Espadrilles artisanales du Pays Basque', imageUrl: null, priceMin: 45, priceMax: 65, status: 'DRAFT', isFeatured: false, brand: { id: 'b5', name: 'Prodiso', slug: 'prodiso' }, category: { id: 'c5', name: 'Chaussures' } },
-        ]);
-        setTotalPages(1992);
-        setTotalProducts(39835);
+        // Aucune donnee de repli : cette page affichait cinq produits ecrits
+        // en dur et annoncait « 39 835 produits » des que l'appel echouait —
+        // ce qui etait le cas en permanence, la route GET n'existant pas.
+        // Un tableau de bord qui invente des chiffres est pire qu'un tableau
+        // de bord vide.
+        console.error('Chargement des produits impossible :', res.status);
+        setProducts([]);
+        setTotalPages(1);
+        setTotalProducts(0);
       }
     } catch (error) {
       console.error('Error loading products:', error);

@@ -80,7 +80,7 @@ export default function AdminProduitsTendancesPage() {
 
   async function fetchTrendingProducts() {
     try {
-      const res = await fetch(`${API_URL}/api/admin/products/trending`);
+      const res = await fetch(`/api/admin/products/trending`);
       const data = await res.json();
       setTrendingProducts(data.data || []);
     } catch (error) {
@@ -94,7 +94,7 @@ export default function AdminProduitsTendancesPage() {
   async function handleSearch(query: string) {
     setSearching(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/products/search?q=${encodeURIComponent(query)}&limit=20`);
+      const res = await fetch(`/api/admin/products/search?q=${encodeURIComponent(query)}&limit=20`);
       const data = await res.json();
       setSearchResults(data.data || []);
     } catch (error) {
@@ -108,7 +108,7 @@ export default function AdminProduitsTendancesPage() {
   async function toggleFeatured(productId: string) {
     setTogglingId(productId);
     try {
-      const res = await fetch(`${API_URL}/api/admin/products/${productId}/toggle-featured`, {
+      const res = await fetch(`/api/admin/products/${productId}/toggle-featured`, {
         method: 'PUT',
       });
       const data = await res.json();

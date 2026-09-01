@@ -80,7 +80,7 @@ export default function EditProductPage() {
   const loadData = async () => {
     try {
       const [productRes, labelsRes] = await Promise.all([
-        fetch(`${API_URL}/api/admin/products/${productId}`),
+        fetch(`/api/admin/products/${productId}`),
         fetch(`${API_URL}/api/v1/labels`),
       ]);
 
@@ -212,7 +212,7 @@ export default function EditProductPage() {
     setSaving(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/admin/products/${product.id}`, {
+      const res = await fetch(`/api/admin/products/${product.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

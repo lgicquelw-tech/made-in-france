@@ -63,33 +63,18 @@ export default function AdminDashboard() {
         const data = await res.json();
         setStats(data.data);
       } else {
-        // Fallback data
-        setStats({
-          brands: { total: 902, active: 856, pending: 12, thisMonth: 24 },
-          products: { total: 39835, active: 38500, featured: 12 },
-          users: { total: 1847, thisMonth: 156, active: 423 },
-          subscriptions: { free: 845, premium: 52, royale: 5, mrr: 1847 },
-          analytics: { pageViews: 45230, clickOuts: 3420, favorites: 892, searches: 12450 },
-          ai: { conversations: 2341, tokensUsed: 1250000, cost: 12.50 }
-        });
+        // Chiffres inventes supprimes : ce tableau de bord affichait 902
+        // marques, 39 835 produits et 1 847 utilisateurs des que l'appel
+        // echouait, sans que rien ne le signale.
+        console.error('Chargement des statistiques impossible :', res.status);
+        setStats(null);
       }
-
-      setRecentActivity([
-        { id: '1', type: 'brand_created', message: 'Nouvelle marque : Le Slip Français', time: 'Il y a 2h' },
-        { id: '2', type: 'user_signup', message: 'Nouvel utilisateur inscrit', time: 'Il y a 3h' },
-        { id: '3', type: 'subscription', message: 'Upgrade Premium : Maison Château Rouge', time: 'Il y a 5h' },
-        { id: '4', type: 'favorite', message: '15 nouveaux favoris ajoutés', time: 'Il y a 6h' },
-      ]);
+      // Fil d'activite retire : il etait ecrit en dur et s'affichait meme
+      // quand tout fonctionnait. Il demande de vrais evenements (T8.2).
+      setRecentActivity([]);
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
-      setStats({
-        brands: { total: 902, active: 856, pending: 12, thisMonth: 24 },
-        products: { total: 39835, active: 38500, featured: 12 },
-        users: { total: 1847, thisMonth: 156, active: 423 },
-        subscriptions: { free: 845, premium: 52, royale: 5, mrr: 1847 },
-        analytics: { pageViews: 45230, clickOuts: 3420, favorites: 892, searches: 12450 },
-        ai: { conversations: 2341, tokensUsed: 1250000, cost: 12.50 }
-      });
+        setStats(null);
     } finally {
       setLoading(false);
     }
