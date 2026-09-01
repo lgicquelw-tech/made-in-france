@@ -296,7 +296,8 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 - [~] **T3.2** — **Arbre `/api/admin/brands/*` migré** (9 routes) vers des Route Handlers Next.js, tous derrière `requireAdmin` — `DELETE` derrière `requireSuperAdmin`, car il emporte en cascade produits, images, propriétaires et demandes de revendication. Aucun fichier ne dépasse 115 lignes. Les routes marques **publiques** restent à migrer.
 - [ ] **T3.3** — Migrer les routes produits.
 - [ ] **T3.4** — Migrer la recherche.
-- [ ] **T3.5** — Migrer l'administration.
+- [~] **T3.5** — **Migré : tableau de bord, labels et labels de produit** (9 routes avec la route `setup` supprimée), derrière `requireAdmin` ; suppression d'un label derrière `requireSuperAdmin`, car elle le détache de toutes les marques et de tous les produits — et elle passe désormais par une **transaction**, sans quoi un échec en cours laissait des associations pointant un label disparu. Express : 82 → 73 routes.
+  Deux chiffres faux corrigés : le tableau de bord comptait **toutes** les marques comme actives (`active: brandsTotal`, `pending: 0`), et `labels/:id/usage` renvoyait `totalProducts` calculé sur une liste tronquée à 50. Restent à migrer : produits, collections, mises en avant, réglages IA.
 - [ ] **T3.6** — Migrer l'espace marque.
 - [ ] **T3.7** — Migrer médias, paiements, IA.
 - [ ] **T3.8** — Supprimer l'ancien `index.ts` une fois toutes les routes migrées et vérifiées.
@@ -407,6 +408,32 @@ Lighthouse SEO ≥ 95 et LCP < 2,5 s sur une fiche marque.
 - [ ] **T5.6** — **Tracer la provenance** : source (Shopify, WooCommerce, manuel) et date de collecte pour chaque produit. Sans ça, impossible de savoir ce qui est périmé ni ce qu'un réimport a le droit de remplacer.
 - [ ] **T5.7** — Relancer l'enrichissement IA uniquement sur les champs manquants.
 - [ ] **T5.8** — Ne publier que les produits au-dessus du seuil de complétude (`status = ACTIVE` piloté par l'audit).
+
+### ⚠️ Décision à prendre : 902 marques sur 903 ne sont pas publiables
+
+Découvert le 1er septembre 2026 en migrant le tableau de bord d'administration.
+
+| | |
+|---|---|
+| `PENDING_REVIEW` | **902** |
+| `ACTIVE` | **1** (Armor Lux, venue du seed) |
+
+C'est **volontaire côté import** : `import-brands.ts` pose `PENDING_REVIEW`, ce qui est
+la bonne valeur par défaut — on ne publie pas 903 fiches sans les avoir regardées.
+
+Le problème est ailleurs : **`GET /api/v1/brands` ne filtre pas sur le statut** et renvoie
+les 903, tandis que d'autres routes publiques filtrent bien sur `ACTIVE`. Le catalogue
+public est donc incohérent avec lui-même, et il publie déjà des fiches non relues.
+
+Deux issues, à trancher explicitement :
+
+1. **Filtrer** `/api/v1/brands` sur `ACTIVE` — cohérent, mais le site public n'affiche
+   plus qu'une seule marque tant que la relecture n'a pas eu lieu.
+2. **Passer les 903 en `ACTIVE`** après un audit de qualité (T5.1) — c'est le sens de la
+   phase 5, et la seule option qui donne un site présentable.
+
+L'option 2 est la bonne, mais elle **suppose l'audit fait**. En attendant, ne pas
+« corriger » le filtre sans décider : cela viderait le site sans prévenir.
 
 **Critère de sortie** : `pnpm data:audit` affiche les taux de complétude, et un réimport complet ne crée aucun doublon ni ne perd aucun enrichissement.
 

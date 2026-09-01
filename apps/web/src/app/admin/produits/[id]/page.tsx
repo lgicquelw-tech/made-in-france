@@ -181,14 +181,14 @@ export default function EditProductPage() {
 
     try {
       if (isActive) {
-        const res = await fetch(`${API_URL}/api/admin/products/${product.id}/labels/${labelId}`, {
+        const res = await fetch(`/api/admin/products/${product.id}/labels/${labelId}`, {
           method: 'DELETE',
         });
         if (res.ok) {
           setProductLabels(prev => prev.filter(l => l.id !== labelId));
         }
       } else {
-        const res = await fetch(`${API_URL}/api/admin/products/${product.id}/labels`, {
+        const res = await fetch(`/api/admin/products/${product.id}/labels`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ labelId }),

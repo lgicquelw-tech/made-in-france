@@ -69,7 +69,7 @@ export default function LabelsPage() {
 
   const fetchLabels = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/labels`);
+      const res = await fetch(`/api/admin/labels`);
       const data = await res.json();
       setLabels(data.data || []);
     } catch (error) {
@@ -179,8 +179,8 @@ export default function LabelsPage() {
 
     try {
       const url = editingLabel
-        ? `${API_URL}/api/admin/labels/${editingLabel.id}`
-        : `${API_URL}/api/admin/labels`;
+        ? `/api/admin/labels/${editingLabel.id}`
+        : `/api/admin/labels`;
 
       const res = await fetch(url, {
         method: editingLabel ? 'PUT' : 'POST',
@@ -207,7 +207,7 @@ export default function LabelsPage() {
   const handleDelete = async (id: string) => {
     setDeleting(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/labels/${id}`, {
+      const res = await fetch(`/api/admin/labels/${id}`, {
         method: 'DELETE',
       });
 
