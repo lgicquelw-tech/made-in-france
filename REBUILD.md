@@ -508,7 +508,10 @@ Aucun fichier backend ne dépasse 300 lignes.
 Transversal à ces six étapes :
 
 - [ ] **T4.7** — Basculer les pages publiques en Server Components. `'use client'` uniquement sur les feuilles interactives.
-- [ ] **T4.8** — `generateMetadata` sur chaque page publique (titre, description, Open Graph, canonique).
+- [x] **T4.8** — **Chaque page publique a désormais un titre, une description, une canonique et des balises Open Graph.** Il n'y en avait qu'une sur 45.
+  Sept pages restaient `'use client'` et ne pouvaient donc pas exporter `metadata` : chacune reçoit un `layout.tsx` qui les porte — la manière idiomatique de donner des métadonnées à une page interactive sans la réécrire. Celui de `/marques/[slug]/produits` est dynamique et nomme la marque.
+  Deux pièges rencontrés : un `title` en chaîne simple dans un layout imbriqué **remplace le gabarit du layout racine pour tout son sous-arbre** — `/regions/bretagne` perdait son suffixe ; et sans `metadataBase`, Next.js ne peut pas rendre absolues les URL des images Open Graph.
+  Les pages privées (`/profil`, `/favoris`, `/connexion`) n'en ont volontairement pas : elles sont exclues de l'indexation par `robots.ts`.
 - [ ] **T4.9** — `generateStaticParams` + ISR sur fiches marque et produit.
 - [ ] **T4.10** — Migrer les 40 `<img>` vers `next/image` et déclarer les hôtes réels dans `next.config.js` : `cdn.shopify.com`, `res.cloudinary.com`, `www.google.com`, les domaines WordPress. **Aucun n'y figure aujourd'hui** (seulement AWS, Cloudflare et Unsplash).
 - [ ] **T4.11** — JSON-LD : `Organization` sur les marques, `Product` sur les produits.

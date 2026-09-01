@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { siteUrl } from '@/lib/site';
 import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { Providers } from './providers';
@@ -11,6 +13,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  // Sans `metadataBase`, Next.js ne peut pas rendre absolues les URL des
+  // images Open Graph, et avertit a chaque rendu.
+  metadataBase: new URL(siteUrl()),
+  alternates: { canonical: '/' },
   title: {
     default: 'Made in France - Découvrez les marques françaises',
     template: '%s | Made in France',
