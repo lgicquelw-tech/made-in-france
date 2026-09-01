@@ -1,3 +1,15 @@
+> ## ⚠️ DOCUMENT D'ARCHIVE — NE PAS UTILISER COMME SOURCE
+>
+> Écrit le 15 janvier 2026, archivé le 1er septembre 2026. Conservé pour sa valeur
+> historique uniquement. **Plusieurs de ses affirmations sont fausses :** l'arborescence
+> décrite n'est pas celle du disque, le middleware ne protège pas `/admin` (il ne protège
+> rien), le chat frontend est intégré et non « à faire », l'IA tourne sur Claude et non
+> sur GPT-4o-mini, et pgvector n'est pas installé.
+>
+> Les documents de référence sont `CLAUDE.md` et `REBUILD.md`, à la racine.
+
+---
+
 # 🇫🇷 Made in France - Plan du Projet
 
 > Document de référence pour toutes les sessions de développement

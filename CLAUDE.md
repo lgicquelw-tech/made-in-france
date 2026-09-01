@@ -32,11 +32,23 @@ d'abord. L'état de janvier a été archivé sur la branche `archive/janvier-202
 
 ---
 
-## ⚠️ Documentation non fiable
+## Documentation : ce qui fait foi
 
-- **`README.md` est faux.** Il décrit NestJS, FastAPI, Meilisearch et un service IA Python. Rien de tout ça n'existe. **Ne t'en sers jamais comme source.**
-- **`PLAN.md` est faux.** Il date du 15 janvier 2026 et décrit une arborescence qui n'est pas celle du disque, affirme que le middleware protège `/admin` (il ne protège rien), que le chat frontend reste à faire (il est intégré), et que l'IA tourne sur GPT-4o-mini (le serveur appelle Claude).
-- **La seule source de vérité, c'est le code.** En cas de doute : `grep`, `find`, lis le fichier.
+| Document | Statut |
+|---|---|
+| `CLAUDE.md` (ce fichier) | Contexte permanent et règles. **Fait foi.** |
+| `REBUILD.md` | Plan de reconstruction et journal de sessions. **Fait foi.** |
+| `docs/SPEC-V1.md` | Périmètre de la v1. **Fait foi.** |
+| `README.md` | Réécrit le 1er septembre 2026 à partir du code réel. Fiable. |
+| `docs/archive/*` | **Ne jamais s'en servir comme source.** Valeur historique seulement. |
+
+Deux documents ont été archivés le 1er septembre 2026 parce qu'ils décrivaient une
+architecture qui n'a jamais existé — NestJS, FastAPI, Meilisearch, un service IA Python :
+`PLAN-janvier-2026.md` et `GETTING_STARTED-decembre-2025.md`. Chacun porte une bannière
+d'avertissement en tête. Ils sont dans `docs/archive/` précisément pour qu'aucune IA ne
+les lise comme une source.
+
+**En cas de doute, c'est le code qui tranche** : `grep`, `find`, lis le fichier.
 
 ---
 
@@ -67,14 +79,13 @@ d'abord. L'état de janvier a été archivé sur la branche `archive/janvier-202
 ```
 made-in-france/
 ├── apps/
-│   ├── web/                      # Next.js — 49 pages, dont 46 en 'use client'
+│   ├── web/                      # Next.js — 45 pages, dont 42 en 'use client'
 │   │   ├── middleware.ts         # ne protège RIEN, pose juste un header x-pathname
 │   │   └── src/
 │   │       ├── app/
 │   │       │   ├── admin/        # back-office (10 pages)
 │   │       │   ├── studio/       # espace marque B2B  ← LE canonique
-│   │       │   ├── espace-marque/# DOUBLON à supprimer
-│   │       │   ├── entreprises/  # landing B2B + inscription (3e variante)
+│   │       │   ├── entreprises/  # landing marketing B2B UNIQUEMENT (plus d'inscription)
 │   │       │   ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
 │   │       │   ├── admin/labels/ # fonctionnalité labels (absente de la copie locale de janvier)
 │   │       │   └── api/auth/[...nextauth]/route.ts   # SEULE route API côté web
@@ -168,7 +179,7 @@ aujourd'hui les données du seed : 13 régions, 9 secteurs, 11 catégories, 6 la
 
 7. **Aucun nouveau fichier au-delà de ~300 lignes.** Le monolithe actuel est la cause n°1 des régressions ; ne pas le reproduire.
 8. **Avant de créer une page, un composant ou une route, vérifier qu'un équivalent n'existe pas déjà.** Le projet contient déjà trois espaces B2B concurrents parce que cette règle n'existait pas. Un `grep` de 10 secondes évite un doublon d'une semaine.
-9. **`/studio` est le seul espace marque.** Ne rien ajouter à `/espace-marque` (à supprimer) ni à `/entreprises` (landing marketing uniquement).
+9. **`/studio` est le seul espace marque.** `/espace-marque` a été supprimé le 1er septembre 2026 ; `/entreprises` est une landing marketing sans inscription. Ne pas recréer de troisième variante. ⚠️ `/connexion-pro` coexiste toujours avec `/studio/connexion` : doublon restant, à trancher en phase 3.
 10. **Une seule source pour l'URL d'API** : `apps/web/src/lib/api.ts`, alimenté par `NEXT_PUBLIC_API_URL`. Zéro `http://localhost:4000` en dur (il y en a 57 dans 46 fichiers à nettoyer).
 
 ### Frontend

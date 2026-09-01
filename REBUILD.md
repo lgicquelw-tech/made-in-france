@@ -213,15 +213,28 @@ de la sauvegarde.
 
 ## Phase 1 — Périmètre et doublons · 1 jour
 
-- [ ] **T1.1** — Écrire la spec v1 (une page maximum) à partir de la §3 : ce qui part, ce qui ne part pas.
-- [ ] **T1.2** — Supprimer `apps/web/src/app/espace-marque/` en entier.
-- [ ] **T1.3** — Réduire `/entreprises` à une landing marketing (supprimer `entreprises/inscription` et `entreprises/revendiquer`, qui doublonnent `/studio/inscription` et `/studio/revendiquer`).
-- [ ] **T1.4** — Supprimer `apps/api/src/index.ts.backup`, `apps/web/tsconfig.tsbuildinfo`, et les scripts ponctuels : `enrich-products-test.ts`, `enrich-raptor-test.ts`, `enrich-raptor-save.ts`, `test-woocommerce.ts`, `enrich-20-brands.ts`.
-- [ ] **T1.5** — Copier `CLAUDE.md` à la racine (ce fichier a déjà été écrit — vérifier qu'il correspond toujours au code).
-- [ ] **T1.6** — Réécrire `README.md` à partir du code réel. Supprimer NestJS, FastAPI, Meilisearch, le service IA Python.
-- [ ] **T1.7** — Archiver `PLAN.md` en `docs/archive/PLAN-janvier-2026.md` (valeur historique) et le retirer de la racine pour qu'aucune IA ne le lise comme une source.
+- [x] **T1.1** — `docs/SPEC-V1.md` (49 lignes). Six fonctionnalités qui partent, sept reportées, trois conditions non négociables avant mise en ligne. Tient compte de la perte du catalogue : la v1 se construit sur les 996 marques de `data/brands.xlsx`, pas sur les produits.
+- [x] **T1.2** — Supprimé (2 fichiers, 1 319 lignes). Les 2 redirections de `connexion-pro` pointent désormais vers `/studio/marque/[slug]`.
+- [x] **T1.3** — `entreprises/inscription` (446 lignes) et `entreprises/revendiquer` (263 lignes) supprimés, 7 liens redirigés vers `/studio`.
+  ⚠️ **Une perte assumée :** la landing liait `inscription?plan=premium` et `?plan=sponsored`, or `/studio/inscription` ne lit que `?claim=`. Plutôt que de perdre le paramètre en silence ou d'ajouter une fonctionnalité avant l'heure, ces liens pointent l'inscription simple ; le choix du palier se fera dans `/studio/marque/[slug]/abonnement`. À revoir en phase 8 avec le paiement.
+- [x] **T1.4** — Fait : `tsconfig.tsbuildinfo` et les 5 scripts ponctuels (604 lignes). `index.ts.backup` n'existait pas sur `origin/main` — il n'était que dans la copie locale périmée.
+- [x] **T1.5** — `CLAUDE.md` est à la racine et a été recoupé avec le code trois fois dans la session.
+- [x] **T1.6** — `README.md` réécrit intégralement depuis le code : stack réelle, démarrage effectivement testé (y compris le piège `LC_ALL` et le piège `pnpm setup`), et une section « Limites connues » qui dit franchement que l'API n'a aucune authentification.
+- [x] **T1.7** — `PLAN.md` archivé en `docs/archive/PLAN-janvier-2026.md`, avec bannière d'avertissement.
+  **Découvert au passage :** `docs/GETTING_STARTED.md` racontait la même fiction (NestJS, FastAPI, Meilisearch, MinIO) — c'était une **troisième** source fausse, non listée dans ce plan. Archivé de même en `docs/archive/GETTING_STARTED-decembre-2025.md`.
 
-**Critère de sortie** : `grep -rn "espace-marque" apps/` ne renvoie rien ; un seul chemin existe pour chaque fonctionnalité.
+**Critère de sortie** — atteint :
+
+```bash
+grep -rn "espace-marque" apps/          # aucune sortie ✅
+grep -rn "entreprises/inscription" apps/ # aucune sortie ✅
+```
+
+Effet mesuré : les erreurs de `pnpm typecheck` sur `@mif/web` passent de **22 à 12**.
+
+⚠️ **Un doublon subsiste, hors périmètre de cette phase :** `/connexion-pro` coexiste avec
+`/studio/connexion`. Non traité ici parce que ce plan ne le listait pas et que les deux
+pages ont des comportements différents. À trancher en phase 3, avec l'authentification.
 
 ---
 

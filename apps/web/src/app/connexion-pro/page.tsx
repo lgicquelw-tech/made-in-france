@@ -57,8 +57,7 @@ export default function ConnexionProPage() {
           console.log('Brands data:', data);
           
           if (data.brands && data.brands.length > 0) {
-            console.log('Redirecting to:', `/espace-marque/${data.brands[0].slug}`);
-            router.push(`/espace-marque/${data.brands[0].slug}`);
+            router.push(`/studio/marque/${data.brands[0].slug}`);
             return;
           }
         }
@@ -185,7 +184,7 @@ export default function ConnexionProPage() {
             <div className="mt-6 pt-6 border-t text-center">
               <p className="text-gray-600 text-sm">
                 Pas encore de compte entreprise ?{' '}
-                <Link href="/entreprises/inscription" className="text-blue-600 hover:underline font-medium">
+                <Link href="/studio/inscription" className="text-blue-600 hover:underline font-medium">
                   Inscrivez-vous gratuitement
                 </Link>
               </p>

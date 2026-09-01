@@ -67,14 +67,14 @@ export default function EntreprisesPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/entreprises/inscription"
+                href="/studio/inscription"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition"
               >
                 S'inscrire gratuitement
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                href="/entreprises/revendiquer"
+                href="/studio/revendiquer"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-500/30 text-white rounded-xl font-semibold hover:bg-blue-500/40 transition border border-white/20"
               >
                 <Search className="w-5 h-5" />
@@ -198,7 +198,7 @@ export default function EntreprisesPage() {
                 ))}
               </ul>
               <Link
-                href="/entreprises/inscription"
+                href="/studio/inscription"
                 className="block w-full py-3 text-center bg-gray-100 text-gray-900 rounded-xl font-semibold hover:bg-gray-200 transition"
               >
                 Commencer gratuitement
@@ -229,7 +229,7 @@ export default function EntreprisesPage() {
                 ))}
               </ul>
               <Link
-                href="/entreprises/inscription?plan=premium"
+                href="/studio/inscription"
                 className="block w-full py-3 text-center bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
               >
                 Essai gratuit 14 jours
@@ -257,7 +257,7 @@ export default function EntreprisesPage() {
                 ))}
               </ul>
               <Link
-                href="/entreprises/inscription?plan=sponsored"
+                href="/studio/inscription"
                 className="block w-full py-3 text-center bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition"
               >
                 Devenir sponsor
@@ -277,7 +277,7 @@ export default function EntreprisesPage() {
             Réclamez votre fiche en quelques clics et prenez le contrôle de votre présence en ligne.
           </p>
           <Link
-            href="/entreprises/revendiquer"
+            href="/studio/revendiquer"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition"
           >
             <Search className="w-5 h-5" />

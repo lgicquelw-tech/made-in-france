@@ -1,3 +1,14 @@
+> ## ⚠️ DOCUMENT D'ARCHIVE — NE PAS UTILISER COMME SOURCE
+>
+> Archivé le 1er septembre 2026. Il décrit une architecture qui n'a jamais existé :
+> un backend NestJS, un service IA Python/FastAPI, Meilisearch, Redis et MinIO.
+> Le backend réel est un fichier Express, la recherche utilise `pg_trgm`, et
+> Redis / Meilisearch / MinIO ont été retirés du `docker-compose.yml` faute d'usage.
+>
+> Pour démarrer le projet, voir le [`README.md`](../../README.md) à la racine.
+
+---
+
 # 🚀 Guide de Démarrage Rapide - Made in France
 
 ## Ce qui a été créé
