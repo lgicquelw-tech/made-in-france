@@ -29,7 +29,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "prepare": "husky",
-    "db:import": "tsx --env-file=.env scripts/import/import-brands.ts data/brands.xlsx"
+    "db:import": "tsx --env-file=.env scripts/import/import-brands.ts data/brands.xlsx",
+    "admin:create": "tsx --env-file=.env scripts/create-admin.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

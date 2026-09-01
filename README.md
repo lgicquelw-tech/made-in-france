@@ -116,6 +116,8 @@ pnpm db:generate          # client Prisma
 pnpm db:migrate           # migration de développement
 pnpm db:seed              # données de démarrage
 pnpm db:import            # import des marques depuis data/brands.xlsx (idempotent)
+
+pnpm admin:create         # crée (ou promeut) un compte administrateur
 pnpm db:studio            # Prisma Studio
 ```
 

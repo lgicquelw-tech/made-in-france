@@ -125,6 +125,11 @@ npx prisma migrate dev --schema=./packages/database/prisma/schema.prisma
 pnpm typecheck            # PASSE sur les 7 tâches du monorepo. Le garder au vert.
 pnpm lint
 
+# Administration
+pnpm admin:create         # cree ou promeut un administrateur (T3.15).
+                          # POST /api/admin/setup est desactive : il creait un
+                          # super_admin sans aucune authentification.
+
 # Données
 npx tsx scripts/stats.ts             # compte réel marques / produits en base
 npx tsx scripts/shopify-scraper.ts --all
