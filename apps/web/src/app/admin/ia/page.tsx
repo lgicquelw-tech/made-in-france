@@ -72,7 +72,7 @@ export default function AdminIAPage() {
 
   const loadSettings = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/ai/settings`);
+      const res = await fetch(`/api/admin/ai/settings`);
       if (res.ok) {
         const data = await res.json();
         if (data.data) {
@@ -88,7 +88,7 @@ export default function AdminIAPage() {
     setSaving(true);
     setSaved(false);
     try {
-      const res = await fetch(`${API_URL}/api/admin/ai/settings`, {
+      const res = await fetch(`/api/admin/ai/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)

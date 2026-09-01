@@ -42,28 +42,19 @@ export default function SubscriptionsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/admin/subscriptions?filter=${filter}`);
+      const res = await fetch(`/api/admin/subscriptions?filter=${filter}`);
       if (res.ok) {
         const data = await res.json();
         setSubscriptions(data.data);
         setStats(data.stats);
       } else {
-        setStats({
-          totalMrr: 1847,
-          totalSubscribers: 902,
-          free: 845,
-          premium: 52,
-          royale: 5,
-          churnRate: 2.3,
-          growthRate: 15.4
-        });
-        setSubscriptions([
-          { id: '1', brandId: 'b1', brandName: 'Le Slip Français', brandSlug: 'le-slip-francais', tier: 'ROYALE', status: 'active', currentPeriodEnd: '2024-02-15', mrr: 99, stripeCustomerId: 'cus_xxx1', createdAt: '2023-06-15' },
-          { id: '2', brandId: 'b2', brandName: 'Saint James', brandSlug: 'saint-james', tier: 'ROYALE', status: 'active', currentPeriodEnd: '2024-02-20', mrr: 99, stripeCustomerId: 'cus_xxx2', createdAt: '2023-08-10' },
-          { id: '3', brandId: 'b3', brandName: 'Maison Château Rouge', brandSlug: 'maison-chateau-rouge', tier: 'PREMIUM', status: 'active', currentPeriodEnd: '2024-02-18', mrr: 29, stripeCustomerId: 'cus_xxx3', createdAt: '2023-11-05' },
-          { id: '4', brandId: 'b4', brandName: 'Veja', brandSlug: 'veja', tier: 'PREMIUM', status: 'active', currentPeriodEnd: '2024-02-22', mrr: 29, stripeCustomerId: 'cus_xxx4', createdAt: '2023-12-01' },
-          { id: '5', brandId: 'b5', brandName: 'Faguo', brandSlug: 'faguo', tier: 'PREMIUM', status: 'past_due', currentPeriodEnd: '2024-01-15', mrr: 29, stripeCustomerId: 'cus_xxx5', createdAt: '2023-09-20' },
-        ]);
+        // Aucune donnee de repli. Cette page presentait cinq entreprises
+        // REELLES ET NOMMEES comme des clients payants, avec des identifiants
+        // Stripe inventes et un chiffre d'affaires fictif. Sur un ecran
+        // d'administration, c'est indiscernable de la verite.
+        console.error('Chargement des abonnements impossible :', res.status);
+        setStats(null);
+        setSubscriptions([]);
       }
     } catch (error) {
       console.error('Error loading subscriptions:', error);

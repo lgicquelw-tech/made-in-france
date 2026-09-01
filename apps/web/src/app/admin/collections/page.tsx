@@ -18,13 +18,11 @@ interface Collection {
 }
 
 export default function CollectionsPage() {
-  const [collections, setCollections] = useState<Collection[]>([
-    { id: '1', name: 'Mode Éthique', slug: 'mode-ethique', description: 'Les marques de mode responsable', image: null, brandsCount: 45, productsCount: 890, status: 'PUBLISHED', featured: true, createdAt: '2024-01-10' },
-    { id: '2', name: 'Beauté Naturelle', slug: 'beaute-naturelle', description: 'Cosmétiques bio et naturels', image: null, brandsCount: 32, productsCount: 456, status: 'PUBLISHED', featured: true, createdAt: '2024-01-08' },
-    { id: '3', name: 'Maison & Déco', slug: 'maison-deco', description: 'Artisanat et décoration française', image: null, brandsCount: 28, productsCount: 312, status: 'PUBLISHED', featured: false, createdAt: '2024-01-05' },
-    { id: '4', name: 'Idées Cadeaux', slug: 'idees-cadeaux', description: 'Sélection de cadeaux made in France', image: null, brandsCount: 56, productsCount: 234, status: 'PUBLISHED', featured: true, createdAt: '2024-01-02' },
-    { id: '5', name: 'Sport & Outdoor', slug: 'sport-outdoor', description: 'Équipements sportifs français', image: null, brandsCount: 18, productsCount: 145, status: 'DRAFT', featured: false, createdAt: '2024-01-15' },
-  ]);
+  // Cette page n'a jamais appele d'API : elle demarrait sur une liste de
+  // collections ecrite en dur (« Mode Ethique », « Noel »…) avec des
+  // compteurs inventes. Les routes /api/admin/collections existent desormais
+  // et sont protegees ; le branchement de cette page reste a faire.
+  const [collections, setCollections] = useState<Collection[]>([]);
 
   return (
     <div className="space-y-6">

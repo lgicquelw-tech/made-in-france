@@ -52,7 +52,7 @@ export default function UsersPage() {
     setLoading(true);
     try {
       const res = await fetch(
-        `${API_URL}/api/admin/users?page=${page}&limit=20&search=${search}&filter=${filter}`
+        `/api/admin/users?page=${page}&limit=20&search=${search}&filter=${filter}`
       );
       if (res.ok) {
         const data = await res.json();

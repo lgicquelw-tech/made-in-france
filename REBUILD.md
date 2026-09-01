@@ -77,6 +77,28 @@ sauvegardés.** Recherche exhaustive faite le 1er septembre 2026, résultat nég
 | Autre copie du projet sur le disque | une seule, sans rapport (page de portfolio) |
 | Dossier `madeinfrance-hostinger` (cité dans `.gitignore`) | introuvable |
 
+### Des pages d'administration qui inventaient leurs données
+
+Découvert le 1er septembre 2026 en migrant les routes. **Cinq pages** fabriquaient des
+données dès que leur appel échouait — et l'appel échouait en permanence, trois des routes
+appelées n'ayant jamais existé (`GET /api/admin/products`, `/users`, `/subscriptions`).
+
+| Page | Ce qu'elle affichait |
+|---|---|
+| `/admin` | 902 marques, 39 835 produits, 1 847 utilisateurs, 45 230 vues, et un fil d'activité inventé **affiché même quand tout fonctionnait** |
+| `/admin/produits` | 5 produits fictifs, « 39 835 produits, 1992 pages » |
+| `/admin/utilisateurs` | 5 utilisateurs fictifs, noms et adresses e-mail vraisemblables |
+| `/admin/abonnements` | 5 abonnements présentant **des entreprises réelles et nommées** comme clientes payantes, identifiants Stripe inventés, 1 847 € de revenu mensuel |
+| `/admin/collections` | une liste de collections en dur ; cette page n'appelait **aucune** API |
+
+Le cas des abonnements est le plus grave : sur un écran d'administration, une entreprise
+nommée présentée comme cliente payante est indiscernable de la vérité.
+
+Tout cela a été supprimé. Les pages affichent désormais un état vide et une erreur en
+console, et les trois routes manquantes ont été créées sur de vraies données. Reste à
+faire : un vrai état d'erreur visible à l'écran, et le branchement de `/admin/collections`
+sur ses endpoints (qui existent et sont protégés depuis cette session).
+
 ### D'où venait le chiffre de « 39 835 produits »
 
 Découvert le 1er septembre 2026 en migrant les routes produit : **il était écrit en dur
@@ -322,7 +344,9 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   La recherche reste en SQL brut (score de pertinence et `similarity()` de `pg_trgm`, donc l'index GIN de T2.9) mais en `$queryRaw` **balisé** : chaque valeur est un paramètre lié. Vérifié avec `q=l'apostrophe`.
   Trois bugs corrigés : `GET /api/admin/products` n'existait pas (voir §1), une mise à jour partielle effaçait tags, matières, galerie et attributs, et un prix minimum supérieur au maximum était accepté sans rien dire.
 - [ ] **T3.4** — Migrer la recherche.
-- [~] **T3.5** — **Migré : tableau de bord, labels et labels de produit** (9 routes avec la route `setup` supprimée), derrière `requireAdmin` ; suppression d'un label derrière `requireSuperAdmin`, car elle le détache de toutes les marques et de tous les produits — et elle passe désormais par une **transaction**, sans quoi un échec en cours laissait des associations pointant un label disparu. Express : 82 → 73 routes.
+- [x] **T3.5** — **L'arbre `/api/admin/*` est entièrement migré** : plus une seule route d'administration côté Express. 92 → 53 routes, et `index.ts` passe de 4 385 à 3 162 lignes. Toutes derrière `requireAdmin` ; `DELETE` d'une marque ou d'un label et `activate-all` derrière `requireSuperAdmin`. Validation Zod partout. Aucun fichier ne dépasse 115 lignes.
+  **Trois routes appelées par le front n'existaient nulle part** — `GET /api/admin/products`, `GET /api/admin/users` et `GET /api/admin/subscriptions`. Créées. Voir §1 pour ce que cachait leur absence.
+  Les réglages IA ne peuvent plus fuir ni stocker de clé : double filtre (schéma Zod fermé + filtre par nom de champ), et le chat ne lit plus les clés que depuis l'environnement — la lecture depuis la base a été retirée, c'est elle qui rendait tentant d'en stocker.
   Deux chiffres faux corrigés : le tableau de bord comptait **toutes** les marques comme actives (`active: brandsTotal`, `pending: 0`), et `labels/:id/usage` renvoyait `totalProducts` calculé sur une liste tronquée à 50. Restent à migrer : produits, collections, mises en avant, réglages IA.
 - [ ] **T3.6** — Migrer l'espace marque.
 - [ ] **T3.7** — Migrer médias, paiements, IA.

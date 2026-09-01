@@ -1064,226 +1064,6 @@ app.get('/api/v1/sectors/with-counts', async (req, res) => {
 
 
 // ===========================================
-// ADMIN COLLECTIONS
-// ===========================================
-app.get('/api/admin/collections', async (req, res) => {
-  try {
-    const collections = await prisma.collection.findMany({
-      orderBy: { displayOrder: 'asc' },
-      include: {
-        _count: { select: { brands: true } },
-      },
-    });
-
-    res.json({ data: collections });
-  } catch (error) {
-    console.error('Error fetching collections:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.post('/api/admin/collections', async (req, res) => {
-  try {
-    const data = req.body;
-    
-    const slug = data.slug || data.name.toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
-
-    const collection = await prisma.collection.create({
-      data: {
-        name: data.name,
-        slug,
-        description: data.description,
-        imageUrl: data.imageUrl,
-        color: data.color,
-        isActive: data.isActive ?? true,
-        startDate: data.startDate ? new Date(data.startDate) : null,
-        endDate: data.endDate ? new Date(data.endDate) : null,
-        displayOrder: data.displayOrder || 0,
-      },
-    });
-
-    res.json({ data: collection });
-  } catch (error) {
-    console.error('Error creating collection:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.put('/api/admin/collections/:id', async (req, res) => {
-  try {
-    const data = req.body;
-
-    const collection = await prisma.collection.update({
-      where: { id: req.params.id },
-      data: {
-        name: data.name,
-        description: data.description,
-        imageUrl: data.imageUrl,
-        color: data.color,
-        isActive: data.isActive,
-        startDate: data.startDate ? new Date(data.startDate) : null,
-        endDate: data.endDate ? new Date(data.endDate) : null,
-        displayOrder: data.displayOrder,
-      },
-    });
-
-    res.json({ data: collection });
-  } catch (error) {
-    console.error('Error updating collection:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.delete('/api/admin/collections/:id', async (req, res) => {
-  try {
-    await prisma.collection.delete({
-      where: { id: req.params.id },
-    });
-
-    res.json({ message: 'Collection supprimée' });
-  } catch (error) {
-    console.error('Error deleting collection:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.post('/api/admin/collections/:id/brands', async (req, res) => {
-  try {
-    const { brandIds } = req.body;
-
-    await prisma.collectionBrand.createMany({
-      data: brandIds.map((brandId: string, index: number) => ({
-        collectionId: req.params.id,
-        brandId,
-        displayOrder: index,
-      })),
-      skipDuplicates: true,
-    });
-
-    res.json({ message: 'Marques ajoutées à la collection' });
-  } catch (error) {
-    console.error('Error adding brands to collection:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.delete('/api/admin/collections/:id/brands/:brandId', async (req, res) => {
-  try {
-    await prisma.collectionBrand.delete({
-      where: {
-        collectionId_brandId: {
-          collectionId: req.params.id,
-          brandId: req.params.brandId,
-        },
-      },
-    });
-
-    res.json({ message: 'Marque retirée de la collection' });
-  } catch (error) {
-    console.error('Error removing brand from collection:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-// ===========================================
-// ADMIN FEATURED BRANDS
-// ===========================================
-app.get('/api/admin/featured', async (req, res) => {
-  try {
-    const featured = await prisma.featuredBrand.findMany({
-      orderBy: [{ featuredType: 'asc' }, { displayOrder: 'asc' }],
-      include: {
-        brand: {
-          include: {
-            region: true,
-            sector: true,
-          },
-        },
-      },
-    });
-
-    res.json({ data: featured });
-  } catch (error) {
-    console.error('Error fetching featured brands:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.post('/api/admin/featured', async (req, res) => {
-  try {
-    const data = req.body;
-
-    const featured = await prisma.featuredBrand.create({
-      data: {
-        brandId: data.brandId,
-        title: data.title,
-        description: data.description,
-        imageUrl: data.imageUrl,
-        featuredType: data.featuredType || 'weekly',
-        isActive: data.isActive ?? true,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        displayOrder: data.displayOrder || 0,
-      },
-      include: {
-        brand: true,
-      },
-    });
-
-    res.json({ data: featured });
-  } catch (error) {
-    console.error('Error creating featured brand:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.put('/api/admin/featured/:id', async (req, res) => {
-  try {
-    const data = req.body;
-
-    const featured = await prisma.featuredBrand.update({
-      where: { id: req.params.id },
-      data: {
-        brandId: data.brandId,
-        title: data.title,
-        description: data.description,
-        imageUrl: data.imageUrl,
-        featuredType: data.featuredType,
-        isActive: data.isActive,
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
-        displayOrder: data.displayOrder,
-      },
-      include: {
-        brand: true,
-      },
-    });
-
-    res.json({ data: featured });
-  } catch (error) {
-    console.error('Error updating featured brand:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-app.delete('/api/admin/featured/:id', async (req, res) => {
-  try {
-    await prisma.featuredBrand.delete({
-      where: { id: req.params.id },
-    });
-
-    res.json({ message: 'Marque en vedette supprimée' });
-  } catch (error) {
-    console.error('Error deleting featured brand:', error);
-    res.status(500).json({ error: 'Erreur serveur', details: String(error) });
-  }
-});
-
-// ===========================================
 // ADMIN PRODUCTS
 // ===========================================
 
@@ -2254,7 +2034,10 @@ app.post('/api/v1/chat', async (req, res) => {
 
     if (isOpenAI) {
       // Utiliser OpenAI
-      const openaiKey = aiSettings?.openaiApiKey || process.env.OPENAI_API_KEY;
+      // Uniquement l'environnement du serveur (CLAUDE.md, regle 4). La
+      // lecture d'une cle depuis les reglages en base a ete retiree : c'est
+      // ce chemin qui rendait tentant d'en stocker une.
+      const openaiKey = process.env.OPENAI_API_KEY;
       if (!openaiKey) {
         return res.status(400).json({ error: 'Clé OpenAI non configurée' });
       }
@@ -2264,7 +2047,7 @@ app.post('/api/v1/chat', async (req, res) => {
     }
 
     // Utiliser Anthropic (Claude)
-    const anthropicKey = aiSettings?.anthropicApiKey || process.env.ANTHROPIC_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
     if (!anthropicKey) {
       return res.status(400).json({ error: 'Clé Anthropic non configurée' });
     }
@@ -3368,65 +3151,6 @@ app.get('/api/v1/brands/:slug/images', async (req, res) => {
     res.json({ data: images });
   } catch (error) {
     console.error('Get images error:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// ===========================================
-// AI SETTINGS ROUTES
-// ===========================================
-
-// Les cles d'API vivent uniquement dans l'environnement du serveur (CLAUDE.md, regle 4).
-// Elles ne sont ni renvoyees dans une reponse HTTP, ni stockees en base.
-const AI_SECRET_FIELD = /(apikey|api_key|secret|token|password)/i;
-function sanitizeAiSettings(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(([k]) => !AI_SECRET_FIELD.test(k))
-  );
-}
-
-// GET - Charger les settings IA
-app.get('/api/admin/ai/settings', async (req, res) => {
-  try {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: 'ai_settings' }
-    });
-    
-    if (setting) {
-      res.json({ data: sanitizeAiSettings(setting.value) });
-    } else {
-      // Retourner les valeurs par défaut
-      res.json({ data: {
-        model: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022',
-        prompt: '',
-        temperature: 0.7,
-        maxTokens: 1024,
-        rules: []
-      }});
-    }
-  } catch (error) {
-    console.error('Erreur chargement AI settings:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// PUT - Sauvegarder les settings IA
-app.put('/api/admin/ai/settings', async (req, res) => {
-  try {
-    // Les cles eventuellement envoyees par le client sont ignorees, pas persistees.
-    const settings = sanitizeAiSettings(req.body) as Record<string, unknown>;
-
-    await prisma.siteSetting.upsert({
-      where: { key: 'ai_settings' },
-      update: { value: settings as any },
-      create: { key: 'ai_settings', value: settings as any }
-    });
-    
-    console.log('✅ AI settings saved:', { model: settings.model });
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Erreur sauvegarde AI settings:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
