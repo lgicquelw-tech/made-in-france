@@ -102,7 +102,7 @@ export default function ProfilPage() {
       if (!session?.user?.id) return;
 
       try {
-        const res = await fetch(`${API_URL}/api/v1/users/${session.user.id}`);
+        const res = await fetch(`/api/v1/me`);
         if (res.ok) {
           const data = await res.json();
           setProfile(data.data);

@@ -44,7 +44,7 @@ export function useFavorites() {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/v1/users/${userId}/favorites`);
+      const res = await fetch(`/api/v1/me/favorites`);
       if (res.ok) {
         const data = await res.json();
         setFavorites(data.data);
@@ -72,7 +72,7 @@ export function useFavorites() {
     if (!userId) return false;
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/users/${userId}/favorites`, {
+      const res = await fetch(`/api/v1/me/favorites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brandId }),
@@ -94,7 +94,7 @@ export function useFavorites() {
     if (!userId) return false;
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/users/${userId}/favorites/${brandId}`, {
+      const res = await fetch(`/api/v1/me/favorites/${brandId}`, {
         method: 'DELETE',
       });
 

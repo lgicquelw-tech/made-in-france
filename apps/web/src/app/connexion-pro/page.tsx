@@ -49,7 +49,7 @@ export default function ConnexionProPage() {
       console.log('Fetching brands for:', email);
       
       try {
-        const res = await fetch(`${API_URL}/api/v1/user/brands?email=${encodeURIComponent(email)}`);
+        const res = await fetch(`/api/v1/user/brands`);
         console.log('Response status:', res.status);
         
         if (res.ok) {

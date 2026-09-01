@@ -140,7 +140,7 @@ produit se reconstruit par les scrapers en phase 5, et les phases 5 et 6 changen
 |---|---|---|
 | 1 | **L'API n'a aucune authentification.** ~85 routes ouvertes, dont `DELETE /api/admin/brands/:id`, les uploads et Stripe. Zéro middleware. | `apps/api/src/index.ts` — 0 occurrence de `requireAuth`/`verifyToken`/`Bearer` |
 | 2 | ~~**L'admin est « protégé » par le navigateur.**~~ **Corrigé le 1er septembre 2026.** Le garde du navigateur a été remplacé par `useSession` (affichage) + le middleware (routage) + `requireAdmin` (autorisation, relue en base). Aggravant découvert au passage : le middleware ne s'exécutait même pas, mauvais emplacement de fichier. |
-| 3 | **L'identité circule en query string.** N'importe qui passe n'importe quel `userId` et édite n'importe quelle marque. | `index.ts:2972` (ownership), `:3012` et `:3104` (dashboard GET/PUT) |
+| 3 | ~~**L'identité circule en query string.**~~ **Corrigé le 1er septembre 2026** (T3.12). Elle circulait sous trois formes, dont une — `:userId` dans le chemin — que le constat d'origine ne mentionnait pas. |
 | 4 | **Injection SQL, chemin public.** Les mots-clés du chat sont concaténés dans la requête. | `index.ts:2643` → `p.name ILIKE '%${k}%'` puis `:2662` `$queryRawUnsafe(query)` ; même motif `:2723` |
 | 5 | **La clé secrète Stripe est journalisée en clair.** | `index.ts:3569` → `console.log(…, 'value:', process.env.STRIPE_SECRET_KEY)` |
 | 6 | **Une route publique distribue les clés IA.** `GET` renvoie `anthropicApiKey` et `openaiApiKey` en clair, sans auth. Le `PUT` écrit `process.env` depuis `req.body`. | `index.ts:3910` (GET), `:3937` (PUT) |
@@ -157,7 +157,7 @@ produit se reconstruit par les scrapers en phase 5, et les phases 5 et 6 changen
 | 12 | **Schéma et migrations désynchronisés.** Migration unique du 5 janvier, `schema.prisma` modifié le 14 → la base a été mise à jour au `db push`. | `migrations/20260105230946_init/` vs date de `schema.prisma` |
 | 13 | **Zéro test, zéro CI, zéro config de déploiement.** `turbo.json` déclare `test` et `test:e2e` — qui ne pointent sur rien. | pas de `*.test.*`, pas de `.github/`, pas de `vercel.json` |
 | 14 | **Un seul commit, et `.env.local` non ignoré.** `.gitignore` ne couvre que `.env`, donc `apps/web/.env.local` (contenant `NEXTAUTH_SECRET` et le secret OAuth Google) est prêt à être committé. | `git log`, `git status` |
-| 15 | **Les statistiques vendues aux marques sont inventées.** L'API renvoie vues, clics et taux de conversion en `Math.random()`, et la page Studio génère en plus ses propres courbes aléatoires. | `index.ts:3063-3067` ; `studio/marque/[slug]/statistiques/page.tsx:68-69` |
+| 15 | ~~**Les statistiques vendues aux marques sont inventées.**~~ **Côté API : corrigé le 1er septembre 2026.** `views`, `clicks` et `conversionRate` valent désormais `null` — et non un nombre — tant qu'il n'existe pas de vrais événements (T8.2). `favorites` et `products` sont de vrais comptages. **Reste à faire :** la page `studio/marque/[slug]/statistiques` génère encore ses propres courbes aléatoires côté client. |
 
 ### Erreurs de compilation connues
 
@@ -359,11 +359,17 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 - [x] **T3.11** — `apps/web/src/lib/guards.ts` : `requireUser`, `requireAdmin`, `requireSuperAdmin`, `requireBrandOwner(slug)`.
   Deux partis pris : **le rôle est relu en base à chaque requête** (le JWT est signé donc infalsifiable, mais c'est une photographie prise à la connexion — un compte rétrogradé garderait ses droits jusqu'à expiration) ; et `requireBrandOwner` exclut explicitement le rôle `VIEWER`, qui est un rôle de lecture.
   Fondations posées avec : `lib/db.ts` (singleton Prisma — `route.ts` faisait `new PrismaClient()` au niveau du module, ce qui ouvre une connexion par rechargement en dev et par invocation à froid en serverless), `lib/auth.ts` (`authOptions` extraits, réutilisables par `getServerSession`), `lib/api-response.ts` (`HttpError`, réponses uniformes, 500 générique qui ne fuite rien) et `types/next-auth.d.ts`.
-- [ ] **T3.12** — **Supprimer tout `?userId=`.** L'identité vient du token.
+- [x] **T3.12** — **L'identité ne vient plus jamais du client.** Les trois formes ont été supprimées : `?userId=` (tableau de bord, propriété, propriétaires), `?email=` (`/api/v1/user/brands`, qui permettait d'énumérer les marques de n'importe quelle adresse), et `:userId` **dans le chemin** (favoris, vues, profil) — cette dernière forme n'était pas couverte par le critère d'origine, qui ne cherchait que dans la query. Les routes utilisateur sont devenues `/api/v1/me/*` : une forme où l'on ne peut plus exprimer l'identité autrement que par la session.
+  ```bash
+  grep -rn "userId" apps/api/src | grep -iE "req.query|query.userId"   # vide ✅
+  grep -rn "req.query.email" apps/api/src                                # vide ✅
+  grep -rnE "app.\\w+\\('[^']*:userId" apps/api/src                        # vide ✅
+  ```
   ```bash
   grep -rn "userId" apps/api/src | grep -i "query\|req.query"   # doit devenir vide
   ```
-- [~] **T3.13** — Le socle existe (`requireBrandOwner`, vérification en base, `VIEWER` exclu) mais aucune route B2B ne l'utilise encore : l'espace marque n'est pas migré.
+- [x] **T3.13** — **Chaque écriture B2B vérifie la propriété en base.** Vérifié compte contre compte : un utilisateur connecté qui n'est pas propriétaire reçoit **403** sur le tableau de bord (lecture et écriture), la liste des propriétaires, l'ajout de label et l'envoi d'image ; le propriétaire reçoit 200. Trois de ces routes n'avaient **aucun** contrôle auparavant : ajouter un label, envoyer une image et supprimer une image de n'importe quelle marque était ouvert à tous.
+  ⚠️ À qualifier : la **coquille** des pages `/studio/marque/[slug]` reste accessible à tout compte connecté — le middleware ne vérifie que l'authentification, pas la propriété (il faudrait un appel en base sur l'edge). Vérifié qu'aucune donnée ne fuit : les deux pages font exactement la même taille, le contenu arrive côté client et l'API répond 403.
 - [ ] **T3.14** — Piste d'audit : qui a modifié quoi, quand, sur les fiches marque.
 - [x] **T3.15** — Remplacé par une commande locale : **`pnpm admin:create`** (`scripts/create-admin.ts`). Une commande locale n'est appelable que par quelqu'un qui a déjà accès au serveur et à la base : c'est le bon niveau de privilège pour créer un administrateur.
   Le mot de passe est saisi sans écho et **jamais passé en argument** — il finirait sinon dans l'historique du shell et dans la liste des processus. Minimum 12 caractères, confirmation exigée, hachage bcrypt en 12 tours. Le premier compte est `SUPER_ADMIN`, les suivants `ADMIN` ; un compte existant est promu plutôt que refusé.
@@ -378,7 +384,7 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   ```
 - [x] **T3.18** — Import `Stripe` dédoublonné et version d'API figée dans une constante unique `STRIPE_API_VERSION`, utilisée par une fabrique `stripeClient()`. Elle était répétée à trois instanciations, sous une valeur de décembre 2024 que le SDK installé (stripe v20) **n'accepte plus** — le fichier ne compilait pas.
 - [ ] **T3.19** — **Aucun secret en base ni en réponse HTTP.** Les réglages IA ne stockent qu'un nom de modèle et une température.
-- [ ] **T3.20** — Uploads : type MIME réel, taille, propriété de la marque, quota par compte — tout vérifié serveur.
+- [x] **T3.20** — Uploads : **type MIME réel vérifié** (JPEG, PNG, WebP, AVIF — l'ancienne route n'en contrôlait aucun et acceptait `resource_type: 'auto'`), taille plafonnée, propriété de la marque exigée, quota par palier d'abonnement conservé. Le paramètre `?folder=` d'`/api/upload` partait tel quel dans le chemin Cloudinary : il passe désormais par une liste blanche. `/api/upload/multiple` et le `DELETE` par `publicId` ont été supprimés : personne ne les appelait, et ils permettaient d'effacer n'importe quel média du compte Cloudinary.
 - [ ] **T3.21** — Limitation de débit sur `/chat`, `/search`, `/upload`.
 - [ ] **T3.22** — Gestionnaire d'erreurs centralisé, logs structurés (pino), suppression des 35 `console.log`.
 - [ ] **T3.23** — Centraliser l'accès aux données côté web dans `lib/api.ts` et éliminer les 57 `localhost:4000`.

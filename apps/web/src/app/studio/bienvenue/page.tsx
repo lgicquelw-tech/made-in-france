@@ -43,7 +43,7 @@ export default function StudioBienvenuePage() {
 
   const fetchUserBrands = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/user/brands?email=${encodeURIComponent(session!.user!.email!)}`);
+      const res = await fetch(`/api/v1/user/brands`);
       if (res.ok) {
         const data = await res.json();
         setUserBrands(data.brands || []);

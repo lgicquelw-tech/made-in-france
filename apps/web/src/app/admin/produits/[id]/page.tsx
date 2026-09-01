@@ -117,7 +117,7 @@ export default function EditProductPage() {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`${API_URL}/api/upload?folder=${folder}`, {
+      const res = await fetch(`/api/upload?folder=${folder}`, {
         method: 'POST',
         body: formData,
       });

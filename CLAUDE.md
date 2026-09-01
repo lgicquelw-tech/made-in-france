@@ -59,7 +59,7 @@ les lise comme une source.
 | Monorepo | pnpm workspaces + Turborepo |
 | Node | >= 20 (testé en v22), `packageManager: pnpm@9.1.0` |
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
-| Backend | **En cours de migration vers Next.js** (option A, T0.1). **Tout `/api/admin/*` est migré** et protégé par `requireAdmin`. Express ne sert plus que 53 routes publiques et B2B, **sans aucune authentification** — c'est la suite du travail. |
+| Backend | **En cours de migration vers Next.js** (option A, T0.1). `/api/admin/*`, tout l'espace marque et les routes utilisateur sont migrés et protégés. Express ne sert plus que **32 routes**, presque toutes des lectures publiques — plus `/api/v1/chat`, `/api/auth/*` et Stripe, qui restent à traiter. |
 | Base | PostgreSQL 16.15 (Homebrew) + Prisma 5.22 |
 | Recherche | PostgreSQL `pg_trgm` (pas Meilisearch) |
 | Auth | NextAuth v4 (Google, Email, Credentials) côté web uniquement |
@@ -181,7 +181,7 @@ chemins commençant par `../`.
 ### Sécurité
 
 1. **Aucune route API ne part sans garde-fou d'authentification.** Toute route sous `/api/admin/*` exige un rôle admin vérifié **côté serveur**. Toute route sous `/api/v1/brands/:slug/*` en écriture exige la propriété de la marque, vérifiée en base.
-2. **L'identité vient du token, jamais du client.** Un `userId`, un e-mail ou un rôle transmis dans la query string, le body ou un header applicatif n'est **pas** une preuve d'identité. Le motif `?userId=` doit disparaître complètement du projet.
+2. **L'identité vient de la session, jamais du client.** Un `userId`, un e-mail ou un rôle transmis dans la query string, le corps, un en-tête **ou le chemin** n'est pas une preuve d'identité. Fait le 1er septembre 2026 : `?userId=`, `?email=` et `:userId` ont tous disparu. Les routes utilisateur sont sous **`/api/v1/me/*`**, une forme où l'on ne peut pas exprimer l'identité autrement.
 3. **Jamais de `$queryRawUnsafe` avec de l'interpolation.** Requêtes paramétrées ou `Prisma.sql`. Si une requête dynamique est indispensable, les fragments variables doivent venir d'une liste blanche, jamais de l'entrée utilisateur.
 4. **Aucune clé d'API dans un log, une réponse HTTP, une table ou une interface d'administration.** Les secrets vivent dans l'environnement du serveur, point. Un réglage IA stocke un nom de modèle et une température, pas une clé.
 5. **Valider toute entrée avec Zod** avant de toucher la base. Zod est déjà dans les dépendances.
@@ -219,7 +219,7 @@ chemins commençant par `../`.
 | Dépôt public | `github.com/lgicquelw-tech/made-in-france` est **public**. Tout commit est immédiatement visible. Vérifier avant chaque push. |
 | Identité | Un seul modèle : `User`, avec `role` (`USER`/`ADMIN`/`SUPER_ADMIN`) et `isActive`. `AdminUser` n'existe plus. L'autorisation passe par `apps/web/src/lib/guards.ts`, qui **relit le rôle en base** — jamais depuis le jeton seul. |
 | Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné. |
-| Appels admin depuis le front | **URL relative** (`/api/admin/...`), jamais `${API_URL}`. Le cookie de session n'est envoyé qu'en même origine : un appel vers `localhost:4000` ne peut pas être authentifié. |
+| Appels authentifiés depuis le front | **URL relative** (`/api/...`), jamais `${API_URL}`. Le cookie de session n'est envoyé qu'en même origine : un appel vers `localhost:4000` ne peut pas être authentifié. |
 | Données inventées | Cinq pages d'administration fabriquaient leurs chiffres quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |

@@ -96,7 +96,7 @@ export default function StudioLabelsPage() {
       }
 
       // Fetch brand labels
-      const brandLabelsRes = await fetch(`${API_URL}/api/v1/brands/${slug}/labels`);
+      const brandLabelsRes = await fetch(`/api/v1/brands/${slug}/labels`);
       if (brandLabelsRes.ok) {
         const data = await brandLabelsRes.json();
         setBrandLabels(data.data || []);
@@ -113,7 +113,7 @@ export default function StudioLabelsPage() {
     setSaving(labelId);
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/brands/${slug}/labels`, {
+      const res = await fetch(`/api/v1/brands/${slug}/labels`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ labelId }),
@@ -137,7 +137,7 @@ export default function StudioLabelsPage() {
     setSaving(labelId);
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/brands/${slug}/labels/${labelId}`, {
+      const res = await fetch(`/api/v1/brands/${slug}/labels/${labelId}`, {
         method: 'DELETE',
       });
 

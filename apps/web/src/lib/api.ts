@@ -255,6 +255,13 @@ export const eventsApi = {
 // USER API
 // ===========================================
 
+/**
+ * ⚠️ Ce bloc n'est appelé nulle part, et il ne fonctionnerait pas tel quel :
+ * `fetcher` préfixe `NEXT_PUBLIC_API_URL`, alors que `/api/v1/me/*` est
+ * désormais servi par Next.js **en même origine** — c'est la condition pour
+ * que le cookie de session parte. Utiliser `fetch` relatif, comme le fait
+ * `hooks/useFavorites.ts`. `/api/v1/me/recommendations` n'existe pas.
+ */
 export const userApi = {
   getMe: async (): Promise<unknown> => {
     return fetcher('/api/v1/me');

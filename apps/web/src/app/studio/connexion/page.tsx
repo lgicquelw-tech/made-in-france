@@ -43,7 +43,7 @@ export default function StudioConnexionPage() {
 
       // Récupérer les marques de l'utilisateur
       const API_URL = 'http://localhost:4000';
-      const res = await fetch(`${API_URL}/api/v1/user/brands?email=${encodeURIComponent(email)}`);
+      const res = await fetch(`/api/v1/user/brands`);
       
       if (res.ok) {
         const data = await res.json();

@@ -120,7 +120,7 @@ export default function LabelsPage() {
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
 
-      const res = await fetch(`${API_URL}/api/upload?folder=labels`, {
+      const res = await fetch(`/api/upload?folder=labels`, {
         method: 'POST',
         body: formDataUpload,
       });

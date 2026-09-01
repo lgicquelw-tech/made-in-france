@@ -386,7 +386,7 @@ export default function StudioParametresPage() {
     setSaving(true);
     try {
       const userId = session?.user?.id;
-      const res = await fetch(`${API_URL}/api/v1/brands/${slug}/dashboard?userId=${userId}`, {
+      const res = await fetch(`/api/v1/brands/${slug}/dashboard`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -425,7 +425,7 @@ export default function StudioParametresPage() {
     formData.append('type', 'logo');
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/brands/${slug}/upload`, {
+      const res = await fetch(`/api/v1/brands/${slug}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -451,7 +451,7 @@ export default function StudioParametresPage() {
     formData.append('type', 'cover');
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/brands/${slug}/upload`, {
+      const res = await fetch(`/api/v1/brands/${slug}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -480,7 +480,7 @@ export default function StudioParametresPage() {
       formData.append('type', 'photo');
 
       try {
-        const res = await fetch(`${API_URL}/api/v1/brands/${slug}/upload`, {
+        const res = await fetch(`/api/v1/brands/${slug}/upload`, {
           method: 'POST',
           body: formData,
         });

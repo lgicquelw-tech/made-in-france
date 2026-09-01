@@ -74,7 +74,7 @@ export default function StudioDashboardPage() {
       }
 
       // Récupérer les stats
-      const statsRes = await fetch(`${API_URL}/api/v1/brands/${slug}/dashboard`);
+      const statsRes = await fetch(`/api/v1/brands/${slug}/dashboard`);
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);

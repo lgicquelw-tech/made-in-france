@@ -27,7 +27,7 @@ export default function StudioHomePage() {
       // Vérifier si l'utilisateur a des marques
       const checkBrands = async () => {
         try {
-          const res = await fetch(`http://localhost:4000/api/v1/user/brands?email=${encodeURIComponent(session.user.email!)}`);
+          const res = await fetch(`/api/v1/user/brands`);
           if (res.ok) {
             const data = await res.json();
             if (data.brands && data.brands.length > 0) {
