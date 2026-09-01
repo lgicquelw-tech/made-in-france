@@ -66,8 +66,19 @@ Vérifications faites : `docker` absent (pas de Docker.app ni d'OrbStack), Postg
 aucun dump nulle part.
 
 **Les ~40 000 produits n'existaient que dans ce Postgres local et n'ont jamais été
-sauvegardés.** Reste à vérifier s'il en existe une copie sur une autre machine, un disque
-externe ou une sauvegarde Time Machine (en cours).
+sauvegardés.** Recherche exhaustive faite le 1er septembre 2026, résultat négatif :
+
+| Piste | Résultat |
+|---|---|
+| Time Machine | **Aucune destination configurée** — aucune sauvegarde n'a jamais tourné |
+| Instantanés locaux APFS | aucun |
+| Disques externes montés | aucun (seul un installeur monté en lecture seule) |
+| `*.dump` / `*.sql` / `*.pgdump` dans tout `~` | aucun, hors migrations du projet et caches système |
+| Autre copie du projet sur le disque | une seule, sans rapport (page de portfolio) |
+| Dossier `madeinfrance-hostinger` (cité dans `.gitignore`) | introuvable |
+
+**Conclusion : sur cette machine, le catalogue produit est perdu.** Il ne peut subsister
+que sur une autre machine ou dans une sauvegarde distante. À confirmer par toi.
 
 Conséquence si la copie n'existe pas : le seul actif de données versionné est
 `data/brands.xlsx` (996 marques). La v1 devient un annuaire de marques, le catalogue
