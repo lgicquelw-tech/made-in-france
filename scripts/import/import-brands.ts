@@ -271,10 +271,16 @@ function cleanUrl(url: string | undefined | null): string | null {
     url = 'https://' + url;
   }
   
-  // Basic validation
+  // ⚠️ `new URL()` ne suffit pas : les URL autorisent l'unicode dans le nom
+  // d'hote, donc `https://🌬️` est parfaitement valide a ses yeux. Combine au
+  // prefixage automatique ci-dessus, cela transformait la colonne « Image
+  // (Logo) » du fichier Excel — qui contient des EMOJIS — en 899 adresses de
+  // logo cassees. On exige donc un nom de domaine plausible.
   try {
-    new URL(url);
-    return url;
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    const looksLikeDomain = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(host);
+    return looksLikeDomain ? url : null;
   } catch {
     return null;
   }

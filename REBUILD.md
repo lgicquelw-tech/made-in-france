@@ -505,7 +505,9 @@ Transversal à ces six étapes :
 - [ ] **T4.9** — `generateStaticParams` + ISR sur fiches marque et produit.
 - [ ] **T4.10** — Migrer les 40 `<img>` vers `next/image` et déclarer les hôtes réels dans `next.config.js` : `cdn.shopify.com`, `res.cloudinary.com`, `www.google.com`, les domaines WordPress. **Aucun n'y figure aujourd'hui** (seulement AWS, Cloudflare et Unsplash).
 - [ ] **T4.11** — JSON-LD : `Organization` sur les marques, `Product` sur les produits.
-- [ ] **T4.12** — `sitemap.ts` alimenté par la base + `robots.ts`.
+- [x] **T4.12** — **Le sitemap ne listait que 100 marques sur 903.** Il demandait `?limit=1000` à l'API, qui plafonne silencieusement à 100 : **89 % des fiches n'étaient jamais soumises à l'indexation**. Pour un annuaire dont le référencement est le canal d'acquisition, c'était le défaut le plus coûteux du projet. Il lit désormais la base directement — c'est tout l'intérêt de l'option A. **935 URL**, dont les 903 marques, les secteurs et les régions.
+  L'URL de production y était écrite en dur : un sitemap servi en local annonçait des adresses `madeinfrance.fr`. Elle vient de `lib/site.ts`.
+  `robots.ts` **n'existait pas** : créé, avec `/admin`, `/studio`, `/api/`, `/profil` et `/favoris` exclus de l'indexation.
 - [x] **T4.13** — **Le middleware ne s'exécutait pas du tout.** Il était dans `apps/web/middleware.ts` alors que le projet utilise un répertoire `src/`, où Next.js attend `apps/web/src/middleware.ts`. Vérifié : l'en-tête `x-pathname` qu'il prétendait poser n'apparaissait dans aucune réponse — `/admin` et `/studio` étaient donc entièrement ouverts. Déplacé et rendu effectif : anonyme → redirection vers `/connexion`, connecté sans droits → 404, administrateur → 200. `/studio/connexion`, `/studio/inscription` et `/studio/revendiquer` restent ouverts, sinon personne ne pourrait plus se connecter.
 
 **Critère de sortie**
@@ -528,6 +530,24 @@ Lighthouse SEO ≥ 95 et LCP < 2,5 s sur une fiche marque.
 - [ ] **T5.6** — **Tracer la provenance** : source (Shopify, WooCommerce, manuel) et date de collecte pour chaque produit. Sans ça, impossible de savoir ce qui est périmé ni ce qu'un réimport a le droit de remplacer.
 - [ ] **T5.7** — Relancer l'enrichissement IA uniquement sur les champs manquants.
 - [ ] **T5.8** — Ne publier que les produits au-dessus du seuil de complétude (`status = ACTIVE` piloté par l'audit).
+
+### 899 logos étaient des émojis préfixés par `https://`
+
+Découvert le 1er septembre 2026 en préparant `next/image`. La colonne
+« Image (Logo) » du fichier Excel contient des **émojis** (🌿, 👜, 🧼), et la colonne
+`Logo_URL` est **entièrement vide**. Le script d'import mappait la première sur `logoUrl`,
+et sa fonction `cleanUrl` préfixait toute valeur par `https://`.
+
+Le piège : `new URL('https://🌬️')` est **valide** — les URL autorisent l'unicode dans le
+nom d'hôte. La validation passait donc, et 899 marques sur 903 se retrouvaient avec une
+adresse de logo cassée.
+
+`cleanUrl` exige désormais un nom de domaine plausible. Après réimport : 0 logo cassé.
+Les 901 marques qui ont une URL de site peuvent en dériver un logo via Google Favicons,
+ce que plusieurs pages font déjà.
+
+**Reste à décider :** l'émoji était un repère visuel utile et n'a aujourd'hui aucun champ
+où vivre. Lui en donner un est un changement de schéma — donc une décision, pas un détail.
 
 ### ⚠️ Décision à prendre : 902 marques sur 903 ne sont pas publiables
 

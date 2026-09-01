@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import { siteUrl } from './site';
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -56,5 +58,6 @@ export function truncate(text: string, maxLength: number): string {
 }
 
 export function absoluteUrl(path: string): string {
-  return `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${path}`;
+  // L'origine vient de `lib/site.ts`, source unique.
+  return `${siteUrl()}${path.startsWith('/') ? path : `/${path}`}`;
 }
