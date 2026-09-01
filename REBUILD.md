@@ -364,7 +364,7 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 
 ### 3a — Découpage
 
-- [ ] **T3.1** — Créer la structure de modules : `catalogue-marques`, `catalogue-produits`, `recherche`, `comptes-sessions`, `administration`, `espace-marque`, `import-synchronisation`, `medias`, `paiements`, `ia`.
+- [x] **T3.1** — La structure de modules existe, sous la forme imposée par l'App Router : l'arborescence `apps/web/src/app/api/**` **est** le découpage. 44 fichiers de route, le plus long fait **115 lignes** — la règle des 300 lignes tient largement. La logique partagée est dans `lib/` (`db`, `auth`, `guards`, `api-response`, `rate-limit`, `cloudinary`, `stripe`, `validation/*`).
 - [~] **T3.2** — **Arbre `/api/admin/brands/*` migré** (9 routes) vers des Route Handlers Next.js, tous derrière `requireAdmin` — `DELETE` derrière `requireSuperAdmin`, car il emporte en cascade produits, images, propriétaires et demandes de revendication. Aucun fichier ne dépasse 115 lignes. Les routes marques **publiques** restent à migrer.
 - [x] **T3.3** — **Les 9 routes produit migrées** derrière `requireAdmin` (`activate-all` derrière `requireSuperAdmin` : publier tout le catalogue d'un coup contredit T5.8). Express : 73 → 65 routes. Le piège d'ordre des routes Express — `/search` et `/trending` devant `/:id` — **disparaît** : en App Router, un segment statique prime toujours sur un segment dynamique.
   La recherche reste en SQL brut (score de pertinence et `similarity()` de `pg_trgm`, donc l'index GIN de T2.9) mais en `$queryRaw` **balisé** : chaque valeur est un paramètre lié. Vérifié avec `q=l'apostrophe`.
@@ -374,8 +374,9 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   **Trois routes appelées par le front n'existaient nulle part** — `GET /api/admin/products`, `GET /api/admin/users` et `GET /api/admin/subscriptions`. Créées. Voir §1 pour ce que cachait leur absence.
   Les réglages IA ne peuvent plus fuir ni stocker de clé : double filtre (schéma Zod fermé + filtre par nom de champ), et le chat ne lit plus les clés que depuis l'environnement — la lecture depuis la base a été retirée, c'est elle qui rendait tentant d'en stocker.
   Deux chiffres faux corrigés : le tableau de bord comptait **toutes** les marques comme actives (`active: brandsTotal`, `pending: 0`), et `labels/:id/usage` renvoyait `totalProducts` calculé sur une liste tronquée à 50. Restent à migrer : produits, collections, mises en avant, réglages IA.
-- [ ] **T3.6** — Migrer l'espace marque.
-- [ ] **T3.7** — Migrer médias, paiements, IA.
+- [x] **T3.6** — Espace marque migré : propriété, tableau de bord (lecture et écriture), propriétaires, labels, images, envoi de fichiers. Tout derrière `requireBrandOwner`, vérifié compte contre compte. Voir T3.12 et T3.13.
+- [~] **T3.7** — **Médias** : migrés, avec vérification du type MIME réel et liste blanche de dossiers (T3.20). **Paiements** : migrés, avec la propriété vérifiée et le prix dérivé de la base (T8.5, T8.6). **IA** : les *réglages* sont migrés et ne peuvent plus fuir de clé.
+  Reste : `/api/v1/chat` lui-même, encore sur Express. Il est désormais limité à 10 appels/min et son injection SQL est fermée, mais il reste à porter.
 - [ ] **T3.8** — Supprimer l'ancien `index.ts` une fois toutes les routes migrées et vérifiées.
 
 ### 3b — Authentification et droits
@@ -403,7 +404,8 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 
 ### 3c — Robustesse
 
-- [ ] **T3.16** — Schéma Zod en entrée de chaque endpoint, réponse typée.
+- [~] **T3.16** — **Schéma Zod sur chaque route migrée qui accepte un corps ou une query string.** Les routes qui ne prennent qu'un paramètre de chemin n'en ont pas : vérifié qu'un identifiant malformé y produit une **404**, jamais une 500 — Prisma ne trouve simplement rien.
+  Reste : les 26 lectures publiques encore servies par Express valident leurs paramètres à la main.
 - [x] **T3.17** — **Plus aucun `$queryRawUnsafe` dans le projet.** Il y en avait quatre, réparties sur **deux** foyers, pas un seul comme le laissait croire le constat n°4 :
   - `executeSearchProducts` et `executeSearchBrands` (outils du chat) : `p.name ILIKE '%${k}%'` concaténé, plus `sector`, `target` et les bornes de prix. Les arguments viennent du modèle, donc en dernier ressort de ce que l'utilisateur écrit.
   - `GET /api/v1/products` : les termes de recherche **étaient** liés (`$1`…`$6`), mais `?sector=` était concaténé — sur une route publique, sans authentification.
@@ -416,7 +418,7 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
   grep -rn "queryRawUnsafe" apps/api/src   # zéro, ou uniquement avec des paramètres liés
   ```
 - [x] **T3.18** — Import `Stripe` dédoublonné et version d'API figée dans une constante unique `STRIPE_API_VERSION`, utilisée par une fabrique `stripeClient()`. Elle était répétée à trois instanciations, sous une valeur de décembre 2024 que le SDK installé (stripe v20) **n'accepte plus** — le fichier ne compilait pas.
-- [ ] **T3.19** — **Aucun secret en base ni en réponse HTTP.** Les réglages IA ne stockent qu'un nom de modèle et une température.
+- [x] **T3.19** — **Aucun secret en base ni en réponse HTTP.** Les réglages IA ne conservent qu'un nom de modèle, une température, un plafond de jetons et des règles ; double filtre (schéma Zod fermé + filtre par nom de champ). Le chat ne lit plus les clés que dans l'environnement du serveur. Vérifié : une clé injectée dans le `PUT` n'est ni renvoyée ni écrite, et `site_settings` n'en contient aucune. Le logger masque en plus tout champ ressemblant à un secret.
 - [x] **T3.20** — Uploads : **type MIME réel vérifié** (JPEG, PNG, WebP, AVIF — l'ancienne route n'en contrôlait aucun et acceptait `resource_type: 'auto'`), taille plafonnée, propriété de la marque exigée, quota par palier d'abonnement conservé. Le paramètre `?folder=` d'`/api/upload` partait tel quel dans le chemin Cloudinary : il passe désormais par une liste blanche. `/api/upload/multiple` et le `DELETE` par `publicId` ont été supprimés : personne ne les appelait, et ils permettaient d'effacer n'importe quel média du compte Cloudinary.
 - [x] **T3.21** — **Il n'existait aucune limitation, nulle part.** Le cas le plus coûteux : `/api/v1/chat` est public, non authentifié, et **chaque appel consomme des crédits Anthropic** — n'importe qui pouvait épuiser le budget du projet.
   Côté Express : 120 requêtes/min en général, 30/min sur les recherches (requêtes trigram coûteuses), **10/min sur le chat**. Le webhook Stripe est exclu — il est appelé par Stripe, le limiter ferait perdre des événements de paiement.
@@ -459,7 +461,22 @@ pas dans le schéma**. Ces champs sont vides depuis toujours et ne sauvegardent 
 Ajouter les colonnes serait ajouter une fonctionnalité : à décider explicitement, pas à
 glisser au passage.
 
-**Critère de sortie**
+**Critère de sortie** — atteint pour la partie sécurité :
+
+```bash
+pnpm typecheck --force                                  # 7/7 ✅
+curl -s -o /dev/null -w "%{http_code}" \
+  http://localhost:3000/api/admin/brands                # 401 ✅
+curl "http://localhost:4000/api/v1/products?q=l'apostrophe"   # ne casse rien ✅
+grep -rn "queryRawUnsafe" apps/api/src                  # vide ✅
+grep -rn "localhost:4000" apps/web/src | grep -v lib/api.ts   # vide ✅
+```
+
+Aucun fichier de route ne dépasse **115 lignes**. Reste à faire avant de clore la phase :
+migrer la recherche et le chat (T3.4, T3.7), supprimer `index.ts` (T3.8), et la piste
+d'audit (T3.14).
+
+~~**Critère de sortie**~~
 ```bash
 pnpm typecheck                                    # passe
 curl -s -o /dev/null -w "%{http_code}" \
