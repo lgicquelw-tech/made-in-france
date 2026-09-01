@@ -77,6 +77,19 @@ sauvegardés.** Recherche exhaustive faite le 1er septembre 2026, résultat nég
 | Autre copie du projet sur le disque | une seule, sans rapport (page de portfolio) |
 | Dossier `madeinfrance-hostinger` (cité dans `.gitignore`) | introuvable |
 
+### La page d'accueil publique inventait aussi ses chiffres
+
+Découvert le 1er septembre 2026 en préparant `next/image`. La vitrine du site annonçait
+**quatre collections avec des compteurs écrits en dur** — « 48 marques », « 127 marques »,
+« 84 marques », « 156 marques » — alors que la base n'en contient **aucune**.
+
+Et chacune de ces quatre cartes menait vers une **404** : la route `/collections` n'existe
+pas. Quatre liens morts et quatre chiffres faux, sur la première page que voit un visiteur.
+
+La grille lit désormais les vraies collections ; sans collection, la section ne s'affiche
+pas. Ce qui reste dans le code est une table de présentation — une image et une couleur
+par slug connu.
+
 ### Des pages d'administration qui inventaient leurs données
 
 Découvert le 1er septembre 2026 en migrant les routes. **Cinq pages** fabriquaient des

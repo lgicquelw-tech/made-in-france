@@ -33,12 +33,27 @@ interface Sector {
 }
 
 
-const COLLECTIONS = [
-  { id: '1', title: 'Noël Made in France', slug: 'noel', count: 48, image: 'https://images.unsplash.com/photo-1512909006721-3d6018887383?w=600&q=80', color: '#BD3A3A' },
-  { id: '2', title: 'Mode Éthique', slug: 'mode-ethique', count: 127, image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=600&q=80', color: '#0D2B4E' },
-  { id: '3', title: 'Artisanat d\'Art', slug: 'artisanat', count: 84, image: 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=600&q=80', color: '#7C3AED' },
-  { id: '4', title: 'Gastronomie', slug: 'gastronomie', count: 156, image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80', color: '#E5A632' },
-];
+// ⚠️ Cette page annonçait quatre collections avec des compteurs INVENTÉS
+// (48, 127, 84 et 156 marques) alors que la base n'en contient aucune — et
+// chacune menait vers une 404, la route /collections n'existant pas. Sur la
+// page d'accueil publique, c'est-à-dire la vitrine.
+//
+// Ce qui reste ici est une table de présentation : une image et une couleur
+// par slug connu. Les collections, leurs noms et leurs compteurs viennent de
+// l'API. Sans collection, la section ne s'affiche pas.
+const COLLECTION_PRESENTATION: Record<string, { image: string; color: string }> = {
+  noel: { image: 'https://images.unsplash.com/photo-1512909006721-3d6018887383?w=600&q=80', color: '#BD3A3A' },
+  'mode-ethique': { image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=600&q=80', color: '#0D2B4E' },
+  artisanat: { image: 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=600&q=80', color: '#7C3AED' },
+  gastronomie: { image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80', color: '#E5A632' },
+};
+
+interface HomeCollection {
+  id: string;
+  name: string;
+  slug: string;
+  brandCount: number;
+}
 
 const HERO_BACKGROUNDS = [
   'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80',
@@ -433,7 +448,18 @@ function HeroSlider() {
       <section className="relative min-h-[90vh] overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0 transition-all duration-1000">
-          <img src={bg} alt={currentBrand.name} className="w-full h-full object-cover" />
+          {/* Image de fond du carrousel : c'est l'element LCP de la page
+              d'accueil. `next/image` la sert au bon format et a la bonne
+              taille ; `priority` evite qu'elle soit chargee paresseusement,
+              ce qui retarderait justement le LCP (REBUILD.md T4.10). */}
+          <Image
+            src={bg}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-france-blue via-france-blue/60 to-france-blue/30" />
         </div>
 
@@ -664,19 +690,54 @@ function SectorsGrid() {
 
 // ===== COLLECTIONS GRID =====
 function CollectionsGrid() {
+  const [collections, setCollections] = useState<HomeCollection[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/collections`)
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((body) => setCollections(body.data ?? []))
+      .catch(() => setCollections([]));
+  }, []);
+
+  // Aucune collection : on n'affiche rien plutôt que d'en inventer.
+  if (collections.length === 0) return null;
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-      {COLLECTIONS.map(c => (
-        <Link key={c.id} href={`/collections/${c.slug}`}
-          className="group relative h-52 md:h-72 rounded-3xl overflow-hidden shadow-soft hover:shadow-xl transition-all duration-500">
-          <img src={c.image} alt={c.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${c.color}DD 0%, ${c.color}60 100%)` }} />
-          <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
-            <span className="text-white/80 text-xs md:text-sm mb-2 font-medium">{c.count} marques</span>
-            <h3 className="text-white text-lg md:text-2xl font-bold">{c.title}</h3>
-          </div>
-        </Link>
-      ))}
+      {collections.map((c) => {
+        const look = COLLECTION_PRESENTATION[c.slug];
+        return (
+          <Link
+            key={c.id}
+            href={`/collections/${c.slug}`}
+            className="group relative h-52 md:h-72 rounded-3xl overflow-hidden shadow-soft hover:shadow-xl transition-all duration-500"
+          >
+            {look ? (
+              <img
+                src={look.image}
+                alt=""
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+            ) : (
+              <div className="w-full h-full bg-france-blue" />
+            )}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(135deg, ${look?.color ?? '#0D2B4E'}DD 0%, ${
+                  look?.color ?? '#0D2B4E'
+                }60 100%)`,
+              }}
+            />
+            <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-6">
+              <span className="text-white/80 text-xs md:text-sm mb-2 font-medium">
+                {c.brandCount} marque{c.brandCount > 1 ? 's' : ''}
+              </span>
+              <h3 className="text-white text-lg md:text-2xl font-bold">{c.name}</h3>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
