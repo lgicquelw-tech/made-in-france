@@ -396,112 +396,96 @@ async function main() {
   // ===========================================
   console.log('Creating subscription plans...');
 
-  await Promise.all([
-    prisma.subscriptionPlan.upsert({
-      where: { tier: SubscriptionTier.FREE },
-      update: {},
-      create: {
-        tier: SubscriptionTier.FREE,
-        name: 'Gratuit',
-        description: 'Parfait pour démarrer et gagner en visibilité',
-        priceMonthly: 0,
-        priceYearly: 0,
-        maxProducts: 5,
-        maxTeamMembers: 1,
-        hasAnalytics: false,
-        hasAdvancedAnalytics: false,
-        hasCampaigns: false,
-        hasApiAccess: false,
-        features: JSON.stringify([
-          'Fiche marque complète',
-          'Jusqu\'à 5 produits',
-          'Présence sur la carte',
-          'Référencement dans la recherche',
-        ]),
-        displayOrder: 0,
-      },
-    }),
-    prisma.subscriptionPlan.upsert({
-      where: { tier: SubscriptionTier.STARTER },
-      update: {},
-      create: {
-        tier: SubscriptionTier.STARTER,
-        name: 'Starter',
-        description: 'Pour les marques en croissance',
-        priceMonthly: 29,
-        priceYearly: 290,
-        maxProducts: 25,
-        maxTeamMembers: 2,
-        hasAnalytics: true,
-        hasAdvancedAnalytics: false,
-        hasCampaigns: false,
-        hasApiAccess: false,
-        features: JSON.stringify([
-          'Tout du plan Gratuit',
-          'Jusqu\'à 25 produits',
-          'Analytics de base',
-          '2 membres d\'équipe',
-          'Badge "Marque vérifiée"',
-        ]),
-        displayOrder: 1,
-      },
-    }),
-    prisma.subscriptionPlan.upsert({
-      where: { tier: SubscriptionTier.STANDARD },
-      update: {},
-      create: {
-        tier: SubscriptionTier.STANDARD,
-        name: 'Standard',
-        description: 'Pour les marques établies',
-        priceMonthly: 79,
-        priceYearly: 790,
-        maxProducts: 100,
-        maxTeamMembers: 5,
-        hasAnalytics: true,
-        hasAdvancedAnalytics: true,
-        hasCampaigns: true,
-        hasApiAccess: false,
-        features: JSON.stringify([
-          'Tout du plan Starter',
-          'Jusqu\'à 100 produits',
-          'Analytics avancés',
-          '5 membres d\'équipe',
-          'Campagnes sponsorisées',
-          'Génération IA de descriptions',
-        ]),
-        isPopular: true,
-        displayOrder: 2,
-      },
-    }),
-    prisma.subscriptionPlan.upsert({
-      where: { tier: SubscriptionTier.PREMIUM },
-      update: {},
-      create: {
-        tier: SubscriptionTier.PREMIUM,
-        name: 'Premium',
-        description: 'Pour les grandes marques',
-        priceMonthly: 199,
-        priceYearly: 1990,
-        maxProducts: null, // Unlimited
-        maxTeamMembers: null, // Unlimited
-        hasAnalytics: true,
-        hasAdvancedAnalytics: true,
-        hasCampaigns: true,
-        hasApiAccess: true,
-        features: JSON.stringify([
-          'Tout du plan Standard',
-          'Produits illimités',
-          'Équipe illimitée',
-          'Accès API',
-          'Support prioritaire',
-          'Compte manager dédié',
-        ]),
-        displayOrder: 3,
-      },
-    }),
-  ]);
+  // Les trois paliers du schema (FREE / PREMIUM / ROYALE), avec les tarifs et
+  // capacites reellement affiches par le Studio
+  // (apps/web/src/app/studio/marque/[slug]/abonnement/page.tsx).
+  // L'ancien seed declarait STARTER et STANDARD, disparus du schema : il plantait.
+  // Ce que Premium apporte concretement reste a redefinir en phase 8 (REBUILD.md T8.4).
+  const plans = [
+    {
+      tier: SubscriptionTier.FREE,
+      name: 'Gratuit',
+      description: 'Pour demarrer et gagner en visibilite',
+      priceMonthly: 0,
+      priceYearly: 0,
+      maxProducts: 5,
+      maxTeamMembers: 1,
+      hasAnalytics: false,
+      hasAdvancedAnalytics: false,
+      hasCampaigns: false,
+      hasApiAccess: false,
+      features: [
+        'Fiche entreprise basique',
+        '1 photo',
+        'Lien vers votre site',
+        'Statistiques de base (vues)',
+        "Jusqu'a 5 produits",
+      ],
+      isPopular: false,
+      displayOrder: 0,
+    },
+    {
+      tier: SubscriptionTier.PREMIUM,
+      name: 'Premium',
+      description: 'Pour les marques en croissance',
+      priceMonthly: 29,
+      priceYearly: 290,
+      maxProducts: 100,
+      maxTeamMembers: 5,
+      hasAnalytics: true,
+      hasAdvancedAnalytics: true,
+      hasCampaigns: false,
+      hasApiAccess: false,
+      features: [
+        'Fiche entreprise complete',
+        'Photos illimitees',
+        'Video de presentation',
+        "Jusqu'a 100 produits",
+        'Statistiques avancees',
+        'SEO personnalise',
+        'Badge verifie',
+        'Priorite dans les recherches',
+      ],
+      isPopular: true,
+      displayOrder: 1,
+    },
+    {
+      tier: SubscriptionTier.ROYALE,
+      name: 'Royale',
+      description: 'Pour les marques etablies',
+      priceMonthly: 99,
+      priceYearly: 990,
+      maxProducts: null,
+      maxTeamMembers: null,
+      hasAnalytics: true,
+      hasAdvancedAnalytics: true,
+      hasCampaigns: true,
+      hasApiAccess: true,
+      features: [
+        'Tout du plan Premium',
+        'Produits illimites',
+        'Equipe illimitee',
+        'Alertes clients',
+        'Mise en avant sur la page d\'accueil',
+      ],
+      isPopular: false,
+      displayOrder: 2,
+    },
+  ];
 
-  console.log('✅ Created 4 subscription plans');
+  // update rempli, et non `update: {}` : relancer le seed corrige une ligne
+  // qui aurait derive, au lieu de la laisser en l'etat.
+  for (const plan of plans) {
+    const { tier, ...rest } = plan;
+    const data = { ...rest, features: JSON.stringify(rest.features) };
+    await prisma.subscriptionPlan.upsert({
+      where: { tier },
+      update: data,
+      create: { tier, ...data },
+    });
+  }
+
+  console.log(`✅ Created ${plans.length} subscription plans`);
 
   // ===========================================
   // SAMPLE BRANDS (for testing)

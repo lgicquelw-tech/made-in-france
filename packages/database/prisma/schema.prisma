@@ -256,6 +256,9 @@ model Brand {
   @@index([regionId])
   @@index([isFeatured])
   @@index([isSponsored])
+  // Recherche par similarite pg_trgm : sans cet index, chaque recherche
+  // fait un balayage complet de la table (REBUILD.md T2.9).
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("brands")
 }
 
@@ -354,6 +357,8 @@ model Product {
   @@index([categoryId])
   @@index([status])
   @@index([externalSource, externalId])
+  // Recherche par similarite pg_trgm (REBUILD.md T2.9).
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("products")
 }
 

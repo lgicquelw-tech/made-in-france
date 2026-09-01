@@ -21,10 +21,9 @@
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "migrate:reset": "prisma migrate reset",
-    "db:push": "prisma db push",
     "db:pull": "prisma db pull",
     "studio": "prisma studio",
-    "seed": "tsx prisma/seed.ts",
+    "seed": "tsx --env-file=.env prisma/seed.ts",
     "lint": "eslint . --ext .ts",
     "typecheck": "tsc --noEmit"
   },

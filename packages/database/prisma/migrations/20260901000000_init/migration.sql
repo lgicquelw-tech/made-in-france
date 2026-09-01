@@ -1,3 +1,8 @@
+-- Migration de référence (baseline) régénérée depuis schema.prisma le 1er septembre 2026.
+-- Remplace 20260105230946_init, qui avait divergé du schéma : il lui manquait
+-- brand_owners, brand_claim_requests et brand_images, ajoutées par un `prisma db push`.
+-- REBUILD.md T2.4. Interdiction de `db push` pour la suite (T2.5).
+
 -- CreateExtension
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
@@ -14,13 +19,19 @@ CREATE TYPE "BrandStatus" AS ENUM ('DRAFT', 'PENDING_REVIEW', 'ACTIVE', 'SUSPEND
 CREATE TYPE "ProductStatus" AS ENUM ('DRAFT', 'ACTIVE', 'OUT_OF_STOCK', 'DISCONTINUED');
 
 -- CreateEnum
-CREATE TYPE "SubscriptionTier" AS ENUM ('FREE', 'STARTER', 'STANDARD', 'PREMIUM');
+CREATE TYPE "SubscriptionTier" AS ENUM ('FREE', 'PREMIUM', 'ROYALE');
 
 -- CreateEnum
 CREATE TYPE "EventType" AS ENUM ('BRAND_PAGE_VIEW', 'PRODUCT_PAGE_VIEW', 'SEARCH_RESULTS_VIEW', 'SEARCH_QUERY', 'FILTER_APPLIED', 'MAP_INTERACTION', 'CLICK_OUT', 'AFFILIATE_CLICK', 'ADD_TO_FAVORITES', 'AI_CONVERSATION', 'AI_RECOMMENDATION_SHOWN', 'AI_RECOMMENDATION_CLICKED', 'BRAND_DASHBOARD_VIEW', 'CAMPAIGN_CREATED');
 
 -- CreateEnum
 CREATE TYPE "CampaignStatus" AS ENUM ('DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "BrandOwnerRole" AS ENUM ('OWNER', 'ADMIN', 'EDITOR', 'VIEWER');
+
+-- CreateEnum
+CREATE TYPE "ClaimStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED');
 
 -- CreateTable
 CREATE TABLE "regions" (
@@ -139,6 +150,18 @@ CREATE TABLE "brands" (
 );
 
 -- CreateTable
+CREATE TABLE "brand_images" (
+    "id" TEXT NOT NULL,
+    "brand_id" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "public_id" TEXT,
+    "is_primary" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "brand_images_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "brand_categories" (
     "brand_id" TEXT NOT NULL,
     "category_id" TEXT NOT NULL,
@@ -182,6 +205,9 @@ CREATE TABLE "products" (
     "seo_title" TEXT,
     "seo_description" TEXT,
     "ai_selling_points" JSONB NOT NULL DEFAULT '[]',
+    "external_id" TEXT,
+    "external_source" TEXT,
+    "external_data" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -203,6 +229,7 @@ CREATE TABLE "users" (
     "email" TEXT,
     "email_verified" TIMESTAMP(3),
     "image" TEXT,
+    "password" TEXT,
     "first_name" TEXT,
     "last_name" TEXT,
     "points" INTEGER NOT NULL DEFAULT 0,
@@ -268,6 +295,49 @@ CREATE TABLE "brand_views" (
     "viewed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "brand_views_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "brand_owners" (
+    "id" TEXT NOT NULL,
+    "brand_id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "role" "BrandOwnerRole" NOT NULL DEFAULT 'EDITOR',
+    "invited_by" TEXT,
+    "invited_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "accepted_at" TIMESTAMP(3),
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "brand_owners_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "brand_claim_requests" (
+    "id" TEXT NOT NULL,
+    "brand_id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "first_name" TEXT NOT NULL,
+    "last_name" TEXT NOT NULL,
+    "phone" TEXT,
+    "job_title" TEXT,
+    "company_role" TEXT,
+    "proof_type" TEXT NOT NULL,
+    "proof_details" TEXT,
+    "proof_document_url" TEXT,
+    "verification_code" TEXT,
+    "verification_sent_at" TIMESTAMP(3),
+    "verified_at" TIMESTAMP(3),
+    "status" "ClaimStatus" NOT NULL DEFAULT 'PENDING',
+    "reviewed_by" TEXT,
+    "reviewed_at" TIMESTAMP(3),
+    "review_notes" TEXT,
+    "user_id" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "brand_claim_requests_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -558,6 +628,9 @@ CREATE INDEX "products_category_id_idx" ON "products"("category_id");
 CREATE INDEX "products_status_idx" ON "products"("status");
 
 -- CreateIndex
+CREATE INDEX "products_external_source_external_id_idx" ON "products"("external_source", "external_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "products_brand_id_slug_key" ON "products"("brand_id", "slug");
 
 -- CreateIndex
@@ -580,6 +653,21 @@ CREATE UNIQUE INDEX "favorites_user_id_brand_id_key" ON "favorites"("user_id", "
 
 -- CreateIndex
 CREATE INDEX "brand_views_user_id_viewed_at_idx" ON "brand_views"("user_id", "viewed_at" DESC);
+
+-- CreateIndex
+CREATE INDEX "brand_owners_user_id_idx" ON "brand_owners"("user_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "brand_owners_brand_id_user_id_key" ON "brand_owners"("brand_id", "user_id");
+
+-- CreateIndex
+CREATE INDEX "brand_claim_requests_brand_id_idx" ON "brand_claim_requests"("brand_id");
+
+-- CreateIndex
+CREATE INDEX "brand_claim_requests_email_idx" ON "brand_claim_requests"("email");
+
+-- CreateIndex
+CREATE INDEX "brand_claim_requests_status_idx" ON "brand_claim_requests"("status");
 
 -- CreateIndex
 CREATE INDEX "events_brand_id_created_at_idx" ON "events"("brand_id", "created_at" DESC);
@@ -633,6 +721,9 @@ ALTER TABLE "brands" ADD CONSTRAINT "brands_department_id_fkey" FOREIGN KEY ("de
 ALTER TABLE "brands" ADD CONSTRAINT "brands_sector_id_fkey" FOREIGN KEY ("sector_id") REFERENCES "sectors"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "brand_images" ADD CONSTRAINT "brand_images_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "brand_categories" ADD CONSTRAINT "brand_categories_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -675,6 +766,15 @@ ALTER TABLE "brand_views" ADD CONSTRAINT "brand_views_user_id_fkey" FOREIGN KEY 
 ALTER TABLE "brand_views" ADD CONSTRAINT "brand_views_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "brand_owners" ADD CONSTRAINT "brand_owners_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "brand_owners" ADD CONSTRAINT "brand_owners_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "brand_claim_requests" ADD CONSTRAINT "brand_claim_requests_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "events" ADD CONSTRAINT "events_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -700,3 +800,4 @@ ALTER TABLE "featured_brands" ADD CONSTRAINT "featured_brands_brand_id_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "trending_brands" ADD CONSTRAINT "trending_brands_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "brands"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

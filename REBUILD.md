@@ -227,18 +227,39 @@ de la sauvegarde.
 
 ## Phase 2 — Base reproductible · 1 jour
 
-- [ ] **T2.1** — Fixer et documenter la version de Node (`.nvmrc`) et de pnpm (`packageManager` est déjà à `pnpm@9.1.0`).
-- [ ] **T2.2** — Réinstaller depuis le lockfile à neuf : `rm -rf node_modules && pnpm install --frozen-lockfile`.
-- [ ] **T2.3** — Ajouter `@prisma/client` et `@mif/database` aux dépendances explicites de `apps/web` (aujourd'hui utilisés par remontée implicite).
-- [ ] **T2.4** — Repartir d'une migration `init` unique alignée sur le `schema.prisma` actuel (baseline), testée sur une **copie** de la base, jamais sur l'originale.
-- [ ] **T2.5** — Interdire `prisma db push` pour la suite du projet. Uniquement `prisma migrate`.
-- [ ] **T2.6** — Basculer sur `docker-compose.yml` pour Postgres. Retirer `redis`, `meilisearch`, `minio` du compose de développement (services jamais utilisés).
-- [ ] **T2.7** — Unifier les 5 `.env` : un `.env` racine pour la base et les services, un `.env.local` web pour NextAuth. Mettre à jour `.env.example` avec toutes les clés et aucune valeur.
-- [ ] **T2.8** — Écrire un seed produisant une base de dev utilisable (~50 marques, ~2 000 produits — pas le catalogue entier) en une commande.
-- [ ] **T2.9** — Ajouter les index manquants : `slug`, `status`, `brand_id`, et index GIN trigram sur `products.name` et `brands.name`.
-- [ ] **T2.10** — Une commande unique `pnpm setup` : base, génération Prisma, migration, seed.
+- [x] **T2.1** — `.nvmrc` = `22`. Node 22.23.2 installé via `fnm`, pnpm 9.1.0 activé par `corepack`.
+- [x] **T2.2** — Fait (les 6 `node_modules` supprimés : ils contenaient des modules natifs compilés pour Node 26). Installation en 7,9 s.
+- [x] **T2.3** — Ajoutés (`@prisma/client@^5.22.0`, `@mif/database@workspace:*`). Supprime l'erreur `Cannot find module '@prisma/client'` du typecheck.
+- [x] **T2.4** — Migration `20260901000000_init` régénérée depuis `schema.prisma`, appliquée sur une base neuve et vide. L'ancienne `20260105230946_init` avait bien divergé : il lui manquait **`brand_owners`, `brand_claim_requests` et `brand_images`** (30 tables contre 33), ajoutées à l'époque par un `db push`.
+- [x] **T2.5** — Scripts `db:push` supprimés de `package.json` (racine) et de `packages/database/package.json`. Plus aucune occurrence dans le dépôt.
+- [x] **T2.6** — ⚠️ **Modifié : Homebrew au lieu de Docker.** Docker n'est pas installé sur la machine et l'installer représentait ~1 Go pour un seul service. PostgreSQL 16.15 tourne via `postgresql@16` (Homebrew). `redis`, `meilisearch` et `minio` ont malgré tout été retirés du compose, qui reste utilisable sur une machine équipée de Docker (il ne garde que `postgres` et `mailhog`).
+  **Piège macOS :** sans `LC_ALL` valide, le serveur refuse de démarrer (`postmaster became multithreaded during startup`).
+- [x] **T2.7** — Il n'y avait pas 5 fichiers : `apps/api/.env` et `apps/web/.env` sont des **liens symboliques** vers le `.env` racine. Un troisième lien a été ajouté pour `packages/database/.env` (Prisma ne remonte pas jusqu'à la racine). Vrais fichiers : `.env` (34 clés) et `apps/web/.env.local` (9 clés NextAuth). `.env.example` complété : les 7 clés manquantes (Cloudinary, SMTP) ajoutées, toutes valeurs vides.
+- [~] **T2.8** — Le seed existant **plantait** : il déclarait les paliers `STARTER` et `STANDARD`, disparus du schéma (qui a `FREE`/`PREMIUM`/`ROYALE`). Réécrit sur les trois vrais paliers, aux tarifs réellement affichés par le Studio (0 € / 29 € / 99 €), avec `update` rempli au lieu de `update: {}` — relancer le seed corrige désormais une ligne qui a dérivé au lieu de la laisser en l'état (il a d'ailleurs corrigé un Premium à 199 € hérité de l'ancienne version).
+  **Reste à faire :** il ne produit que 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers, **4 marques et 2 produits**. L'objectif de ~50 marques et ~2 000 produits passe par l'import de `data/brands.xlsx` (996 marques) et les scrapers — à traiter avec la phase 5.
+- [x] **T2.9** — `slug`, `status`, `brand_id`, `sector_id`, `region_id` existaient déjà via le schéma. Seuls manquaient les index GIN trigram : ajoutés dans `schema.prisma` (`@@index([name(ops: raw("gin_trgm_ops"))], type: Gin)`) et migrés (`20260901072814_index_trigram_recherche`). Vérifié : le planificateur les utilise (`Bitmap Index Scan on brands_name_idx`).
+- [x] **T2.10** — ⚠️ **La commande s'appelle `pnpm bootstrap`, pas `pnpm setup`** : `setup` est une commande **interne** de pnpm (elle configure `PNPM_HOME` dans le shell) et masque silencieusement tout script du même nom. Enchaîne `install --frozen-lockfile` → `db:generate` → `db:migrate:prod` → `db:seed`. Testée deux fois, rejouable.
 
-**Critère de sortie** : sur une machine vierge, `git clone` → `pnpm install` → `docker compose up -d` → `pnpm setup` → `pnpm dev` affiche des marques, sans aucune étape manuelle implicite.
+**Critère de sortie** — atteint le 1er septembre 2026, à une réserve près :
+
+```bash
+pnpm bootstrap   # install + generate + migrate + seed — testé, rejouable
+pnpm dev         # web 3000 + api 4000, prêts en 2,5 s
+curl "http://localhost:4000/api/v1/brands?limit=3"   # renvoie Armor Lux & co ✅
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/marques/armor-lux  # 200 ✅
+```
+
+⚠️ **Réserve : le démarrage de PostgreSQL n'est pas encore dans `pnpm bootstrap`.** Il faut
+le lancer à la main, avec `LC_ALL` positionné :
+
+```bash
+LC_ALL=C /opt/homebrew/opt/postgresql@16/bin/pg_ctl \
+  -D /opt/homebrew/var/postgresql@16 -l /opt/homebrew/var/postgresql@16/server.log start
+```
+
+`brew services` ne fonctionne pas ici : le Homebrew installé est trop ancien pour la
+formule `postgresql@16` (`undefined method 'stop_timeout'`). Un `brew update` devrait le
+corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette session.
 
 ---
 

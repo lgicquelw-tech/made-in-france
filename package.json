@@ -12,6 +12,7 @@
   "packageManager": "pnpm@9.1.0",
   "scripts": {
     "dev": "turbo dev",
+    "bootstrap": "pnpm install --frozen-lockfile && pnpm db:generate && pnpm db:migrate:prod && pnpm db:seed",
     "build": "turbo build",
     "start": "turbo start",
     "lint": "turbo lint",
@@ -22,7 +23,6 @@
     "clean": "turbo clean && rm -rf node_modules",
     "db:migrate": "pnpm --filter @mif/database migrate:dev",
     "db:migrate:prod": "pnpm --filter @mif/database migrate:deploy",
-    "db:push": "pnpm --filter @mif/database db:push",
     "db:seed": "pnpm --filter @mif/database seed",
     "db:studio": "pnpm --filter @mif/database studio",
     "db:generate": "pnpm --filter @mif/database generate",

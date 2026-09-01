@@ -48,7 +48,7 @@ d'abord. L'état de janvier a été archivé sur la branche `archive/janvier-202
 | Node | >= 20 (testé en v22), `packageManager: pnpm@9.1.0` |
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
 | Backend | **Express 4** (pas NestJS) — un seul fichier de 4 358 lignes, 92 routes |
-| Base | PostgreSQL 16 + Prisma 5.22 |
+| Base | PostgreSQL 16.15 (Homebrew) + Prisma 5.22 |
 | Recherche | PostgreSQL `pg_trgm` (pas Meilisearch) |
 | Auth | NextAuth v4 (Google, Email, Credentials) côté web uniquement |
 | IA | Anthropic SDK (Claude Haiku). Le chemin OpenAI existe mais renvoie une 400 « pas encore implémenté » |
@@ -103,13 +103,15 @@ pnpm dev                  # web (3000) + api (4000)
 pnpm --filter @mif/web dev
 pnpm --filter @mif/api dev
 
-# Prisma — schéma à la racine de packages/database
-cd packages/database && npx prisma generate
+# Prisma — packages/database/.env est un lien vers le .env racine, sans quoi
+# les commandes prisma ne trouvent pas DATABASE_URL
+cd packages/database && pnpm exec prisma generate
 npx prisma studio  --schema=./packages/database/prisma/schema.prisma
 npx prisma migrate dev --schema=./packages/database/prisma/schema.prisma
 
 # Vérifications
-pnpm typecheck            # ÉCHOUE actuellement — voir REBUILD.md phase 3
+pnpm typecheck            # api, shared et database PASSENT.
+                          # web échoue encore sur 22 erreurs — voir REBUILD.md phase 3
 pnpm lint
 
 # Données
@@ -119,23 +121,35 @@ npx tsx scripts/woocommerce-scraper.ts --all
 npx tsx scripts/enrich-all-products.ts
 ```
 
-### ⚠️ État de la machine au 1er septembre 2026
-
-L'environnement de développement **n'est plus installé** :
+### Environnement de la machine (remis en état le 1er septembre 2026)
 
 | Outil | État |
 |---|---|
-| `pnpm` | **absent** (`corepack` absent aussi). `node_modules/.pnpm/` reste peuplé de 789 paquets d'une installation précédente. |
-| Docker | **absent** — pas de Docker.app, pas d'OrbStack, aucune trace. `docker compose up` ne peut pas fonctionner. |
-| PostgreSQL | **absent** — ni Homebrew, ni Postgres.app, `psql`/`pg_dump` introuvables, aucun répertoire de données. |
-| Node | **v26**, pas v22. Compatibilité avec Next 14.2 / Prisma 5.22 non vérifiée. |
+| Node | **22.23.2** via `fnm`, épinglé par `.nvmrc`. La machine était passée en v26. |
+| pnpm | **9.1.0** activé par `corepack` (conforme à `packageManager`). |
+| PostgreSQL | **16.15 via Homebrew** (`postgresql@16`). Pas Docker : Docker n'est pas installé sur cette machine. |
+| Docker | **absent.** `docker-compose.yml` est conservé mais inutilisable ici. |
 
-**La base de données locale n'existe plus.** Les ~40 000 produits n'ont jamais été
-versionnés ni sauvegardés (voir `REBUILD.md`, T0.0 et T0.2). Le seul actif de données
-versionné est `data/brands.xlsx` (996 lignes).
+**Démarrer PostgreSQL** — `LC_ALL` est obligatoire, sinon le serveur refuse de démarrer
+(`postmaster became multithreaded during startup`) :
 
-Tant que ces quatre points ne sont pas réglés, aucune commande de la section ci-dessus
-ne fonctionne. C'est le prérequis de la phase 2.
+```bash
+LC_ALL=C /opt/homebrew/opt/postgresql@16/bin/pg_ctl \
+  -D /opt/homebrew/var/postgresql@16 -l /opt/homebrew/var/postgresql@16/server.log start
+```
+
+`brew services start postgresql@16` **ne fonctionne pas** : le Homebrew installé est trop
+ancien pour cette formule (`undefined method 'stop_timeout'`). Un `brew update` corrigerait.
+
+**Monter l'environnement complet** : `pnpm bootstrap` (install + generate + migrate + seed).
+⚠️ **Ne pas écrire `pnpm setup`** : c'est une commande **interne** de pnpm qui masque
+silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
+
+**La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
+perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). La base contient
+aujourd'hui les données du seed : 13 régions, 9 secteurs, 11 catégories, 6 labels,
+3 paliers d'abonnement, 4 marques et 2 produits. Le seul actif de données versionné est
+`data/brands.xlsx` (996 marques), pas encore importé.
 
 ---
 
@@ -168,7 +182,7 @@ ne fonctionne. C'est le prérequis de la phase 2.
 14. **Une tâche = une branche = un commit qu'on peut annuler.** Jamais « répare tout » ou « refais l'application ».
 15. **Le test arrive avec le code**, pas plus tard.
 16. **Proposer un plan avant d'écrire du code** sur toute tâche non triviale, et attendre validation.
-17. **Ne jamais lancer de migration destructive ni de `prisma db push`** sur la base de développement sans le dire explicitement avant.
+17. **Ne jamais lancer de migration destructive ni de `prisma db push`** sur la base de développement sans le dire explicitement avant. Les scripts `db:push` ont été retirés du projet (T2.5) : uniquement `prisma migrate`.
 
 ---
 
