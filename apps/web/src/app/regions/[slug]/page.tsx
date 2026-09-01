@@ -1,170 +1,104 @@
-'use client';
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, MapPin, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { API_URL } from '@/lib/api';
+import { prisma } from '@/lib/db';
+import { siteUrl } from '@/lib/site';
+import RegionDetail, { type Brand, type Pagination } from './region-detail';
 
-interface Brand {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  city: string | null;
-  region: string | null;
+/** Marques d'une région — Server Component (REBUILD.md T4.3, T4.8). */
+
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+const PAGE_SIZE = 12;
+
+async function getRegion(slug: string) {
+  return prisma.region.findUnique({ where: { slug }, select: { id: true, name: true, slug: true } });
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
+export async function generateStaticParams() {
+  const regions = await prisma.region.findMany({ select: { slug: true } });
+  return regions.map((region) => ({ slug: region.slug }));
 }
 
-export default function RegionDetailPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const region = await getRegion(params.slug);
+  if (!region) return { title: 'Région introuvable' };
 
-  const [regionName, setRegionName] = useState<string>('');
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const count = await prisma.brand.count({ where: { regionId: region.id } });
+  const title = `Marques de ${region.name}`;
+  const description = `${count} marque${count > 1 ? 's' : ''} française${count > 1 ? 's' : ''} fabriquant en ${region.name}.`;
+  const url = `${siteUrl()}/regions/${region.slug}`;
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `${API_URL}/api/v1/brands?region=${slug}&page=${currentPage}&limit=12`
-        );
-        const data = await response.json();
-        setBrands(data.data || []);
-        setPagination(data.pagination || null);
-        
-        if (data.data && data.data.length > 0 && data.data[0].region) {
-          setRegionName(data.data[0].region);
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      title: `${title} | Made in France`,
+      description,
+      url,
+      siteName: 'Made in France',
+      locale: 'fr_FR',
+    },
+  };
+}
 
-    if (slug) {
-      fetchData();
-    }
-  }, [slug, currentPage]);
+export default async function RegionPage({ params }: { params: { slug: string } }) {
+  const region = await getRegion(params.slug);
+  // Une région inconnue affichait auparavant une page vide sous un nom
+  // reconstruit à partir du slug. Elle renvoie désormais 404.
+  if (!region) notFound();
 
-  const formatSlugToName = (s: string) => {
-    return s
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+  const [rows, total] = await Promise.all([
+    prisma.brand.findMany({
+      where: { regionId: region.id },
+      take: PAGE_SIZE,
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        descriptionShort: true,
+        logoUrl: true,
+        city: true,
+        region: { select: { name: true } },
+        sector: { select: { name: true, color: true } },
+      },
+    }),
+    prisma.brand.count({ where: { regionId: region.id } }),
+  ]);
+
+  const initialBrands = rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.descriptionShort,
+    logoUrl: row.logoUrl,
+    city: row.city,
+    region: row.region?.name ?? null,
+    sector: row.sector?.name ?? null,
+    sectorColor: row.sector?.color ?? null,
+  })) as unknown as Brand[];
+
+  const initialPagination: Pagination = {
+    page: 1,
+    limit: PAGE_SIZE,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
   };
 
-  const displayName = regionName || formatSlugToName(slug);
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-br from-france-blue to-blue-700 text-white">
-        <div className="container py-12">
-          <Link href="/regions" className="inline-flex items-center text-blue-200 hover:text-white mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Toutes les régions
-          </Link>
-
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-white/20 rounded-xl">
-              <MapPin className="h-8 w-8" />
-            </div>
-            <h1 className="text-4xl font-bold">{displayName}</h1>
-          </div>
-
-          <div className="flex items-center gap-2 text-blue-100">
-            <Building2 className="h-5 w-5" />
-            <span className="text-lg">
-              {pagination?.total || 0} marques dans cette région
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="container py-12">
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500">Chargement des marques...</div>
-          </div>
-        ) : brands.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500">Aucune marque dans cette région</div>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {brands.map((brand) => (
-                <Link
-                  href={`/marques/${brand.slug}`}
-                  key={brand.id}
-                  className="group bg-white rounded-2xl p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
-                >
-                  <div className="relative h-16 w-full mb-4 flex items-center justify-center bg-gray-100 rounded-xl">
-                    <div className="text-2xl font-bold text-france-blue">
-                      {brand.name.charAt(0)}
-                    </div>
-                  </div>
-
-                  <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                    {brand.name}
-                  </h3>
-
-                  {brand.description && (
-                    <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                      {brand.description}
-                    </p>
-                  )}
-
-                  {brand.city && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <MapPin className="h-3 w-3" />
-                      {brand.city}
-                    </div>
-                  )}
-                </Link>
-              ))}
-            </div>
-
-            {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 mt-10">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Précédent
-                </Button>
-
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} sur {pagination.totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
-                  disabled={currentPage === pagination.totalPages}
-                >
-                  Suivant
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+    <RegionDetail
+      slug={region.slug}
+      regionName={region.name}
+      initialBrands={initialBrands}
+      initialPagination={initialPagination}
+    />
   );
 }
