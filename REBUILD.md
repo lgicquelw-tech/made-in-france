@@ -492,7 +492,9 @@ Aucun fichier backend ne dépasse 300 lignes.
 > **Verticalement, dans cet ordre.** À chaque étape : API, interface responsive, états vides et erreurs, contrôle de types, test du parcours — **avant** de passer à la suivante. Le JSX existant est réutilisable à ~80 % ; c'est le mode de rendu qui change.
 
 - [ ] **T4.1** — Liste des marques : pagination, filtres, recherche.
-- [ ] **T4.2** — Fiche marque + SEO complet.
+- [x] **T4.2** — **Fiche marque en Server Component, avec SEO complet.** Elle était entièrement `'use client'` et chargeait la marque dans un `useEffect` : le HTML servi ne contenait qu'un « Chargement… ». Aucun titre, aucune description, aucun contenu — chaque fiche était invisible pour un moteur.
+  Découpée en deux : `page.tsx` (serveur) lit la base directement, porte `generateMetadata`, `generateStaticParams` et le JSON-LD ; `brand-detail.tsx` reste client pour la visionneuse, le bouton favori et les sections dépliables, mais **reçoit ses données en props**. C'est ce qui change tout : un composant client est rendu côté serveur, à condition que ses données soient déjà là.
+  Vérifié : 52 Ko de HTML contenant le nom, la ville, la région et la description ; `<title>`, `meta description`, canonique, Open Graph et JSON-LD présents ; une marque inconnue renvoie 404.
 - [ ] **T4.3** — Régions, secteurs, carte.
 - [ ] **T4.4** — Catalogue et fiche produit.
 - [ ] **T4.5** — Recherche unifiée marques + produits.
@@ -510,11 +512,18 @@ Transversal à ces six étapes :
   `robots.ts` **n'existait pas** : créé, avec `/admin`, `/studio`, `/api/`, `/profil` et `/favoris` exclus de l'indexation.
 - [x] **T4.13** — **Le middleware ne s'exécutait pas du tout.** Il était dans `apps/web/middleware.ts` alors que le projet utilise un répertoire `src/`, où Next.js attend `apps/web/src/middleware.ts`. Vérifié : l'en-tête `x-pathname` qu'il prétendait poser n'apparaissait dans aucune réponse — `/admin` et `/studio` étaient donc entièrement ouverts. Déplacé et rendu effectif : anonyme → redirection vers `/connexion`, connecté sans droits → 404, administrateur → 200. `/studio/connexion`, `/studio/inscription` et `/studio/revendiquer` restent ouverts, sinon personne ne pourrait plus se connecter.
 
-**Critère de sortie**
+**Critère de sortie** — atteint sur les fiches marque :
+
 ```bash
-curl -s http://localhost:3000/marques/<un-slug> | grep -c "<h1"   # >= 1
+curl -s http://localhost:3000/marques/armor-lux | grep -c "<h1"   # 1 ✅
 ```
-Lighthouse SEO ≥ 95 et LCP < 2,5 s sur une fiche marque.
+
+Vérifié sur quatre fiches. Reste à faire avant de clore la phase : les listes, les
+secteurs, les régions, la carte, les produits, la recherche (T4.1, T4.3 à T4.6), la
+bascule des autres pages en Server Components (T4.7), `generateMetadata` partout (T4.8),
+et les 69 `<img>` à migrer vers `next/image` (T4.10).
+
+Lighthouse SEO ≥ 95 et LCP < 2,5 s restent à mesurer.
 
 ---
 
