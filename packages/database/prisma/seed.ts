@@ -10,138 +10,46 @@ async function main() {
   // ===========================================
   console.log('Creating regions...');
   
-  const regions = await Promise.all([
-    prisma.region.upsert({
-      where: { slug: 'bretagne' },
-      update: {},
-      create: {
-        name: 'Bretagne',
-        slug: 'bretagne',
-        centerLat: 48.2020,
-        centerLng: -2.9326,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'normandie' },
-      update: {},
-      create: {
-        name: 'Normandie',
-        slug: 'normandie',
-        centerLat: 49.1829,
-        centerLng: -0.3707,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'ile-de-france' },
-      update: {},
-      create: {
-        name: 'Île-de-France',
-        slug: 'ile-de-france',
-        centerLat: 48.8566,
-        centerLng: 2.3522,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'provence-alpes-cote-dazur' },
-      update: {},
-      create: {
-        name: "Provence-Alpes-Côte d'Azur",
-        slug: 'provence-alpes-cote-dazur',
-        centerLat: 43.9352,
-        centerLng: 6.0679,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'auvergne-rhone-alpes' },
-      update: {},
-      create: {
-        name: 'Auvergne-Rhône-Alpes',
-        slug: 'auvergne-rhone-alpes',
-        centerLat: 45.4473,
-        centerLng: 4.3859,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'nouvelle-aquitaine' },
-      update: {},
-      create: {
-        name: 'Nouvelle-Aquitaine',
-        slug: 'nouvelle-aquitaine',
-        centerLat: 45.7086,
-        centerLng: 0.6262,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'occitanie' },
-      update: {},
-      create: {
-        name: 'Occitanie',
-        slug: 'occitanie',
-        centerLat: 43.8927,
-        centerLng: 3.2828,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'hauts-de-france' },
-      update: {},
-      create: {
-        name: 'Hauts-de-France',
-        slug: 'hauts-de-france',
-        centerLat: 49.9662,
-        centerLng: 2.7954,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'grand-est' },
-      update: {},
-      create: {
-        name: 'Grand Est',
-        slug: 'grand-est',
-        centerLat: 48.6998,
-        centerLng: 6.1878,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'pays-de-la-loire' },
-      update: {},
-      create: {
-        name: 'Pays de la Loire',
-        slug: 'pays-de-la-loire',
-        centerLat: 47.4784,
-        centerLng: -0.5632,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'centre-val-de-loire' },
-      update: {},
-      create: {
-        name: 'Centre-Val de Loire',
-        slug: 'centre-val-de-loire',
-        centerLat: 47.7516,
-        centerLng: 1.6751,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'bourgogne-franche-comte' },
-      update: {},
-      create: {
-        name: 'Bourgogne-Franche-Comté',
-        slug: 'bourgogne-franche-comte',
-        centerLat: 47.2805,
-        centerLng: 4.9994,
-      },
-    }),
-    prisma.region.upsert({
-      where: { slug: 'corse' },
-      update: {},
-      create: {
-        name: 'Corse',
-        slug: 'corse',
-        centerLat: 42.0396,
-        centerLng: 9.0129,
-      },
-    }),
-  ]);
+  // Les treize régions métropolitaines, plus les territoires d'outre-mer.
+  //
+  // ⚠️ Ces derniers manquaient : `data/brands.xlsx` contient pourtant 13 marques
+  // en Guyane, Martinique, Mayotte, Guadeloupe, La Réunion, Polynésie et
+  // Nouvelle-Calédonie. Faute de région correspondante, elles étaient importées
+  // **sans région** — donc invisibles sur /regions, et la page /regions/outre-mer
+  // interrogeait cinq slugs qui n'existaient nulle part.
+  const REGIONS = [
+    { slug: 'auvergne-rhone-alpes', name: 'Auvergne-Rhône-Alpes', centerLat: 45.7, centerLng: 4.8 },
+    { slug: 'bourgogne-franche-comte', name: 'Bourgogne-Franche-Comté', centerLat: 47.28, centerLng: 4.99 },
+    { slug: 'bretagne', name: 'Bretagne', centerLat: 48.202, centerLng: -2.9326 },
+    { slug: 'centre-val-de-loire', name: 'Centre-Val de Loire', centerLat: 47.48, centerLng: 1.68 },
+    { slug: 'corse', name: 'Corse', centerLat: 42.15, centerLng: 9.1 },
+    { slug: 'grand-est', name: 'Grand Est', centerLat: 48.7, centerLng: 5.63 },
+    { slug: 'hauts-de-france', name: 'Hauts-de-France', centerLat: 50.0, centerLng: 2.8 },
+    { slug: 'ile-de-france', name: 'Île-de-France', centerLat: 48.8499, centerLng: 2.6371 },
+    { slug: 'normandie', name: 'Normandie', centerLat: 49.1829, centerLng: 0.371 },
+    { slug: 'nouvelle-aquitaine', name: 'Nouvelle-Aquitaine', centerLat: 45.19, centerLng: 0.2 },
+    { slug: 'occitanie', name: 'Occitanie', centerLat: 43.7, centerLng: 2.2 },
+    { slug: 'pays-de-la-loire', name: 'Pays de la Loire', centerLat: 47.47, centerLng: -0.82 },
+    { slug: 'provence-alpes-cote-dazur', name: "Provence-Alpes-Côte d'Azur", centerLat: 43.95, centerLng: 6.05 },
+    // Outre-mer
+    { slug: 'guadeloupe', name: 'Guadeloupe', centerLat: 16.265, centerLng: -61.551 },
+    { slug: 'martinique', name: 'Martinique', centerLat: 14.641, centerLng: -61.024 },
+    { slug: 'guyane', name: 'Guyane', centerLat: 3.933, centerLng: -53.126 },
+    { slug: 'la-reunion', name: 'La Réunion', centerLat: -21.115, centerLng: 55.536 },
+    { slug: 'mayotte', name: 'Mayotte', centerLat: -12.827, centerLng: 45.166 },
+    { slug: 'polynesie-francaise', name: 'Polynésie française', centerLat: -17.68, centerLng: -149.406 },
+    { slug: 'nouvelle-caledonie', name: 'Nouvelle-Calédonie', centerLat: -21.3, centerLng: 165.618 },
+  ];
+
+  // `update` rempli : relancer le seed corrige un nom ou des coordonnées qui
+  // auraient dérivé, au lieu de les laisser en l'état.
+  const regions = [];
+  for (const region of REGIONS) {
+    const { slug, ...rest } = region;
+    regions.push(
+      await prisma.region.upsert({ where: { slug }, update: rest, create: { slug, ...rest } })
+    );
+  }
 
   console.log(`✅ Created ${regions.length} regions`);
 

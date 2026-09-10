@@ -602,6 +602,28 @@ ce que plusieurs pages font déjà.
 **Reste à décider :** l'émoji était un repère visuel utile et n'a aujourd'hui aucun champ
 où vivre. Lui en donner un est un changement de schéma — donc une décision, pas un détail.
 
+### L'outre-mer était absent du modèle
+
+Découvert le 10 septembre 2026 en migrant `/regions/outre-mer`. Le seed ne créait que
+les **13 régions métropolitaines**. Or `data/brands.xlsx` contient 13 marques en Guyane,
+Martinique, Mayotte, Guadeloupe, La Réunion, Polynésie française et Nouvelle-Calédonie :
+faute de région correspondante, elles étaient importées **sans région**, donc invisibles
+partout.
+
+Et la page `/regions/outre-mer` interrogeait cinq slugs qui n'existaient nulle part — en
+cinq appels HTTP séquentiels — tout en oubliant la Polynésie et la Nouvelle-Calédonie.
+
+Les sept territoires sont ajoutés au seed. Après réimport, les 13 marques sont rattachées
+et la page les affiche.
+
+**Trois marques restent sans région, et ce sont des décisions, pas des bugs :**
+
+| Marque | Région déclarée | Question |
+|---|---|---|
+| NANNETTA | `Monaco` | Monaco est un État souverain. A-t-elle sa place dans un annuaire « fabriqué en France » ? |
+| RECYCLED BY LISA | `France` | Aucune région précisée — la rattacher à quoi ? |
+| WIA | `Occitanie / Normandie` | Deux régions ; le modèle n'en accepte qu'une. |
+
 ### ⚠️ Décision à prendre : 902 marques sur 903 ne sont pas publiables
 
 Découvert le 1er septembre 2026 en migrant le tableau de bord d'administration.
