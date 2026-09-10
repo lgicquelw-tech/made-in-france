@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { JsonLd, breadcrumbList } from '@/lib/json-ld';
 import ProductDetail, {
   type Product,
   type SimilarProduct,
@@ -147,12 +148,16 @@ export default async function ProductPage({ params }: { params: { slug: string }
       : {}),
   };
 
+  const crumbs = breadcrumbList([
+    { name: 'Produits', path: '/produits' },
+    { name: product.brand.name, path: `/marques/${product.brand.slug}` },
+    { name: product.name, path: `/produits/${product.slug}` },
+  ]);
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={crumbs} />
       <ProductDetail
         product={
           {

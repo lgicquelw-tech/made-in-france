@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
 import { brandLogoUrl } from '@/lib/brand-logo';
+import { JsonLd, breadcrumbList, itemList } from '@/lib/json-ld';
 
 /**
  * Page d'un secteur (REBUILD.md T4.3, T4.8).
@@ -81,7 +82,17 @@ export default async function SecteurDetailPage({ params }: { params: { slug: st
 
   const color = sector.color ?? '#002395';
 
+  const structured = itemList(`Marques du secteur ${sector.name}`,
+    brands.map((brand) => ({ name: brand.name, path: `/marques/${brand.slug}` })));
+  const crumbs = breadcrumbList([
+    { name: 'Secteurs', path: '/secteurs' },
+    { name: sector.name, path: `/secteurs/${sector.slug}` },
+  ]);
+
   return (
+    <>
+      <JsonLd data={structured} />
+      <JsonLd data={crumbs} />
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}
       <section 
@@ -159,5 +170,6 @@ export default async function SecteurDetailPage({ params }: { params: { slug: st
         )}
       </section>
     </div>
+    </>
   );
 }

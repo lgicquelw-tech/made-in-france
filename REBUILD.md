@@ -554,7 +554,10 @@ Transversal à ces six étapes :
 - [x] **T4.9** — `generateStaticParams` sur les quatre routes dynamiques et `revalidate` sur toutes les pages serveur. **Vérifié par un vrai `pnpm build`** : 991 pages générées, les fiches marque, produit, secteur et région en SSG, les listes en statique.
   ⚠️ **C'est ce build qui a révélé que le projet n'était pas constructible.** Voir §2.
 - [ ] **T4.10** — Migrer les 40 `<img>` vers `next/image` et déclarer les hôtes réels dans `next.config.js` : `cdn.shopify.com`, `res.cloudinary.com`, `www.google.com`, les domaines WordPress. **Aucun n'y figure aujourd'hui** (seulement AWS, Cloudflare et Unsplash).
-- [ ] **T4.11** — JSON-LD : `Organization` sur les marques, `Product` sur les produits.
+- [x] **T4.11** — **JSON-LD sur toutes les pages publiques indexables.** `Organization` sur les fiches marque, `Product` sur les fiches produit — l'offre n'y est déclarée que si le prix **et** le lien d'achat existent.
+  Ajouté : `BreadcrumbList` partout — c'est ce que Google affiche **sous le titre** à la place de l'URL brute — et `ItemList` sur les quatre listes (marques, produits, secteur, région).
+  ⚠️ L'`ItemList` ne décrit que **la page rendue**, pas les 903 fiches : annoncer plus que ce que la page contient serait faux, et une donnée structurée qui ne correspond pas au contenu est sanctionnée.
+  Les trois briques vivent dans `lib/json-ld.tsx` plutôt que recopiées — la leçon des 16 copies du logo.
 - [x] **T4.12** — **Le sitemap ne listait que 100 marques sur 903.** Il demandait `?limit=1000` à l'API, qui plafonne silencieusement à 100 : **89 % des fiches n'étaient jamais soumises à l'indexation**. Pour un annuaire dont le référencement est le canal d'acquisition, c'était le défaut le plus coûteux du projet. Il lit désormais la base directement — c'est tout l'intérêt de l'option A. **935 URL**, dont les 903 marques, les secteurs et les régions.
   L'URL de production y était écrite en dur : un sitemap servi en local annonçait des adresses `madeinfrance.fr`. Elle vient de `lib/site.ts`.
   `robots.ts` **n'existait pas** : créé, avec `/admin`, `/studio`, `/api/`, `/profil` et `/favoris` exclus de l'indexation.

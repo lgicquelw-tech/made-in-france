@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { JsonLd, breadcrumbList, itemList } from '@/lib/json-ld';
 import ProductList, { type Product, type Sector } from './product-list';
 
 /**
@@ -78,13 +79,25 @@ export default async function ProductsPage() {
     }),
   ]);
 
+  // La liste ne rend que sa premiere page : c'est elle qu'on decrit, pas les
+  // 903 fiches. Annoncer plus que ce que la page contient serait faux.
+  const structured = itemList('Produits fabriqués en France', rows.map((p) => ({
+    name: p.name,
+    path: `/produits/${p.slug}`,
+  })));
+  const crumbs = breadcrumbList([{ name: 'Produits', path: '/produits' }]);
+
   return (
-    <Suspense fallback={<div className="p-12 text-center text-gray-500">Chargement des produits…</div>}>
-      <ProductList
-        initialProducts={rows as unknown as Product[]}
-        initialTotal={total}
-        sectors={sectorRows as Sector[]}
-      />
-    </Suspense>
+    <>
+      <JsonLd data={structured} />
+      <JsonLd data={crumbs} />
+      <Suspense fallback={<div className="p-12 text-center text-gray-500">Chargement des produits…</div>}>
+        <ProductList
+          initialProducts={rows as unknown as Product[]}
+          initialTotal={total}
+          sectors={sectorRows as Sector[]}
+        />
+      </Suspense>
+    </>
   );
 }

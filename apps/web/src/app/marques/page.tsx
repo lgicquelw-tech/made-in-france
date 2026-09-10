@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { JsonLd, breadcrumbList, itemList } from '@/lib/json-ld';
 import BrandList, {
   type Brand,
   type Pagination,
@@ -98,14 +99,26 @@ export default async function BrandsPage() {
     totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
   };
 
+  // La liste ne rend que sa premiere page : c'est elle qu'on decrit, pas les
+  // 903 fiches. Annoncer plus que ce que la page contient serait faux.
+  const structured = itemList('Toutes les marques', initialBrands.map((b) => ({
+    name: b.name,
+    path: `/marques/${b.slug}`,
+  })));
+  const crumbs = breadcrumbList([{ name: 'Marques', path: '/marques' }]);
+
   return (
-    <Suspense fallback={<div className="p-12 text-center text-gray-500">Chargement des marques…</div>}>
-      <BrandList
-        initialBrands={initialBrands}
-        initialPagination={initialPagination}
-        regions={regionRows as Region[]}
-        sectors={sectorRows as Sector[]}
-      />
-    </Suspense>
+    <>
+      <JsonLd data={structured} />
+      <JsonLd data={crumbs} />
+      <Suspense fallback={<div className="p-12 text-center text-gray-500">Chargement des marques…</div>}>
+        <BrandList
+          initialBrands={initialBrands}
+          initialPagination={initialPagination}
+          regions={regionRows as Region[]}
+          sectors={sectorRows as Sector[]}
+        />
+      </Suspense>
+    </>
   );
 }

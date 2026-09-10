@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { JsonLd, breadcrumbList } from '@/lib/json-ld';
 import BrandDetail, { type Brand, type BrandProduct, type SimilarBrand } from './brand-detail';
 
 /**
@@ -150,12 +151,16 @@ export default async function BrandPage({ params }: { params: { slug: string } }
       : {}),
   };
 
+  const crumbs = breadcrumbList([
+    { name: 'Marques', path: '/marques' },
+    ...(brand.sector ? [{ name: brand.sector.name, path: `/secteurs/${brand.sector.slug}` }] : []),
+    { name: brand.name, path: `/marques/${brand.slug}` },
+  ]);
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={crumbs} />
       <BrandDetail
         brand={brand as unknown as Brand}
         similarBrands={similarBrands}

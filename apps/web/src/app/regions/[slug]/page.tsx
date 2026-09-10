@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { JsonLd, breadcrumbList, itemList } from '@/lib/json-ld';
 import RegionDetail, { type Brand, type Pagination } from './region-detail';
 
 /** Marques d'une région — Server Component (REBUILD.md T4.3, T4.8). */
@@ -95,12 +96,23 @@ export default async function RegionPage({ params }: { params: { slug: string } 
     totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
   };
 
+  const structured = itemList(`Marques de ${region.name}`,
+    initialBrands.map((brand) => ({ name: brand.name, path: `/marques/${brand.slug}` })));
+  const crumbs = breadcrumbList([
+    { name: 'Régions', path: '/regions' },
+    { name: region.name, path: `/regions/${region.slug}` },
+  ]);
+
   return (
-    <RegionDetail
-      slug={region.slug}
-      regionName={region.name}
-      initialBrands={initialBrands}
-      initialPagination={initialPagination}
-    />
+    <>
+      <JsonLd data={structured} />
+      <JsonLd data={crumbs} />
+        <RegionDetail
+        slug={region.slug}
+        regionName={region.name}
+        initialBrands={initialBrands}
+        initialPagination={initialPagination}
+      />
+    </>
   );
 }
