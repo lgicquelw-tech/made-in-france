@@ -520,7 +520,10 @@ Aucun fichier backend ne dépasse 300 lignes.
 
 Transversal à ces six étapes :
 
-- [ ] **T4.7** — Basculer les pages publiques en Server Components. `'use client'` uniquement sur les feuilles interactives.
+- [~] **T4.7** — **Toutes les pages publiques qui chargeaient des données sont passées en Server Components** : accueil, annuaire, catalogue, fiches marque et produit, secteurs, régions, produits d'une marque. Le motif est toujours le même — la page serveur lit la base, le composant de rendu reste client pour ses interactions mais **reçoit ses données en props**.
+  Le vrai coupable n'était jamais le `'use client'` : c'était le `fetch` dans un `useEffect`. Un composant client est rendu côté serveur, à condition que ses données soient déjà là.
+  Restent client, et c'est justifié : `/carte` (Mapbox), `/recherche` (interaction pure), `/entreprises` (une landing dont le contenu est statique, donc déjà dans le HTML), et les pages privées.
+  ⚠️ `/marques/[slug]/produits` renvoyait « Marque non trouvée » **avec un code 200** : un moteur indexait donc une page d'erreur comme une page valide. Elle renvoie 404.
 - [x] **T4.8** — **Chaque page publique a désormais un titre, une description, une canonique et des balises Open Graph.** Il n'y en avait qu'une sur 45.
   Sept pages restaient `'use client'` et ne pouvaient donc pas exporter `metadata` : chacune reçoit un `layout.tsx` qui les porte — la manière idiomatique de donner des métadonnées à une page interactive sans la réécrire. Celui de `/marques/[slug]/produits` est dynamique et nomme la marque.
   Deux pièges rencontrés : un `title` en chaîne simple dans un layout imbriqué **remplace le gabarit du layout racine pour tout son sous-arbre** — `/regions/bretagne` perdait son suffixe ; et sans `metadataBase`, Next.js ne peut pas rendre absolues les URL des images Open Graph.
