@@ -124,6 +124,9 @@ npx prisma migrate dev --schema=./packages/database/prisma/schema.prisma
 
 # Vérifications
 pnpm typecheck            # PASSE sur les 7 tâches du monorepo. Le garder au vert.
+pnpm build                # PASSE depuis le 10 septembre 2026 : 991 pages generees.
+                          # Il ECHOUAIT depuis fevrier — le mode dev ne le signale pas.
+                          # A lancer avant toute affirmation sur la mise en ligne.
 pnpm lint
 
 # Administration
@@ -219,6 +222,7 @@ chemins commençant par `../`.
 | Webhook Stripe | Le corps brut doit rester non parsé — le contournement existe déjà `index.ts:23-29`, ne pas le casser |
 | Dépôt public | `github.com/lgicquelw-tech/made-in-france` est **public**. Tout commit est immédiatement visible. Vérifier avant chaque push. |
 | Identité | Un seul modèle : `User`, avec `role` (`USER`/`ADMIN`/`SUPER_ADMIN`) et `isActive`. `AdminUser` n'existe plus. L'autorisation passe par `apps/web/src/lib/guards.ts`, qui **relit le rôle en base** — jamais depuis le jeton seul. |
+| `useSearchParams()` | Impose une frontière `Suspense` dès qu'une page est prérendue, sinon `next build` échoue. Le mode développement ne dit rien. C'est ce qui rendait le projet non constructible. |
 | Limitation de débit | En place depuis le 1er septembre 2026 : `express-rate-limit` côté API, `lib/rate-limit.ts` côté web. **Compteurs en mémoire du processus** — ils ne tiennent pas sur plusieurs instances. À reprendre au déploiement. Toute nouvelle route coûteuse (modèle payant, stockage, envoi d'e-mail) doit en poser un. |
 | Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné. |
 | Appels authentifiés depuis le front | **URL relative** (`/api/...`), jamais `${API_URL}`. Le cookie de session n'est envoyé qu'en même origine : un appel vers `localhost:4000` ne peut pas être authentifié. |

@@ -198,6 +198,29 @@ La validation humaine de ces demandes reste à construire (T8.1).
 | 14 | **Un seul commit, et `.env.local` non ignoré.** `.gitignore` ne couvre que `.env`, donc `apps/web/.env.local` (contenant `NEXTAUTH_SECRET` et le secret OAuth Google) est prêt à être committé. | `git log`, `git status` |
 | 15 | ~~**Les statistiques vendues aux marques sont inventées.**~~ **Côté API : corrigé le 1er septembre 2026.** `views`, `clicks` et `conversionRate` valent désormais `null` — et non un nombre — tant qu'il n'existe pas de vrais événements (T8.2). `favorites` et `products` sont de vrais comptages. **Reste à faire :** la page `studio/marque/[slug]/statistiques` génère encore ses propres courbes aléatoires côté client. |
 
+### `next build` n'a jamais fonctionné
+
+Découvert le 10 septembre 2026 en lançant un build de production pour vérifier T4.9. Il
+échouait sur **cinq pages** :
+
+```
+useSearchParams() should be wrapped in a suspense boundary
+```
+
+`useSearchParams()` impose une frontière `Suspense` dès lors qu'une page est prérendue.
+Le mode développement ne le signale pas, et rien dans le dépôt ne faisait tourner le build.
+
+**Trois des cinq pages fautives — `/recherche`, `/connexion-pro`, `/studio/inscription` —
+utilisaient déjà `useSearchParams` dans le commit de février 2026.** Le projet n'était
+donc pas constructible, et par conséquent pas déployable, depuis au moins cette date. Ni
+`REBUILD.md` ni `PLAN.md` ne le mentionnaient : les deux parlaient de mise en ligne comme
+d'une simple formalité de configuration.
+
+Corrigé : les cinq pages sont entourées d'un `Suspense`. `pnpm build` renvoie désormais 0,
+génère 991 pages, et `pnpm start` les sert — vérifié page par page.
+
+**Leçon pour la CI (phase 6) : `build` doit y figurer, pas seulement `typecheck` et `lint`.**
+
 ### Erreurs de compilation connues
 
 - Import `Stripe` en double : `index.ts:11` **et** `index.ts:3556`.
@@ -528,7 +551,8 @@ Transversal à ces six étapes :
   Sept pages restaient `'use client'` et ne pouvaient donc pas exporter `metadata` : chacune reçoit un `layout.tsx` qui les porte — la manière idiomatique de donner des métadonnées à une page interactive sans la réécrire. Celui de `/marques/[slug]/produits` est dynamique et nomme la marque.
   Deux pièges rencontrés : un `title` en chaîne simple dans un layout imbriqué **remplace le gabarit du layout racine pour tout son sous-arbre** — `/regions/bretagne` perdait son suffixe ; et sans `metadataBase`, Next.js ne peut pas rendre absolues les URL des images Open Graph.
   Les pages privées (`/profil`, `/favoris`, `/connexion`) n'en ont volontairement pas : elles sont exclues de l'indexation par `robots.ts`.
-- [ ] **T4.9** — `generateStaticParams` + ISR sur fiches marque et produit.
+- [x] **T4.9** — `generateStaticParams` sur les quatre routes dynamiques et `revalidate` sur toutes les pages serveur. **Vérifié par un vrai `pnpm build`** : 991 pages générées, les fiches marque, produit, secteur et région en SSG, les listes en statique.
+  ⚠️ **C'est ce build qui a révélé que le projet n'était pas constructible.** Voir §2.
 - [ ] **T4.10** — Migrer les 40 `<img>` vers `next/image` et déclarer les hôtes réels dans `next.config.js` : `cdn.shopify.com`, `res.cloudinary.com`, `www.google.com`, les domaines WordPress. **Aucun n'y figure aujourd'hui** (seulement AWS, Cloudflare et Unsplash).
 - [ ] **T4.11** — JSON-LD : `Organization` sur les marques, `Product` sur les produits.
 - [x] **T4.12** — **Le sitemap ne listait que 100 marques sur 903.** Il demandait `?limit=1000` à l'API, qui plafonne silencieusement à 100 : **89 % des fiches n'étaient jamais soumises à l'indexation**. Pour un annuaire dont le référencement est le canal d'acquisition, c'était le défaut le plus coûteux du projet. Il lit désormais la base directement — c'est tout l'intérêt de l'option A. **935 URL**, dont les 903 marques, les secteurs et les régions.

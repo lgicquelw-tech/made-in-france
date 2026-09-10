@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
@@ -8,6 +9,16 @@ import BrandList, {
   type Region,
   type Sector,
 } from './brand-list';
+
+/**
+ * ⚠️ `useSearchParams()` impose une frontiere `Suspense` des lors que la page
+ * est prerendue : sans elle, `next build` echoue avec
+ * « useSearchParams() should be wrapped in a suspense boundary ».
+ *
+ * Le mode developpement ne le signale pas. Ce defaut existait depuis le commit
+ * de fevrier 2026 : le projet n'etait donc pas constructible, et par
+ * consequent pas deployable.
+ */
 
 /**
  * Annuaire des marques — **Server Component** (REBUILD.md T4.1, T4.7, T4.8).
@@ -88,11 +99,13 @@ export default async function BrandsPage() {
   };
 
   return (
-    <BrandList
-      initialBrands={initialBrands}
-      initialPagination={initialPagination}
-      regions={regionRows as Region[]}
-      sectors={sectorRows as Sector[]}
-    />
+    <Suspense fallback={<div className="p-12 text-center text-gray-500">Chargement des marques…</div>}>
+      <BrandList
+        initialBrands={initialBrands}
+        initialPagination={initialPagination}
+        regions={regionRows as Region[]}
+        sectors={sectorRows as Sector[]}
+      />
+    </Suspense>
   );
 }
