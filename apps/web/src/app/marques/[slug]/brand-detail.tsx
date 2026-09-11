@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -58,11 +59,13 @@ function ProductsSection({
             className="group block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-soft-lg hover:border-transparent transition-all"
           >
             {product.imageUrl ? (
-              <div className="aspect-square bg-gray-50">
-                <img
+              <div className="relative aspect-square bg-gray-50">
+                <Image
                   src={product.imageUrl}
                   alt={product.name}
-                  className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 200px"
+                  className="object-contain p-2 group-hover:scale-105 transition-transform"
                 />
               </div>
             ) : (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   Search,
@@ -360,10 +361,12 @@ export default function ProductList({
                 >
                   <div className="aspect-square bg-gray-50 relative overflow-hidden">
                     {product.imageUrl ? (
-                      <img
+                      <Image
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 300px"
+                        className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div

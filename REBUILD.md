@@ -557,7 +557,9 @@ Transversal à ces six étapes :
   Les pages privées (`/profil`, `/favoris`, `/connexion`) n'en ont volontairement pas : elles sont exclues de l'indexation par `robots.ts`.
 - [x] **T4.9** — `generateStaticParams` sur les quatre routes dynamiques et `revalidate` sur toutes les pages serveur. **Vérifié par un vrai `pnpm build`** : 991 pages générées, les fiches marque, produit, secteur et région en SSG, les listes en statique.
   ⚠️ **C'est ce build qui a révélé que le projet n'était pas constructible.** Voir §2.
-- [ ] **T4.10** — Migrer les 40 `<img>` vers `next/image` et déclarer les hôtes réels dans `next.config.js` : `cdn.shopify.com`, `res.cloudinary.com`, `www.google.com`, les domaines WordPress. **Aucun n'y figure aujourd'hui** (seulement AWS, Cloudflare et Unsplash).
+- [~] **T4.10** — **Les hôtes sont corrigés** (c'était le prérequis : les trois déclarés — AWS, Cloudflare, Unsplash — ne correspondaient à aucune image du projet). Les images de contenu passent à `next/image` : image de fond du carrousel et image principale d'une fiche produit avec `priority`, cartes produit du catalogue et des fiches marque avec `fill` et `sizes`. Vérifié : l'optimiseur sert un JPEG progressif de 41 Ko en 0,8 s.
+  ⚠️ **Le gain reste invérifiable aujourd'hui, et il faut le dire : la base ne contient aucune image.** Ni photo produit, ni couverture de marque, ni galerie — zéro sur toute la base. Les seules images du site sont les favicons dérivés du site de chaque marque et trois photos d'illustration Unsplash écrites en dur.
+  Les 27 `<img>` restants sur les pages publiques sont **des favicons de 64 pixels**. Les passer par l'optimiseur ajouterait un aller-retour serveur pour un gain nul : c'est un choix, pas un oubli. À revoir quand le catalogue aura de vraies images — c'est-à-dire en phase 5.
 - [x] **T4.11** — **JSON-LD sur toutes les pages publiques indexables.** `Organization` sur les fiches marque, `Product` sur les fiches produit — l'offre n'y est déclarée que si le prix **et** le lien d'achat existent.
   Ajouté : `BreadcrumbList` partout — c'est ce que Google affiche **sous le titre** à la place de l'URL brute — et `ItemList` sur les quatre listes (marques, produits, secteur, région).
   ⚠️ L'`ItemList` ne décrit que **la page rendue**, pas les 903 fiches : annoncer plus que ce que la page contient serait faux, et une donnée structurée qui ne correspond pas au contenu est sanctionnée.
@@ -654,6 +656,23 @@ et la page les affiche.
 | NANNETTA | `Monaco` | Monaco est un État souverain. A-t-elle sa place dans un annuaire « fabriqué en France » ? |
 | RECYCLED BY LISA | `France` | Aucune région précisée — la rattacher à quoi ? |
 | WIA | `Occitanie / Normandie` | Deux régions ; le modèle n'en accepte qu'une. |
+
+### La base ne contient aucune image
+
+Constaté le 11 septembre 2026 en migrant vers `next/image` :
+
+| | |
+|---|---|
+| Produits avec une image | **0** sur 2 |
+| Marques avec une image de couverture | **0** sur 903 |
+| Marques avec une galerie non vide | **0** sur 903 |
+
+Les seules images du site sont les **favicons** dérivés du site de chaque marque, et trois
+photos d'illustration Unsplash écrites en dur sur la page d'accueil.
+
+Pour un annuaire, c'est un manque de fond : une fiche sans visuel inspire peu confiance,
+et `next/image` n'a rien à optimiser. À traiter en phase 5, en même temps que le catalogue
+produit — les scrapers récupèrent les images en même temps que les fiches.
 
 ### ⚠️ Décision à prendre : 902 marques sur 903 ne sont pas publiables
 

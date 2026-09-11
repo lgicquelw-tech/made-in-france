@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -170,10 +171,15 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
             <div className="relative aspect-square bg-gray-50 rounded-2xl overflow-hidden group">
               {allImages.length > 0 ? (
                 <>
-                  <img
+                  {/* Image principale : c'est l'element LCP de la fiche.
+                      `priority` evite un chargement paresseux qui le retarderait. */}
+                  <Image
                     src={allImages[currentImageIndex]}
                     alt={product.name}
-                    className="w-full h-full object-contain p-8 transition-transform duration-500 group-hover:scale-105"
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 600px"
+                    className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"
                   />
                   {allImages.length > 1 && (
                     <>
