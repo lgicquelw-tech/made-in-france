@@ -52,6 +52,9 @@ made-in-france/
 │   ├── database/               # schema.prisma — 33 modèles, migrations
 │   └── shared/                 # types et constantes partagés
 ├── scripts/                    # imports, scrapers, enrichissement, statistiques
+│   ├── audit/                  # pnpm data:audit — qualité des données, lecture seule
+│   ├── links/                  # pnpm data:links — liens morts (règle testée)
+│   └── catalogue/              # LE point d'écriture des produits scrappés (bruit, fusion, provenance)
 ├── data/brands.xlsx            # 903 marques — seule source de données versionnée
 └── docs/archive/               # documents historiques, non fiables
 ```
@@ -124,7 +127,7 @@ pnpm data:audit           # qualité des données : combien de fiches sont publi
 pnpm data:audit --liens   # ... en interrogeant aussi les liens sortants
 pnpm data:links           # vérifie les liens et désactive ceux qui sont durablement morts
 pnpm data:links --simuler # ... sans rien écrire
-pnpm test:links           # tests de la règle de désactivation
+pnpm test:scripts         # 27 tests : liens morts, filtre de bruit, règle de fusion
 ```
 
 `data:audit` est en **lecture seule** : il mesure, il ne corrige rien. `data:links`
@@ -151,13 +154,14 @@ Deux fichiers réels, tous deux ignorés par git :
 des tâches `test` et `test:e2e` qui ne pointent sur rien, et Vitest et Playwright sont
 prévus en phase 6 de `REBUILD.md`.
 
-Une exception : la règle de désactivation des liens morts est couverte par 10 tests,
+Une exception : les règles qui écrivent ou retirent du contenu — liens morts, filtre de
+bruit, fusion au réimport — sont couvertes par 27 tests,
 écrits avec le lanceur **intégré à Node 22** pour ne pas préempter le choix de la
 phase 6. C'est la partie du code où une erreur retire silencieusement une marque
 vivante de l'annuaire.
 
 ```bash
-pnpm test:links
+pnpm test:scripts
 ```
 
 ## Limites connues

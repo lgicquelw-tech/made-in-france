@@ -354,9 +354,14 @@ model Product {
   
   aiSellingPoints  Json          @default("[]") @map("ai_selling_points")
   
+  // Provenance (REBUILD.md T5.6). `externalSource` dit d'ou vient la fiche
+  // (`shopify`, `woocommerce`, ou null si saisie a la main), `externalId` son
+  // identifiant chez la source, `collectedAt` la date de la derniere collecte.
+  // Sans cette date, impossible de savoir ce qui est perime.
   externalId       String?       @map("external_id")
   externalSource   String?       @map("external_source")
   externalData     String?       @map("external_data")
+  collectedAt      DateTime?     @map("collected_at")
 
   // Lien d'achat declare mort (REBUILD.md T5.2). Meme regle que pour les marques :
   // on cesse d'afficher le bouton, on ne supprime pas l'URL.
@@ -372,6 +377,11 @@ model Product {
   events           Event[]
 
   @@unique([brandId, slug])
+  // Cle stable d'un produit scrappe (REBUILD.md T5.5) : une marque, une source, un
+  // identifiant chez la source. C'est elle qui rend le reimport idempotent. Les
+  // produits saisis a la main ont externalId null, ce que l'unicite SQL autorise
+  // en nombre illimite.
+  @@unique([brandId, externalSource, externalId])
   @@index([brandId])
   @@index([categoryId])
   @@index([status])

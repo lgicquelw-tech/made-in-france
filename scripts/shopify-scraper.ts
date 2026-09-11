@@ -1,19 +1,22 @@
 /**
- * 🛒 Shopify Product Scraper for Made in France
- * 
- * Ce script récupère automatiquement les produits des sites Shopify
- * et les importe dans la base de données Made in France.
- * 
- * Usage:
- *   npx tsx scripts/shopify-scraper.ts <brand-slug> <shopify-domain>
- * 
- * Exemple:
- *   npx tsx scripts/shopify-scraper.ts raptor-nutrition raptornutrition.fr
+ * Scraper Shopify — collecte les produits d'une boutique et les confie au point
+ * d'écriture unique du catalogue (`scripts/catalogue/upsert.ts`).
+ *
+ * Ce fichier ne touche plus à `prisma.product`. Il récupère, convertit, et appelle
+ * `enregistrerCollecte`, qui filtre le bruit, dédoublonne, retrouve la fiche par sa
+ * clé stable et n'écrase jamais un champ éditorial (REBUILD.md T5.3, T5.5, T5.6).
+ *
+ * Usage :
+ *   npx tsx scripts/shopify-scraper.ts <slug-marque> <domaine>   une marque
+ *   npx tsx scripts/shopify-scraper.ts --scan                     détecter les boutiques
+ *   npx tsx scripts/shopify-scraper.ts --all                      détecter ET importer
  */
 
 import dotenv from 'dotenv';
 dotenv.config();
 import { PrismaClient } from '@prisma/client';
+import { texteDepuisHtml } from './catalogue/html';
+import { enregistrerCollecte, afficherBilan, type ProduitAEnregistrer } from './catalogue/upsert';
 
 const prisma = new PrismaClient();
 
@@ -59,26 +62,6 @@ interface ShopifyResponse {
   products: ShopifyProduct[];
 }
 
-// Nettoyer le HTML pour avoir une description propre
-function cleanHtml(html: string): string {
-  if (!html) return '';
-  
-  return html
-    // Supprimer les tags HTML
-    .replace(/<[^>]*>/g, ' ')
-    // Décoder les entités HTML
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    // Supprimer les espaces multiples
-    .replace(/\s+/g, ' ')
-    // Supprimer le marqueur __TAB__
-    .replace(/__TAB__/g, '')
-    .trim();
-}
 
 // Créer un slug unique pour le produit
 function createProductSlug(brandSlug: string, productHandle: string): string {
@@ -142,102 +125,56 @@ async function fetchShopifyProducts(domain: string): Promise<ShopifyProduct[]> {
 }
 
 // Importer les produits dans la base de données
-async function importProducts(brandSlug: string, products: ShopifyProduct[]): Promise<void> {
-  // Trouver la marque
-  const brand = await prisma.brand.findUnique({
-    where: { slug: brandSlug }
-  });
-  
-  if (!brand) {
-    throw new Error(`Brand not found: ${brandSlug}`);
-  }
-  
-  console.log(`\n📦 Importing ${products.length} products for ${brand.name}...`);
-  
-  let created = 0;
-  let updated = 0;
-  let errors = 0;
-  
-  for (const shopifyProduct of products) {
-    try {
-      const productSlug = createProductSlug(brandSlug, shopifyProduct.handle);
-      
-      // Prendre le prix de la première variante disponible
-      const availableVariant = shopifyProduct.variants.find(v => v.available) || shopifyProduct.variants[0];
-      const price = availableVariant ? parseFloat(availableVariant.price) : null;
-      
-      // Prendre la première image comme image principale
-      const imageUrl = shopifyProduct.images[0]?.src || null;
-      
-      // Toutes les images pour la galerie (y compris la première)
-      const galleryUrls = shopifyProduct.images.map(img => img.src);
-      
-      // Créer les données du produit
-      const productData = {
-        name: shopifyProduct.title,
-        slug: productSlug,
-        descriptionShort: cleanHtml(shopifyProduct.body_html).substring(0, 500),
-        descriptionLong: cleanHtml(shopifyProduct.body_html),
-        priceMin: price,
-        priceMax: price,
-        imageUrl: imageUrl,
-        galleryUrls: galleryUrls, // <-- AJOUT: toutes les images
-        brandId: brand.id,
-        status: 'ACTIVE' as const, // actif par defaut (membre de l'enum ProductStatus)
+/**
+ * Convertit un produit Shopify en produit à enregistrer.
+ *
+ * Le lien d'achat est **construit** depuis le domaine et la poignée : l'ancien
+ * scraper ne le renseignait jamais, et tout produit Shopify arrivait sans bouton
+ * d'achat. La description brute est gardée dans `externalData` pour qu'une
+ * amélioration côté marchand reste accessible sans toucher au champ éditorial.
+ */
+function convertir(brandSlug: string, domain: string, p: ShopifyProduct): ProduitAEnregistrer {
+  const variantes = p.variants ?? [];
+  const prix = variantes
+    .map((v) => Number.parseFloat(v.price))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  const description = texteDepuisHtml(p.body_html);
+  const images = (p.images ?? []).map((i) => i.src);
 
-        // Metadata Shopify (pour sync future)
-        externalId: shopifyProduct.id.toString(),
-        externalSource: 'shopify',
-        externalData: JSON.stringify({
-          handle: shopifyProduct.handle,
-          vendor: shopifyProduct.vendor,
-          product_type: shopifyProduct.product_type,
-          tags: shopifyProduct.tags,
-          variants: shopifyProduct.variants.map(v => ({
-            id: v.id,
-            title: v.title,
-            price: v.price,
-            sku: v.sku,
-            available: v.available
-          })),
-          images: shopifyProduct.images.map(i => i.src),
-          updated_at: shopifyProduct.updated_at
-        })
-      };
-      
-      // Upsert - créer ou mettre à jour
-      const existingProduct = await prisma.product.findFirst({
-        where: {
-          brandId: brand.id,
-          externalId: shopifyProduct.id.toString()
-        }
-      });
-      
-      if (existingProduct) {
-        await prisma.product.update({
-          where: { id: existingProduct.id },
-          data: productData
-        });
-        updated++;
-      } else {
-        await prisma.product.create({
-          data: productData
-        });
-        created++;
-      }
-      
-      process.stdout.write('.');
-      
-    } catch (error) {
-      console.error(`\n❌ Error importing "${shopifyProduct.title}":`, error);
-      errors++;
-    }
-  }
-  
-  console.log(`\n\n✅ Import terminé!`);
-  console.log(`   - Créés: ${created}`);
-  console.log(`   - Mis à jour: ${updated}`);
-  console.log(`   - Erreurs: ${errors}`);
+  return {
+    externalSource: 'shopify',
+    externalId: String(p.id),
+    name: p.title,
+    slug: createProductSlug(brandSlug, p.handle),
+    descriptionShort: description ? description.slice(0, 500) : null,
+    descriptionLong: description || null,
+    priceMin: prix.length ? Math.min(...prix) : null,
+    priceMax: prix.length ? Math.max(...prix) : null,
+    currency: 'EUR',
+    imageUrl: images[0] ?? null,
+    galleryUrls: images,
+    externalBuyUrl: `https://${domain}/products/${p.handle}`,
+    externalData: JSON.stringify({
+      handle: p.handle,
+      vendor: p.vendor,
+      product_type: p.product_type,
+      tags: p.tags,
+      body_html: p.body_html,
+      variants: variantes.map((v) => ({ id: v.id, title: v.title, price: v.price, sku: v.sku, available: v.available })),
+      images,
+      updated_at: p.updated_at,
+    }),
+    type: p.product_type,
+    tags: p.tags,
+  };
+}
+
+async function importProducts(brandSlug: string, domain: string, products: ShopifyProduct[]): Promise<void> {
+  const brand = await prisma.brand.findUnique({ where: { slug: brandSlug }, select: { id: true, name: true } });
+  if (!brand) throw new Error(`Marque introuvable : ${brandSlug}`);
+
+  const bilan = await enregistrerCollecte(prisma, brand.id, products.map((p) => convertir(brandSlug, domain, p)));
+  afficherBilan(brand.name, bilan);
 }
 
 // Vérifier si un site est Shopify
@@ -255,7 +192,7 @@ async function isShopifySite(domain: string): Promise<boolean> {
 }
 
 // Scanner toutes les marques pour trouver les sites Shopify
-async function scanForShopifySites(): Promise<void> {
+async function scanForShopifySites(): Promise<{ name: string; slug: string; domain: string }[]> {
   console.log('🔍 Scanning all brands for Shopify sites...\n');
   
   const brands = await prisma.brand.findMany({
@@ -276,8 +213,10 @@ async function scanForShopifySites(): Promise<void> {
     if (!brand.websiteUrl) continue;
     
     try {
-      const url = new URL(brand.websiteUrl);
-      const domain = url.hostname.replace('www.', '');
+      // On garde le nom d'hôte tel que la marque le déclare, `www.` compris : c'est
+      // lui qui sert à construire le lien d'achat, et un lien canonique vaut mieux
+      // qu'un lien qui redirige.
+      const domain = new URL(brand.websiteUrl).hostname;
       
       const isShopify = await isShopifySite(domain);
       
@@ -309,105 +248,46 @@ async function scanForShopifySites(): Promise<void> {
       console.log(`    Command: npx tsx scripts/shopify-scraper.ts ${b.slug} ${b.domain}`);
     });
   }
-}
-
-// Mettre à jour les galleryUrls depuis externalData existant
-async function updateGalleryUrls(): Promise<void> {
-  console.log('🔄 Updating galleryUrls from externalData...\n');
-  
-  const products = await prisma.product.findMany({
-    where: {
-      externalSource: 'shopify',
-      externalData: { not: null }
-    }
-  });
-  
-  console.log(`Found ${products.length} Shopify products to update`);
-  
-  let updated = 0;
-  let errors = 0;
-  
-  for (const product of products) {
-    try {
-      if (!product.externalData) continue;
-      
-      const externalData = JSON.parse(product.externalData as string);
-      const images = externalData.images || [];
-      
-      if (images.length > 0) {
-        await prisma.product.update({
-          where: { id: product.id },
-          data: {
-            galleryUrls: images
-          }
-        });
-        updated++;
-        process.stdout.write('.');
-      }
-    } catch (error) {
-      errors++;
-      process.stdout.write('x');
-    }
-  }
-  
-  console.log(`\n\n✅ Update terminé!`);
-  console.log(`   - Mis à jour: ${updated}`);
-  console.log(`   - Erreurs: ${errors}`);
+  return shopifyBrands;
 }
 
 // Main
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args[0] === '--scan') {
-    // Mode scan: trouver tous les sites Shopify
     await scanForShopifySites();
-  } else if (args[0] === '--update-gallery') {
-    // Mode update: mettre à jour les galleryUrls depuis externalData
-    await updateGalleryUrls();
+  } else if (args[0] === '--all') {
+    // Remplace `import-all-shopify.ts` et sa liste de 181 marques figée en dur :
+    // la détection est refaite à chaque passage, sur les marques réellement en base.
+    const boutiques = await scanForShopifySites();
+    for (const b of boutiques) {
+      try {
+        const products = await fetchShopifyProducts(b.domain);
+        if (products.length > 0) await importProducts(b.slug, b.domain, products);
+      } catch (e) {
+        console.error(`\n  ${b.name} : ${e instanceof Error ? e.message : e}`);
+      }
+    }
   } else if (args.length >= 2) {
-    // Mode import: importer les produits d'une marque
     const [brandSlug, domain] = args;
-    
-    console.log(`\n🛒 Shopify Scraper - Made in France\n`);
-    console.log(`Brand: ${brandSlug}`);
-    console.log(`Domain: ${domain}\n`);
-    
-    // Vérifier que c'est bien un site Shopify
-    const isShopify = await isShopifySite(domain);
-    if (!isShopify) {
-      console.error(`❌ ${domain} n'est pas un site Shopify ou l'API n'est pas accessible`);
+    console.log(`\nShopify — ${brandSlug} (${domain})`);
+    if (!(await isShopifySite(domain))) {
+      console.error(`${domain} n'est pas une boutique Shopify, ou son API n'est pas accessible`);
       process.exit(1);
     }
-    
-    // Récupérer et importer les produits
     const products = await fetchShopifyProducts(domain);
-    
-    if (products.length > 0) {
-      await importProducts(brandSlug, products);
-    } else {
-      console.log('⚠️ Aucun produit trouvé');
-    }
+    if (products.length > 0) await importProducts(brandSlug, domain, products);
+    else console.log('Aucun produit trouvé');
   } else {
     console.log(`
-🛒 Shopify Scraper - Made in France
-
-Usage:
-  npx tsx scripts/shopify-scraper.ts <brand-slug> <domain>
-  npx tsx scripts/shopify-scraper.ts --scan
-  npx tsx scripts/shopify-scraper.ts --update-gallery
-
-Exemples:
-  npx tsx scripts/shopify-scraper.ts raptor-nutrition raptornutrition.fr
-  npx tsx scripts/shopify-scraper.ts --scan            # Trouver tous les sites Shopify
-  npx tsx scripts/shopify-scraper.ts --update-gallery  # Mettre à jour les galleryUrls existantes
-
-Options:
-  --scan            Scanner toutes les marques pour détecter les sites Shopify
-  --update-gallery  Mettre à jour galleryUrls depuis externalData (pour produits déjà importés)
+Usage :
+  npx tsx scripts/shopify-scraper.ts <slug-marque> <domaine>
+  npx tsx scripts/shopify-scraper.ts --scan     détecter les boutiques Shopify
+  npx tsx scripts/shopify-scraper.ts --all      détecter et importer toutes les boutiques
 `);
   }
-  
+
   await prisma.$disconnect();
 }
 

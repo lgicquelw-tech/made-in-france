@@ -232,3 +232,82 @@ pas de sens à le brancher deux fois dans trois fichiers qui vont fusionner.
 addition devra d'abord le scinder (règle 7).
 
 **Commit.** `phase 5 (3/n): filtre de bruit et dedoublonnage (T5.3)`
+
+### 2026-09-11 · T5.5 + T5.6 — Import idempotent et provenance
+
+**But.** Qu'un scraping relancé N fois donne le même résultat qu'une fois, sans jamais
+détruire un travail éditorial ; et que chaque produit dise d'où il vient et de quand.
+
+**Fait.**
+
+- Migration additive `20260911100500_provenance_produit` : colonne
+  `products.collected_at` et clé unique `(brand_id, external_source, external_id)`.
+  **Écrite à la main** — `prisma migrate dev` exige une confirmation interactive pour
+  toute contrainte unique sur une table existante, et refuse sans terminal. Vérifiée
+  par `prisma migrate diff` : **écart vide** entre la base et le schéma.
+- `scripts/catalogue/merge.ts` — la règle de fusion, pure : deux listes, ce que la
+  boutique connaît mieux que nous (prix, images, lien, données brutes) et tout le reste,
+  posé une fois et jamais réécrit. 4 tests, dont le scénario complet
+  *création → enrichissement → rescrape*.
+- `scripts/catalogue/upsert.ts` — **le seul point d'écriture** d'un produit scrappé.
+  Filtre le bruit (T5.3), dédoublonne, retrouve par clé stable, applique la règle, pose
+  la date. Un produit collecté naît en `DRAFT` : c'est l'audit qui publie (T5.8), pas le
+  seul fait d'avoir été scrappé.
+- `scripts/catalogue/html.ts` — `texteDepuisHtml`, qui remplace **trois copies**
+  identiques de `cleanHtml`.
+- Les deux scrapers ne touchent plus `prisma.product`. `import-all-shopify.ts` est
+  supprimé : il dupliquait `shopify-scraper.ts` avec une liste de 181 marques figée ;
+  `--all` refait la détection à chaque passage sur les marques réellement en base.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test:scripts` | **27 / 27** |
+| `pnpm typecheck` | 7 / 7 |
+| `prisma migrate diff` base ↔ schéma | vide |
+| Copies de `cleanHtml` dans `scripts/` | 3 → **0** |
+| Accès directs à `prisma.product` dans les scrapers | **0** |
+
+**Preuve d'idempotence, sur une vraie boutique** (`www.airpurlabs.com`, 10 produits) :
+
+| Étape | Résultat |
+|---|---|
+| Passage 1 | 10 créés, 0 mis à jour |
+| Entre les deux : `descriptionLong` remplacée à la main, statut passé à `ACTIVE` sur une fiche | — |
+| Passage 2 | **0 créé, 10 mis à jour** |
+| Produits en base après | **10** (pas 20) |
+| Texte éditorial | **intact** |
+| Statut `ACTIVE` | **intact** |
+| `collectedAt` | avancé |
+| Liens d'achat | **10 / 10**, HTTP 200 |
+
+Le texte de test a ensuite été retiré (suppression des 10 fiches, passage propre). Les
+10 produits Airpur Labs restent en base, en `DRAFT`, avec leur provenance — ce sont de
+vraies fiches d'une vraie marque de l'annuaire, et T5.8 aura besoin de matière.
+
+**Découvert.**
+
+1. **Le scraper Shopify ne renseignait jamais le lien d'achat.** WooCommerce le prend
+   dans `permalink` ; Shopify n'avait que la poignée, rangée dans `externalData`. Tout
+   produit Shopify arrivait donc sans bouton d'achat. Le lien est désormais construit,
+   avec le nom d'hôte **tel que la marque le déclare** (`www.` compris) — un lien
+   canonique vaut mieux qu'un lien qui redirige.
+2. **`--all` WooCommerce ne traitait que les marques sans aucun produit**
+   (`products: { none: {} }`). Une relance ne mettait donc jamais rien à jour — l'exact
+   inverse de l'idempotence. Filtre retiré.
+3. **Les erreurs de `--all` étaient avalées** (`// Skip silently`). Elles sont affichées.
+4. Le heredoc de cet environnement convertit `\uXXXX` en caractère réel, même quoté.
+   Deux caractères combinants invisibles se sont retrouvés dans une regex ; corrigé par
+   construction explicite de l'échappement. Sans conséquence fonctionnelle, mais
+   illisible — noté pour ne pas le rechercher deux fois.
+
+**Compromis assumé et signalé :** le **nom** est un champ collecté — c'est la boutique
+qui nomme son produit. Un renommage éditorial serait donc écrasé au rescrape. Choix
+documenté dans `merge.ts`, à revoir si le besoin apparaît.
+
+**Ce que T5.5 ne fait pas :** détecter un produit **disparu** de la boutique. Un
+produit retiré du catalogue marchand reste en base tel qu'il était. À traiter avec la
+planification des passages (phase 7).
+
+**Commit.** `phase 5 (4/n): import idempotent et provenance (T5.5, T5.6)`

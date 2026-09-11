@@ -1,11 +1,19 @@
 /**
- * 🛒 WooCommerce Product Scraper for Made in France
+ * Scraper WooCommerce — collecte les produits d'une boutique (API Store, sans clé)
+ * et les confie au point d'écriture unique du catalogue (`scripts/catalogue/upsert.ts`).
+ *
+ * Ce fichier ne touche plus à `prisma.product` (REBUILD.md T5.3, T5.5, T5.6).
+ *
+ * Usage :
+ *   npx tsx scripts/woocommerce-scraper.ts <slug-marque> <domaine>
+ *   npx tsx scripts/woocommerce-scraper.ts --all
  */
 
 import dotenv from 'dotenv';
 dotenv.config();
-
 import { PrismaClient } from '@prisma/client';
+import { texteDepuisHtml } from './catalogue/html';
+import { enregistrerCollecte, afficherBilan, type ProduitAEnregistrer } from './catalogue/upsert';
 
 const prisma = new PrismaClient();
 
@@ -22,20 +30,8 @@ interface WooProduct {
   };
   images: { id: number; src: string; alt: string }[];
   permalink: string;
-}
-
-function cleanHtml(html: string): string {
-  if (!html) return '';
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
+  categories?: { id: number; name: string; slug: string }[];
+  tags?: { id: number; name: string; slug: string }[];
 }
 
 function createProductSlug(brandSlug: string, productSlug: string): string {
@@ -81,88 +77,50 @@ async function fetchWooProducts(domain: string): Promise<WooProduct[]> {
   return allProducts;
 }
 
+/** Convertit un produit de l'API Store WooCommerce en produit à enregistrer. */
+function convertir(brandSlug: string, p: WooProduct): ProduitAEnregistrer {
+  // L'API Store exprime les prix en centimes, sous forme de chaîne.
+  const prix = p.prices?.price ? Number.parseInt(p.prices.price, 10) / 100 : NaN;
+  const longue = texteDepuisHtml(p.description);
+  const courte = texteDepuisHtml(p.short_description) || longue;
+  const images = (p.images ?? []).map((i) => i.src);
+
+  return {
+    externalSource: 'woocommerce',
+    externalId: String(p.id),
+    name: p.name,
+    slug: createProductSlug(brandSlug, p.slug),
+    descriptionShort: courte ? courte.slice(0, 500) : null,
+    descriptionLong: longue || null,
+    priceMin: Number.isFinite(prix) && prix > 0 ? prix : null,
+    priceMax: Number.isFinite(prix) && prix > 0 ? prix : null,
+    currency: p.prices?.currency_code || 'EUR',
+    imageUrl: images[0] ?? null,
+    galleryUrls: images,
+    externalBuyUrl: p.permalink || null,
+    externalData: JSON.stringify(p),
+    type: (p.categories ?? []).map((c) => c.name).join(' / ') || null,
+    tags: (p.tags ?? []).map((t) => t.name),
+  };
+}
+
 async function importProducts(brandSlug: string, products: WooProduct[]): Promise<void> {
-  const brand = await prisma.brand.findUnique({
-    where: { slug: brandSlug }
-  });
+  const brand = await prisma.brand.findUnique({ where: { slug: brandSlug }, select: { id: true, name: true } });
+  if (!brand) throw new Error(`Marque introuvable : ${brandSlug}`);
 
-  if (!brand) {
-    throw new Error(`Brand not found: ${brandSlug}`);
-  }
-
-  console.log(`\n📦 Importing ${products.length} products for ${brand.name}...`);
-
-  let created = 0;
-  let updated = 0;
-  let errors = 0;
-
-  for (const wooProduct of products) {
-    try {
-      const productSlug = createProductSlug(brandSlug, wooProduct.slug);
-      const price = wooProduct.prices?.price ? parseFloat(wooProduct.prices.price) / 100 : null;
-      const imageUrl = wooProduct.images?.[0]?.src || null;
-      const galleryUrls = wooProduct.images?.map(img => img.src) || [];
-
-      const productData = {
-        name: wooProduct.name,
-        slug: productSlug,
-        descriptionShort: cleanHtml(wooProduct.short_description || wooProduct.description).substring(0, 500),
-        descriptionLong: cleanHtml(wooProduct.description),
-        priceMin: price,
-        priceMax: price,
-        imageUrl: imageUrl,
-        galleryUrls: galleryUrls,
-        brandId: brand.id,
-        status: 'ACTIVE' as const,
-        externalBuyUrl: wooProduct.permalink,
-        externalId: wooProduct.id.toString(),
-        externalSource: 'woocommerce',
-        externalData: JSON.stringify(wooProduct)
-      };
-
-      const existingProduct = await prisma.product.findFirst({
-        where: {
-          brandId: brand.id,
-          externalId: wooProduct.id.toString(),
-          externalSource: 'woocommerce'
-        }
-      });
-
-      if (existingProduct) {
-        await prisma.product.update({
-          where: { id: existingProduct.id },
-          data: productData
-        });
-        updated++;
-      } else {
-        await prisma.product.create({
-          data: productData
-        });
-        created++;
-      }
-
-      process.stdout.write('.');
-
-    } catch (error) {
-      console.error(`\n❌ Error importing "${wooProduct.name}":`, error);
-      errors++;
-    }
-  }
-
-  console.log(`\n\n✅ Import terminé!`);
-  console.log(`   - Créés: ${created}`);
-  console.log(`   - Mis à jour: ${updated}`);
-  console.log(`   - Erreurs: ${errors}`);
+  const bilan = await enregistrerCollecte(prisma, brand.id, products.map((p) => convertir(brandSlug, p)));
+  afficherBilan(brand.name, bilan);
 }
 
 async function importAllWooCommerce(): Promise<void> {
   console.log('🔍 Finding all WooCommerce brands...\n');
 
+  // Toutes les marques avec un site — pas seulement celles « sans produit ». L'ancien
+  // filtre `products: { none: {} }` empêchait toute mise à jour : une relance ne
+  // repassait jamais sur une marque déjà importée, ce qui est l'inverse de
+  // l'idempotence voulue par T5.5.
   const brands = await prisma.brand.findMany({
-    where: {
-      websiteUrl: { not: null },
-      products: { none: {} }
-    },
+    where: { websiteUrl: { not: null } },
     select: { name: true, slug: true, websiteUrl: true }
   });
 
@@ -188,7 +146,9 @@ async function importAllWooCommerce(): Promise<void> {
         }
       }
     } catch (error) {
-      // Skip silently
+      // Un domaine injoignable n'est pas une boutique WooCommerce : on passe, mais
+      // on le dit — une erreur avalée est une erreur qu'on ne peut pas corriger.
+      process.stdout.write(`\n  ${brand.name} : ${error instanceof Error ? error.message : error}`);
     }
   }
 

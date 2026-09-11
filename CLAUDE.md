@@ -143,9 +143,11 @@ pnpm test:links                      # 10 tests de la regle de desactivation
 
 # Données
 npx tsx scripts/stats.ts             # compte réel marques / produits en base
-npx tsx scripts/shopify-scraper.ts --all
-npx tsx scripts/woocommerce-scraper.ts --all
+npx tsx --env-file=.env scripts/shopify-scraper.ts --all        # detecte et importe toutes les boutiques Shopify
+npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommerce
+npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 npx tsx scripts/enrich-all-products.ts
+pnpm test:scripts                    # 27 tests : liens, bruit, fusion
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)
@@ -176,7 +178,7 @@ silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
 **La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
 perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). Elle contient
 aujourd'hui 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
-**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`) et 2 produits.
+**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`) et **12 produits** — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
 
 ⚠️ **Les liens `.env` sont ignorés par git** : `apps/api/.env`, `apps/web/.env` et tout
 lien équivalent n'existent pas sur un clone neuf. C'est pourquoi **toutes les commandes
@@ -239,6 +241,7 @@ chemins commençant par `../`.
 | Version d'API Stripe | Figée une seule fois dans `STRIPE_API_VERSION` (`index.ts`). Ne pas la redéclarer ailleurs. |
 | Clearbit | Mort. Les logos passent par Google Favicons |
 | **Un 403 n'est pas un site mort** | C'est un pare-feu qui a reconnu un robot. Une boutique derrière Cloudflare répond 403 à l'audit et 200 à un humain. `data:links` a donc **trois** verdicts, pas deux : `vivant`, `mort`, `indetermine` — et ne désactive que les `mort`. Confondre les deux retire des marques vivantes de l'annuaire, silencieusement. |
+| **Écriture d'un produit scrappé** | Un seul point : `scripts/catalogue/upsert.ts` → `enregistrerCollecte`. Les scrapers ne touchent **jamais** `prisma.product` directement. Clé stable `(brandId, externalSource, externalId)` ; le rescrape réécrit prix, images, lien, données brutes et `collectedAt`, et **jamais** descriptions, slug, statut, catégorie, matières, SEO. Un produit collecté naît en `DRAFT` : c'est l'audit (T5.8) qui publie. |
 | Désactivation d'un lien | Ne détruit **jamais** l'URL : on pose `websiteDeadAt` / `buyUrlDeadAt` et l'affichage cesse. Il faut 3 échecs consécutifs **et** un premier échec vieux de 72 h — sans la seconde condition, relancer la commande trois fois pendant une panne d'hébergeur viderait l'annuaire. |
 | **Taxonomie des secteurs** | Une seule liste fait foi, partagée par quatre endroits : `data/brands.xlsx`, `SECTOR_MAPPING` de `scripts/import/import-brands.ts`, le seed, et le front (`app/secteurs/page.tsx` + `sitemap.ts`). Les 9 slugs : `mode-accessoires`, `maison-jardin`, `gastronomie`, `cosmetique`, `enfance`, `loisirs-sport`, `animaux`, `sante-nutrition`, `high-tech`. **Modifier l'un sans les autres laisse des centaines de marques sans secteur, sans la moindre erreur.** C'est arrivé : 687 marques sur 903. |
 | Noms de marque numériques | `909`, `1083`, `1336` sont de vraies marques. XLSX lit leur nom comme un **nombre** : toute validation en `typeof === 'string'` les rejette silencieusement. |
