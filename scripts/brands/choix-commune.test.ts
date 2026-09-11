@@ -1,0 +1,69 @@
+/** Tests du choix de commune (REBUILD.md T5.4). Lanceur intégré à Node 22. */
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { choisirCommune, formesAInterroger, type ResultatBan } from './choix-commune';
+
+const r = (label: string, context: string, score: number, type = 'municipality'): ResultatBan => ({
+  label, context, score, type, postcode: '00000', latitude: 0, longitude: 0,
+});
+
+// Les cinq Saint-Denis, tels que l'API les renvoie.
+const SAINT_DENIS = [
+  r('Saint-Denis', '974, La Réunion', 0.96),
+  r('Saint-Denis', '93, Seine-Saint-Denis, Île-de-France', 0.96),
+  r('Saint-Denis', '11, Aude, Occitanie', 0.93),
+  r('Saint-Denis', '30, Gard, Occitanie', 0.93),
+  r('Saint-Denis', '45, Loiret, Centre-Val de Loire', 0.85),
+];
+
+test('la region de la marque departage les homonymes', () => {
+  assert.equal(choisirCommune(SAINT_DENIS, 'Île-de-France').resultat?.context, '93, Seine-Saint-Denis, Île-de-France');
+  assert.equal(choisirCommune(SAINT_DENIS, 'La Réunion').resultat?.context, '974, La Réunion');
+  assert.equal(choisirCommune(SAINT_DENIS, 'Centre-Val de Loire').resultat?.context, '45, Loiret, Centre-Val de Loire');
+});
+
+test('la comparaison ignore accents et casse', () => {
+  assert.equal(choisirCommune(SAINT_DENIS, 'ile-de-france').resultat?.postcode, '00000');
+  assert.equal(choisirCommune(SAINT_DENIS, 'ILE-DE-FRANCE').resultat?.context.startsWith('93'), true);
+});
+
+test('deux candidats dans la meme region : le meilleur score gagne', () => {
+  const c = choisirCommune(SAINT_DENIS, 'Occitanie');
+  assert.equal(c.resultat?.context, '11, Aude, Occitanie');
+});
+
+test('sans correspondance de region, on ne devine pas', () => {
+  const c = choisirCommune(SAINT_DENIS, 'Bretagne');
+  assert.equal(c.resultat, null);
+  assert.equal(c.motif, 'aucun résultat dans la région');
+});
+
+test('sans region connue, le meilleur score gagne', () => {
+  const c = choisirCommune(SAINT_DENIS, null);
+  assert.equal(c.resultat?.score, 0.96);
+});
+
+test('un score trop faible est rejete', () => {
+  const c = choisirCommune([r('Quelquepart', '64, Pyrénées-Atlantiques, Nouvelle-Aquitaine', 0.31)], 'Nouvelle-Aquitaine');
+  assert.equal(c.resultat, null);
+  assert.equal(c.motif, 'score trop faible');
+});
+
+test('seules les communes comptent, pas les rues', () => {
+  const c = choisirCommune([r('Rue de Bidache', '64, Pyrénées-Atlantiques, Nouvelle-Aquitaine', 0.9, 'street')], 'Nouvelle-Aquitaine');
+  assert.equal(c.resultat, null);
+  assert.equal(c.motif, 'aucun résultat');
+});
+
+test('liste vide', () => {
+  assert.equal(choisirCommune([], 'Bretagne').motif, 'aucun résultat');
+});
+
+test('formes a interroger : la premiere partie avant / ou ( en repli', () => {
+  assert.deepEqual(formesAInterroger('Paris / Vincennes'), ['Paris / Vincennes', 'Paris']);
+  assert.deepEqual(formesAInterroger('Roubaix / Lille (Métropole)'), ['Roubaix / Lille (Métropole)', 'Roubaix']);
+  assert.deepEqual(formesAInterroger('Saint-Denis (93)'), ['Saint-Denis (93)', 'Saint-Denis']);
+  assert.deepEqual(formesAInterroger('Bidache'), ['Bidache']);
+  assert.deepEqual(formesAInterroger('(Boutique en ligne)'), ['(Boutique en ligne)']);
+});

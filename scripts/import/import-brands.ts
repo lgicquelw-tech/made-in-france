@@ -18,6 +18,7 @@ import { PrismaClient, MadeInFranceLevel, BrandStatus } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import XLSX from 'xlsx';
+import { retirerParametresDeSuivi } from '../brands/urls';
 
 const prisma = new PrismaClient();
 
@@ -280,7 +281,9 @@ function cleanUrl(url: string | undefined | null): string | null {
     const parsed = new URL(url);
     const host = parsed.hostname;
     const looksLikeDomain = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(host);
-    return looksLikeDomain ? url : null;
+    // Les parametres de suivi (utm_*, fbclid...) identifient une campagne, pas une
+    // page : on ne les garde pas (REBUILD.md T5.4).
+    return looksLikeDomain ? retirerParametresDeSuivi(url) : null;
   } catch {
     return null;
   }
@@ -557,10 +560,15 @@ class BrandImporter {
       }
 
       if (existing) {
-        // Update existing brand
+        // Mise a jour d'une marque existante : le fichier fait foi pour les donnees
+        // qu'il porte, mais **pas pour le statut**. `brandData.status` vaut
+        // PENDING_REVIEW pour toute ligne ; le reecrire ici remettait en attente
+        // chaque marque validee a chaque `pnpm bootstrap` (REBUILD.md T5.4). Le
+        // statut est une decision editoriale, il ne vient pas du fichier.
+        const { status: _statutIgnore, ...sansStatut } = brandData;
         await prisma.brand.update({
           where: { id: existing.id },
-          data: brandData,
+          data: sansStatut,
         });
         this.stats.updated++;
       } else {

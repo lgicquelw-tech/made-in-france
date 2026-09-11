@@ -351,3 +351,87 @@ en attente d'arbitrage (voir `REBUILD.md`).
 (fnm ne met pas `pnpm` sur le PATH de l'aperçu). Retiré de git, ajouté à `.gitignore`.
 
 **Commit.** `phase 5 (5/n): publication au seuil de completude (T5.8)`
+
+### 2026-09-11 · T5.4 — Contrôles sur les marques : géolocalisation et URL
+
+**But.** Remplir la carte (3 marques placées sur 903) et retirer les paramètres de
+suivi des URL de site. Les autres contrôles de T5.4 — URL valide, secteur et région
+reconnus, doublons — sont déjà mesurés par `pnpm data:audit` (T5.1).
+
+**Fait.**
+
+- `scripts/brands/choix-commune.ts`, module pur : parmi les résultats de l'API Adresse
+  nationale, garde celui **dont le contexte contient la région de la marque**. Le
+  problème résolu : les homonymes. « Saint-Denis » existe à La Réunion, en
+  Seine-Saint-Denis, dans l'Aude, le Gard et le Loiret, tous avec un score voisin. Sans
+  correspondance de région, **on ne devine pas**. 9 tests.
+- `scripts/brands/geocode.ts` — `pnpm data:geocode`. Ne réécrit jamais des coordonnées
+  existantes sans `--forcer`. Repli sur la première partie avant `/` ou `(` quand la
+  colonne contient deux lieux (« Paris / Vincennes »).
+- `scripts/brands/urls.ts` — `retirerParametresDeSuivi`, 6 tests, branché dans
+  `cleanUrl` de l'import.
+- **L'import ne réécrit plus le statut** d'une marque existante. `brandData.status`
+  valait `PENDING_REVIEW` pour toute ligne : chaque `pnpm bootstrap` remettait en
+  attente toute marque validée. Même défaut que les scrapers avant T5.5, côté marques.
+- `geocode-api.cjs` (premier résultat, sans score ni type) et `geocode-brands.cjs`
+  (546 lignes de coordonnées en dur) supprimés.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test:scripts` | **49 / 49** |
+| `pnpm typecheck` | 7 / 7 |
+| Marques géolocalisées | 3 → **868 / 903** (96 %) |
+| `/carte` dans l'aperçu | « 868 marques affichées », points sur toute la métropole |
+| `pnpm db:import` relancé | 903 mises à jour, statut `ACTIVE` intact, 868 coordonnées intactes |
+| URL avec `utm_` / `fbclid` | 1 → **0** |
+
+**Précision à connaître :** les coordonnées sont **le centre de la commune**, pas
+l'adresse — la base n'a qu'une ville pour 902 marques sur 903. Suffisant pour une carte
+de France ; à savoir avant de zoomer sur un quartier.
+
+**Les 35 marques non placées sont des défauts de la source, pas du géocodage.** La
+colonne `city` de `data/brands.xlsx` y contient une région, un département, une
+commune fusionnée, un hameau, ou rien. Plus d'heuristique ne les résoudra pas ; c'est
+une correction à faire dans le fichier, ligne par ligne :
+
+| Marque | Colonne `city` | Région |
+|---|---|---|
+| 1+3 | `France` | Occitanie |
+| ALOHÉ | `Martinique` | Martinique |
+| AMEWAT | `Guyane` | Guyane |
+| ANCRÉE | `Île-de-France` | Île-de-France |
+| CAMADOUE | `Raphèle-lès-Arles` | Provence-Alpes-Côte d'Azur |
+| CAPS ME | `Île-de-France` | Île-de-France |
+| CHOCOLATERIE DE PUYRICARD | `Puyricard / Aix` | Provence-Alpes-Côte d'Azur |
+| DE CLERMONT | `Clermont-Clermont` | Auvergne-Rhône-Alpes |
+| ÉBÉNISTERIE VUILLEMIN | `Franche-Comté` | Bourgogne-Franche-Comté |
+| EUGÉNIE DE JAHAM | `Martinique / Paris` | Île-de-France |
+| FLANM & SAVEURS | `Guadeloupe` | Guadeloupe |
+| FRANCE FOULARDS | `Comelles` | Auvergne-Rhône-Alpes |
+| GROIX ET NATURE | `Île de Groix` | Bretagne |
+| HELIX ATELIER | `France` | Hauts-de-France |
+| HUGO | `Bourré` | Centre-Val de Loire |
+| KADALYS | `Martinique` | Martinique |
+| LA MADELEINE BASQUE D'IBAN | `Pays Basque` | Nouvelle-Aquitaine |
+| LA ROSE TRÉMIÈRE | `Île de Ré` | Nouvelle-Aquitaine |
+| LE SAC DU BERGER | `Laysoleil` | Occitanie |
+| LES CONFITURES DU CLOCHER | `Arèches-Beaufort` | Auvergne-Rhône-Alpes |
+| LILIBELLULE | `Alsace` | Grand Est |
+| MARCUS SPURWAY | `Gasse` | Provence-Alpes-Côte d'Azur |
+| MAROQUINIÈRE CRÉATIVE | `France` | Nouvelle-Aquitaine |
+| MEUBLES AUGER | `Charente-Maritime` | Nouvelle-Aquitaine |
+| MONTLIMART | `Saint-Pierre-Montlimart` | Pays de la Loire |
+| NANNETTA | `Monaco` | — |
+| ‘ŌTEO TAHITI | `Tahiti` | Polynésie française |
+| POM’ POM’ | `Manche` | Normandie |
+| RECYCLED BY LISA | `(Boutique en ligne)` | — |
+| SESSILE | `Montjean-sur-Loire` | Pays de la Loire |
+| SÈVE & COPEAUX | `Jura` | Bourgogne-Franche-Comté |
+| TEARDROP LA BOURIQUETTE | `Saint-Germain-de-Marencennes` | Nouvelle-Aquitaine |
+| TERRE DE ROSE DISTILLERIE | `Doué-la-Fontaine` | Pays de la Loire |
+| VELOURS DE L’ABBAYE | `Hauts-de-France` | Hauts-de-France |
+| WIA | `—` | — |
+
+**Commit.** `phase 5 (6/n): geolocalisation et controles sur les marques (T5.4)`

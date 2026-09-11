@@ -139,7 +139,9 @@ pnpm data:audit                      # lecture seule : combien de fiches sont pu
 pnpm data:audit --liens              # ... en interrogeant les liens sortants
 pnpm data:links                      # desactive les liens durablement morts (jamais effaces)
 pnpm data:links --simuler            # ... sans rien ecrire
-pnpm test:links                      # 10 tests de la regle de desactivation
+pnpm data:publish                    # publie les produits complets, retire les incomplets (T5.8)
+pnpm data:geocode                    # place les marques par leur commune, API Adresse nationale (T5.4)
+pnpm test:scripts                    # 49 tests : liens, bruit, fusion, publication, geocodage, URL
 
 # Données
 npx tsx scripts/stats.ts             # compte réel marques / produits en base
@@ -242,6 +244,8 @@ chemins commençant par `../`.
 | Clearbit | Mort. Les logos passent par Google Favicons |
 | **Un 403 n'est pas un site mort** | C'est un pare-feu qui a reconnu un robot. Une boutique derrière Cloudflare répond 403 à l'audit et 200 à un humain. `data:links` a donc **trois** verdicts, pas deux : `vivant`, `mort`, `indetermine` — et ne désactive que les `mort`. Confondre les deux retire des marques vivantes de l'annuaire, silencieusement. |
 | **Écriture d'un produit scrappé** | Un seul point : `scripts/catalogue/upsert.ts` → `enregistrerCollecte`. Les scrapers ne touchent **jamais** `prisma.product` directement. Clé stable `(brandId, externalSource, externalId)` ; le rescrape réécrit prix, images, lien, données brutes et `collectedAt`, et **jamais** descriptions, slug, statut, catégorie, matières, SEO. Un produit collecté naît en `DRAFT` : c'est l'audit (T5.8) qui publie. |
+| **L'import de marques ne touche pas au statut** | `brandData.status` vaut `PENDING_REVIEW` pour toute ligne du fichier. Le réécrire à la mise à jour remettait en attente chaque marque validée à chaque `pnpm bootstrap`. Le statut est une décision éditoriale, il ne vient pas du fichier. |
+| Géocodage | Par **commune**, via `api-adresse.data.gouv.fr` ; précision = centre de la commune. Les homonymes (cinq « Saint-Denis ») sont départagés par la région de la marque ; sans correspondance on ne devine pas. |
 | Désactivation d'un lien | Ne détruit **jamais** l'URL : on pose `websiteDeadAt` / `buyUrlDeadAt` et l'affichage cesse. Il faut 3 échecs consécutifs **et** un premier échec vieux de 72 h — sans la seconde condition, relancer la commande trois fois pendant une panne d'hébergeur viderait l'annuaire. |
 | **Taxonomie des secteurs** | Une seule liste fait foi, partagée par quatre endroits : `data/brands.xlsx`, `SECTOR_MAPPING` de `scripts/import/import-brands.ts`, le seed, et le front (`app/secteurs/page.tsx` + `sitemap.ts`). Les 9 slugs : `mode-accessoires`, `maison-jardin`, `gastronomie`, `cosmetique`, `enfance`, `loisirs-sport`, `animaux`, `sante-nutrition`, `high-tech`. **Modifier l'un sans les autres laisse des centaines de marques sans secteur, sans la moindre erreur.** C'est arrivé : 687 marques sur 903. |
 | Noms de marque numériques | `909`, `1083`, `1336` sont de vraies marques. XLSX lit leur nom comme un **nombre** : toute validation en `typeof === 'string'` les rejette silencieusement. |
