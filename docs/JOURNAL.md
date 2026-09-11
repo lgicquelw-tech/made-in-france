@@ -190,3 +190,45 @@ espacés sur plus de 72 h. Aucun n'est planifié — il n'y a pas d'ordonnanceur
 projet. À rattacher au déploiement (phase 7).
 
 **Commit.** `phase 5 (2/n): verificateur de liens morts (T5.2)`
+
+### 2026-09-11 · T5.3 — Filtre de bruit et dédoublonnage
+
+**But.** Empêcher les cartes cadeaux, échantillons, frais de port et produits de test
+d'entrer dans le catalogue, et écarter les doublons de nom au sein d'une marque.
+
+**Fait.** `scripts/catalogue/noise.ts`, module pur : `detecterBruit()` renvoie `null`
+ou la **raison** du rejet (un filtre muet est un filtre qu'on ne peut pas corriger) ;
+`dedoublonner()` garde le premier et rattache les suivants. 13 tests dans
+`noise.test.ts` — dont une famille « à garder », qui compte plus que l'autre : un
+filtre trop large rend des produits invisibles sans que personne ne s'en aperçoive.
+Branché dans `pnpm data:audit`, qui annonce désormais ce qu'il écarterait.
+
+**Principe :** en cas de doute, on garde. « Coffret cadeau », « Miniature eau de
+parfum », « Testeur de pH » sont des produits. Les motifs sont étroits et testés dans
+les deux sens.
+
+**Vérifié.** `pnpm test:catalogue` **13 / 13**, `pnpm typecheck` 7 / 7. Sur les 2
+produits actuels : 0 bruit, 0 doublon — le filtre attend le catalogue.
+
+**Découvert.**
+
+1. **`\b` en JavaScript ne connaît que l'ASCII.** Devant « É », il ne voit aucune
+   frontière de mot : « Échantillon crème mains » passait, « Echantillon 5 ml » était
+   rejeté. Trouvé par le test, pas par relecture. Correction : désaccentuer le texte
+   avant de comparer, et écrire les motifs sans accent.
+2. **`import-all-shopify.ts` duplique `shopify-scraper.ts`** — mêmes `cleanHtml`,
+   `fetchShopifyProducts`, même écriture — avec une liste de 181 marques en dur. Trois
+   copies de `cleanHtml` dans `scripts/`. À fusionner en T5.5, pas maintenant.
+3. **Le chemin d'écriture des scrapers écrase tout** : `update({ data: productData })`
+   réécrit `descriptionLong`. Un enrichissement payé en appels de modèle serait effacé au
+   passage suivant. C'est exactement le défaut que T5.5 décrit ; il est confirmé dans le
+   code.
+
+**Ce que T5.3 ne fait pas encore :** le filtre n'est pas appelé par les scrapers. Il le
+sera quand T5.5 réécrira leur chemin d'écriture — c'est là qu'il doit vivre, et il n'y a
+pas de sens à le brancher deux fois dans trois fichiers qui vont fusionner.
+
+**Reste à traiter, consigné :** `scripts/audit/index.ts` est à 298 lignes. Toute
+addition devra d'abord le scinder (règle 7).
+
+**Commit.** `phase 5 (3/n): filtre de bruit et dedoublonnage (T5.3)`

@@ -33,7 +33,9 @@
     "admin:create": "tsx --env-file=.env scripts/create-admin.ts",
     "data:audit": "tsx --env-file=.env scripts/audit/index.ts",
     "test:links": "tsx --test scripts/links/policy.test.ts",
-    "data:links": "tsx --env-file=.env scripts/links/run.ts"
+    "data:links": "tsx --env-file=.env scripts/links/run.ts",
+    "test:catalogue": "tsx --test scripts/catalogue/*.test.ts",
+    "test:scripts": "tsx --test scripts/links/*.test.ts scripts/catalogue/*.test.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

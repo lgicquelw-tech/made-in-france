@@ -28,6 +28,7 @@ import {
   type FicheProduit,
 } from './checks';
 import { verifierLiens, type EtatLien } from './links';
+import { detecterBruit, dedoublonner } from '../catalogue/noise';
 import { evaluer, afficherBilan, afficherRepartition } from './report';
 
 const prisma = new PrismaClient();
@@ -114,7 +115,7 @@ async function main(): Promise<void> {
       descriptionShort: true, imageUrl: true, galleryUrls: true,
       priceMin: true, externalBuyUrl: true, affiliateUrl: true,
       categoryId: true, materials: true, madeInFranceLevel: true,
-      externalSource: true,
+      externalSource: true, tags: true,
     },
   });
 
@@ -164,7 +165,29 @@ async function main(): Promise<void> {
   for (const p of produits) parSource.set(p.externalSource ?? 'inconnue (manuel ?)', (parSource.get(p.externalSource ?? 'inconnue (manuel ?)') ?? 0) + 1);
   afficherRepartition('Produits par provenance (T5.6)', parSource);
 
-  // --- doublons
+  // --- bruit et doublons de produits (T5.3)
+  const bruit = new Map<string, number>();
+  for (const p of produits) {
+    const raison = detecterBruit({
+      name: p.name,
+      tags: Array.isArray(p.tags) ? (p.tags as unknown[]).map(String) : [],
+    });
+    if (raison) bruit.set(raison, (bruit.get(raison) ?? 0) + 1);
+  }
+  const parMarque = new Map<string, typeof produits>();
+  for (const p of produits) {
+    parMarque.set(p.brandId, [...(parMarque.get(p.brandId) ?? []), p]);
+  }
+  let doublonsProduits = 0;
+  for (const lot of parMarque.values()) doublonsProduits += dedoublonner(lot).doublons.length;
+  const totalBruit = [...bruit.values()].reduce((a, b) => a + b, 0);
+  afficherRepartition(
+    `Produits qui seraient écartés comme bruit — ${totalBruit} (T5.3)`,
+    bruit,
+  );
+  console.log(`  Doublons de nom au sein d'une même marque : ${doublonsProduits}`);
+
+  // --- doublons de marques
   const dm = doublonsDeNom(marques.map((m) => m.name));
   afficherRepartition(
     `Noms de marque en double — ${dm.size} nom(s) concerné(s)`,
@@ -251,6 +274,7 @@ async function main(): Promise<void> {
       produits: bilanProduits,
       ecartPublication: { publiablesNonPubliees, publieesNonPubliables },
       doublonsDeNom: Object.fromEntries(dm),
+      bruitProduits: { total: totalBruit, parRaison: Object.fromEntries(bruit), doublons: doublonsProduits },
       liens: {
         marques: liensMarques && { ...liensMarques, parCode: Object.fromEntries(liensMarques.parCode) },
         produits: liensProduits && { ...liensProduits, parCode: Object.fromEntries(liensProduits.parCode) },
