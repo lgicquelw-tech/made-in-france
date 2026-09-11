@@ -161,4 +161,5 @@ Elles sont documentées et suivies dans [`REBUILD.md`](REBUILD.md) :
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | Contexte permanent et règles non négociables |
 | [`REBUILD.md`](REBUILD.md) | Plan de reconstruction, phases et journal de sessions |
+| [`docs/JOURNAL.md`](docs/JOURNAL.md) | Journal détaillé, une entrée par étape vérifiée |
 | `docs/archive/` | Documents historiques — **non fiables**, ne pas s'en servir comme source |

@@ -240,8 +240,29 @@ chemins commençant par `../`.
 
 ---
 
-## Protocole de fin de session
+## Protocole de travail
 
-1. Mettre à jour la case correspondante dans `REBUILD.md` et ajouter une ligne au journal en fin de fichier.
+### À chaque étape terminée — pas à la fin de la session
+
+**Écrire une entrée dans `docs/JOURNAL.md`** : le but, ce qui a été fait, la commande de
+vérification **et son résultat chiffré**, le commit. Une étape qui échoue y reste avec son
+échec : c'est précisément ce qui manquait au projet de janvier 2026, où seul le succès
+était consigné.
+
+L'entrée est écrite **quand l'étape est faite et vérifiée**, jamais par anticipation.
+
+### À la fin de la session
+
+1. Cocher la case correspondante dans `REBUILD.md` et ajouter **une ligne de synthèse** au
+   journal en fin de ce fichier — la synthèse, pas le détail : le détail est dans
+   `docs/JOURNAL.md`.
 2. Committer avec un message qui dit **quoi** et **pourquoi**.
 3. Si une découverte contredit ce fichier, corriger ce fichier dans le même commit.
+
+### Qui écrit quoi
+
+| Fichier | Rôle | Granularité |
+|---|---|---|
+| `REBUILD.md` | le plan : cases, décisions ouvertes, synthèse | une ligne par session |
+| `docs/JOURNAL.md` | le récit : chaque étape et sa vérification | une entrée par étape |
+| `git log` | la preuve : le diff exact | un commit par tâche |
