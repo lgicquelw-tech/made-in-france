@@ -35,9 +35,10 @@
     "test:links": "tsx --test scripts/links/policy.test.ts",
     "data:links": "tsx --env-file=.env scripts/links/run.ts",
     "test:catalogue": "tsx --test scripts/catalogue/*.test.ts",
-    "test:scripts": "tsx --test scripts/links/*.test.ts scripts/catalogue/*.test.ts scripts/publish/*.test.ts scripts/brands/*.test.ts",
+    "test:scripts": "tsx --test scripts/links/*.test.ts scripts/catalogue/*.test.ts scripts/publish/*.test.ts scripts/brands/*.test.ts scripts/enrich/*.test.ts",
     "data:publish": "tsx --env-file=.env scripts/publish/run.ts",
-    "data:geocode": "tsx --env-file=.env scripts/brands/geocode.ts"
+    "data:geocode": "tsx --env-file=.env scripts/brands/geocode.ts",
+    "data:enrich": "tsx --env-file=.env scripts/enrich/run.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
@@ -61,7 +62,7 @@
     ]
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
+    "@anthropic-ai/sdk": "^0.125.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "openai": "^6.15.0",

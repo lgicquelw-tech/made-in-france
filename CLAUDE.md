@@ -63,7 +63,7 @@ les lise comme une source.
 | Base | PostgreSQL 16.15 (Homebrew) + Prisma 5.22 |
 | Recherche | PostgreSQL `pg_trgm` (pas Meilisearch) |
 | Auth | NextAuth v4 (Google, Email, Credentials) côté web uniquement |
-| IA | Anthropic SDK (Claude Haiku). Le chemin OpenAI existe mais renvoie une 400 « pas encore implémenté » |
+| IA | Anthropic SDK **0.125.0** (mis à jour le 11 septembre 2026 ; 0.71 n'avait pas les sorties structurées). Chat sur Claude Haiku dans `index.ts` ; enrichissement produit `pnpm data:enrich` (T5.7), qui **n'envoie rien sans `--appliquer`**. Le chemin OpenAI du chat renvoie une 400 « pas encore implémenté » ; le script d'enrichissement OpenAI a été supprimé. |
 | Images | Cloudinary |
 | Cartes | Mapbox GL JS |
 | Paiement | Stripe (API `2024-12-18.acacia`) |
@@ -141,15 +141,15 @@ pnpm data:links                      # desactive les liens durablement morts (ja
 pnpm data:links --simuler            # ... sans rien ecrire
 pnpm data:publish                    # publie les produits complets, retire les incomplets (T5.8)
 pnpm data:geocode                    # place les marques par leur commune, API Adresse nationale (T5.4)
-pnpm test:scripts                    # 49 tests : liens, bruit, fusion, publication, geocodage, URL
 
 # Données
 npx tsx scripts/stats.ts             # compte réel marques / produits en base
 npx tsx --env-file=.env scripts/shopify-scraper.ts --all        # detecte et importe toutes les boutiques Shopify
 npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommerce
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
-npx tsx scripts/enrich-all-products.ts
-pnpm test:scripts                    # 27 tests : liens, bruit, fusion
+pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
+pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
+pnpm test:scripts                    # 62 tests : liens, bruit, fusion, publication, geocodage, URL, enrichissement
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)

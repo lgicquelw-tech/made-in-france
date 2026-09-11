@@ -9,9 +9,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.125.0",
     "@mif/database": "workspace:*",
     "@prisma/client": "^5.15.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

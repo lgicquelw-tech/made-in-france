@@ -127,7 +127,7 @@ pnpm data:audit           # qualité des données : combien de fiches sont publi
 pnpm data:audit --liens   # ... en interrogeant aussi les liens sortants
 pnpm data:links           # vérifie les liens et désactive ceux qui sont durablement morts
 pnpm data:links --simuler # ... sans rien écrire
-pnpm test:scripts         # 27 tests : liens morts, filtre de bruit, règle de fusion
+pnpm test:scripts         # 62 tests : liens, bruit, fusion, publication, géocodage, URL, enrichissement
 ```
 
 `data:audit` est en **lecture seule** : il mesure, il ne corrige rien. `data:links`
@@ -155,7 +155,7 @@ des tâches `test` et `test:e2e` qui ne pointent sur rien, et Vitest et Playwrig
 prévus en phase 6 de `REBUILD.md`.
 
 Une exception : les règles qui écrivent ou retirent du contenu — liens morts, filtre de
-bruit, fusion au réimport — sont couvertes par 27 tests,
+bruit, fusion au réimport — sont couvertes par 62 tests,
 écrits avec le lanceur **intégré à Node 22** pour ne pas préempter le choix de la
 phase 6. C'est la partie du code où une erreur retire silencieusement une marque
 vivante de l'annuaire.

@@ -435,3 +435,52 @@ une correction à faire dans le fichier, ligne par ligne :
 | WIA | `—` | — |
 
 **Commit.** `phase 5 (6/n): geolocalisation et controles sur les marques (T5.4)`
+
+### 2026-09-11 · T5.7 — Enrichissement IA sur les champs manquants (préparé, non lancé)
+
+**But.** Compléter les fiches produit — mots-clés, matières, arguments, titre et
+description pour les moteurs — **sans jamais réécrire un champ existant**, et sans
+dépenser un centime avant un feu vert explicite.
+
+**Fait.**
+
+- `scripts/enrich/champs.ts`, pur : `champsManquants` dit ce qui est vide,
+  `appliquerEnrichissement` ne remplit **que** ça. Si le modèle propose une valeur pour
+  un champ déjà rempli, elle est ignorée. Même discipline que la fusion des scrapers
+  (T5.5). 7 tests.
+- `scripts/enrich/requete.ts`, pur : le message système (stable, donc mis en cache) et le
+  message utilisateur (le produit tel qu'on le connaît, et la liste des champs demandés).
+  Consigne centrale : **ne rien inventer** — une matière absente du texte est une matière
+  inventée, la liste reste vide. Schéma de réponse en zod, sortie structurée. 6 tests.
+- `scripts/enrich/run.ts` — `pnpm data:enrich`. **Sans `--appliquer`, rien n'est envoyé** :
+  la simulation liste les produits, les champs manquants, et une estimation du coût. Le
+  client n'est même pas construit avant `--appliquer`. Provenance tracée dans
+  `attributes.enrichissement` (modèle, date, champs).
+- SDK `@anthropic-ai/sdk` **0.71.2 → 0.125.0** (racine, api, scripts) : l'ancienne version
+  n'avait ni sorties structurées ni les identifiants de modèle courants. Le chat
+  d'`index.ts` compile toujours. `zod` 4 ajouté au paquet scripts (l'aide du SDK l'exige).
+- `enrich-all-products.ts` supprimé : il appelait **OpenAI `gpt-4o-mini`** avec une clé
+  `OPENAI_API_KEY` que le projet ne déclare nulle part comme stack, et réécrivait tags,
+  matières et arguments en bloc.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test:scripts` | **62 / 62** |
+| `pnpm typecheck` (SDK mis à jour) | 7 / 7 |
+| Simulation, 10 produits `ACTIVE` | 5 champs manquants chacun |
+| Coût estimé, `claude-opus-5` | ~0,10 $ |
+| Coût estimé, `claude-haiku-4-5` | ~0,02 $ |
+| Appels réseau pendant la simulation | **0** |
+
+**Non fait, à dessein : aucun appel réel.** La clé Anthropic du `.env` fait partie des
+rotations en attente (T0.7). Lancer `pnpm data:enrich --appliquer` est une dépense et une
+décision : quelle clé, quel modèle, quel périmètre. Elle appartient au propriétaire du
+projet.
+
+**Compromis signalé :** `--modele` vaut `claude-opus-5` par défaut. Pour du remplissage de
+métadonnées en volume, `claude-haiku-4-5` coûte cinq fois moins ; la qualité sur
+« ne rien inventer » reste à comparer sur un échantillon avant de généraliser.
+
+**Commit.** `phase 5 (7/n): enrichissement IA prepare, sans appel (T5.7 partiel)`
