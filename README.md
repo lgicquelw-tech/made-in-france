@@ -119,7 +119,16 @@ pnpm db:import            # import des marques depuis data/brands.xlsx (idempote
 
 pnpm admin:create         # crée (ou promeut) un compte administrateur
 pnpm db:studio            # Prisma Studio
+
+pnpm data:audit           # qualité des données : combien de fiches sont publiables
+pnpm data:audit --liens   # ... en interrogeant aussi les liens sortants
+pnpm data:links           # vérifie les liens et désactive ceux qui sont durablement morts
+pnpm data:links --simuler # ... sans rien écrire
+pnpm test:links           # tests de la règle de désactivation
 ```
+
+`data:audit` est en **lecture seule** : il mesure, il ne corrige rien. `data:links`
+écrit, mais n'efface jamais une URL : il pose une date et l'affichage cesse.
 
 `prisma db push` est **interdit** sur ce projet : le schéma et les migrations avaient
 divergé en janvier 2026, faisant perdre trois tables. Uniquement `prisma migrate`.
@@ -138,8 +147,18 @@ Deux fichiers réels, tous deux ignorés par git :
 
 ## Tests
 
-**Il n'y en a aucun.** `turbo.json` déclare des tâches `test` et `test:e2e` qui ne
-pointent sur rien. Vitest et Playwright sont prévus en phase 6 de `REBUILD.md`.
+**Presque aucun.** Le projet n'a pas encore de framework de test : `turbo.json` déclare
+des tâches `test` et `test:e2e` qui ne pointent sur rien, et Vitest et Playwright sont
+prévus en phase 6 de `REBUILD.md`.
+
+Une exception : la règle de désactivation des liens morts est couverte par 10 tests,
+écrits avec le lanceur **intégré à Node 22** pour ne pas préempter le choix de la
+phase 6. C'est la partie du code où une erreur retire silencieusement une marque
+vivante de l'annuaire.
+
+```bash
+pnpm test:links
+```
 
 ## Limites connues
 

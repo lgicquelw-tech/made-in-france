@@ -237,6 +237,12 @@ model Brand {
   
   aiGeneratedContent Json             @default("{}") @map("ai_generated_content")
   
+  // Date a laquelle le site de la marque a ete declare mort par `pnpm data:links`
+  // (REBUILD.md T5.2). L'URL est **conservee** : on cesse de l'afficher, on ne la
+  // detruit pas. Une marque peut redevenir joignable, et effacer la donnee
+  // interdirait de le constater.
+  websiteDeadAt    DateTime?          @map("website_dead_at")
+
   createdAt        DateTime           @default(now()) @map("created_at")
   updatedAt        DateTime           @updatedAt @map("updated_at")
   publishedAt      DateTime?          @map("published_at")
@@ -351,6 +357,10 @@ model Product {
   externalId       String?       @map("external_id")
   externalSource   String?       @map("external_source")
   externalData     String?       @map("external_data")
+
+  // Lien d'achat declare mort (REBUILD.md T5.2). Meme regle que pour les marques :
+  // on cesse d'afficher le bouton, on ne supprime pas l'URL.
+  buyUrlDeadAt     DateTime?     @map("buy_url_dead_at")
   
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
@@ -837,6 +847,43 @@ model TrendingBrand {
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@map("trending_brands")
+}
+
+/// Etat de sante d'une URL sortante, une ligne par URL (REBUILD.md T5.2).
+///
+/// Cette table existe pour une seule raison : **un echec ne prouve rien**. Un site
+/// peut etre indisponible une journee. Sans memoire entre deux passages, un unique
+/// incident ferait disparaitre une marque vivante de l'annuaire.
+///
+/// La decision de desactivation se prend donc sur deux criteres cumules :
+/// plusieurs echecs **consecutifs**, et un premier echec assez **ancien**.
+model LinkCheck {
+  id                 String    @id @default(uuid())
+
+  url                String    @unique
+  /// `brand_website` ou `product_buy` — a quoi sert ce lien.
+  usage              String
+
+  /// Dernier code HTTP observe, null si la requete n'a pas abouti.
+  lastStatus         Int?      @map("last_status")
+  /// `vivant`, `mort` ou `indetermine`. Un 403 est indetermine : c'est un pare-feu
+  /// qui a reconnu un robot, pas une page absente.
+  lastVerdict        String    @map("last_verdict")
+
+  /// Echecs d'affilee. Remis a zero des qu'une reponse vivante arrive.
+  consecutiveFailures Int      @default(0) @map("consecutive_failures")
+  /// Date du premier echec de la serie en cours.
+  firstFailedAt      DateTime? @map("first_failed_at")
+  lastCheckedAt      DateTime  @default(now()) @map("last_checked_at")
+  /// Date a laquelle les deux criteres ont ete reunis et la desactivation prononcee.
+  disabledAt         DateTime? @map("disabled_at")
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@index([usage])
+  @@index([lastVerdict])
+  @@map("link_checks")
 }
 
 model SiteSetting {

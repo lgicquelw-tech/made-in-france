@@ -34,6 +34,8 @@ export interface Product {
   materials: string[];
   madeInFranceLevel: string | null;
   externalBuyUrl: string | null;
+  /** Posé par `pnpm data:links` quand le lien d'achat ne répond plus (T5.2). */
+  buyUrlDeadAt: Date | string | null;
   tags: string[];
   category: {
     id: string;
@@ -46,6 +48,7 @@ export interface Product {
     slug: string;
     logoUrl: string | null;
     websiteUrl: string | null;
+    websiteDeadAt: Date | string | null;
     city: string | null;
     region: { name: string } | null;
     sector: { 
@@ -139,8 +142,13 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
     setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
   };
 
-  // URL d'achat : soit l'URL produit, soit le site de la marque
-  const buyUrl = product.externalBuyUrl || product.brand.websiteUrl;
+  // URL d'achat : le lien produit, sinon le site de la marque — et dans les deux
+  // cas seulement s'il répond encore (T5.2). Un bouton « Acheter » qui mène à une
+  // page 404 coûte plus de confiance qu'un bouton absent : l'utilisateur a cliqué,
+  // il attendait une boutique, il obtient une erreur.
+  const lienProduit = product.buyUrlDeadAt ? null : product.externalBuyUrl;
+  const lienMarque = product.brand.websiteDeadAt ? null : product.brand.websiteUrl;
+  const buyUrl = lienProduit || lienMarque;
 
   return (
     <div className="min-h-screen bg-white">

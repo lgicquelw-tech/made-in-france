@@ -29,6 +29,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { getIconComponent } from '@/components/ui/icon-picker';
+import { brandLogoUrl } from '@/lib/brand-logo';
 
 // Composant pour les produits
 function ProductsSection({
@@ -288,6 +289,8 @@ export interface Brand {
   galleryUrls: string[] | null;
   videoUrl: string | null;
   websiteUrl: string | null;
+  /** Posé par `pnpm data:links` quand le site ne répond plus (T5.2). */
+  websiteDeadAt?: Date | string | null;
   city: string | null;
   postalCode: string | null;
   address: string | null;
@@ -429,6 +432,17 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
   const sectorColor = brand.sector?.color || '#002395';
 
+  // Le site officiel, s'il répond encore (T5.2). Un lien mort coûte plus de
+  // confiance qu'un lien absent, et il est invisible pour nous tant que personne
+  // ne clique — d'où la vérification automatique plutôt que le signalement.
+  // L'URL, elle, reste en base : on cesse de l'afficher, on ne la détruit pas.
+  const siteVivant = brand.websiteDeadAt ? null : brand.websiteUrl;
+
+  // Le logo passait par `new URL(brand.websiteUrl).hostname` écrit sur place — la
+  // forme recopiée dans 16 fichiers, qui **lève** sur une URL invalide et emporte
+  // la page entière. `brandLogoUrl` attrape l'erreur.
+  const logo = brandLogoUrl(brand, 128);
+
   const getMadeInFranceLabel = (level: string) => {
     const labels: Record<string, string> = {
       'FABRICATION_100_FRANCE': '100% Fabriqué en France',
@@ -487,10 +501,10 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
                   alt={brand.name}
                   className="w-full h-full object-contain"
                 />
-              ) : brand.websiteUrl ? (
+              ) : logo ? (
                 <>
                   <img 
-                    src={`https://www.google.com/s2/favicons?domain=${new URL(brand.websiteUrl).hostname}&sz=128`}
+                    src={logo}
                     alt={brand.name}
                     className="w-16 h-16 object-contain"
                     onError={(e) => {
@@ -585,9 +599,9 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
               {/* Actions */}
               <div className="flex flex-wrap items-center gap-3">
-                {brand.websiteUrl && (
+                {siteVivant && (
                   <a 
-                    href={brand.websiteUrl} 
+                    href={siteVivant} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/20 text-white font-medium hover:bg-gradient-to-r hover:from-[#002395] hover:via-white hover:to-[#ED2939] hover:text-gray-900 hover:scale-105 transition-all"
@@ -906,7 +920,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 )}
 
             {/* CTA */}
-            {brand.websiteUrl && (
+            {siteVivant && (
               <div 
                 className="rounded-2xl p-6 text-white"
                 style={{ backgroundColor: sectorColor }}
@@ -916,7 +930,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
                   Visitez le site officiel pour découvrir tous leurs produits Made in France.
                 </p>
                 <Button className="w-full bg-white hover:bg-gray-100" style={{ color: sectorColor }} asChild>
-                  <a href={brand.websiteUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={siteVivant} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Visiter le site
                   </a>

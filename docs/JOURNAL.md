@@ -119,3 +119,74 @@ T5.2 — un site peut être indisponible une journée. Il faudra N échecs cons�
 plusieurs jours, pas un verdict unique.
 
 **Commit.** `phase 5 (1/n): audit de qualite des donnees (T5.1)`
+
+### 2026-09-11 · T5.2 — Vérificateur de liens et désactivation automatique
+
+**But.** Cesser d'afficher les liens qui ne répondent plus. Un lien mort coûte plus de
+confiance qu'un lien absent : l'utilisateur a cliqué, il attendait une boutique, il
+obtient une erreur — et personne côté projet ne le sait tant qu'il ne le signale pas.
+
+**Fait.**
+
+- Migration **additive** `20260911090738_sante_des_liens` : table `link_checks` (un état
+  par URL) et deux colonnes nullables, `brands.website_dead_at` et
+  `products.buy_url_dead_at`. Vérifié : 0 instruction destructive dans le SQL généré.
+- `scripts/links/policy.ts` — la règle de décision, **module pur** : ni base, ni réseau,
+  ni horloge implicite. Tout entre par les paramètres.
+- `scripts/links/policy.test.ts` — 10 tests.
+- `scripts/links/run.ts` — la commande `pnpm data:links`, avec `--simuler`, `--usage`,
+  `--echantillon`, `--simultanes`, `--delai`.
+- Front : le bouton « Visiter le site » (deux endroits), le bouton d'achat, et l'offre
+  JSON-LD ne s'affichent plus si le lien est mort.
+
+**La règle, et pourquoi elle est prudente.** Désactiver retire du contenu ; se tromper
+coûte donc plus cher que ne rien faire. Il faut **deux** conditions cumulées : 3 échecs
+consécutifs, **et** un premier échec vieux d'au moins 72 h.
+
+La seconde est la plus importante. Sans elle, relancer la commande trois fois pendant une
+panne d'hébergeur viderait l'annuaire. Un test couvre exactement ce scénario.
+
+**Et l'URL n'est jamais effacée.** On pose une date, l'affichage cesse, la donnée reste.
+Un lien qui répond de nouveau est réactivé tout seul au passage suivant.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test:links` | **10 / 10** |
+| `pnpm typecheck` | 7 / 7 |
+| `pnpm build` | code 0, 991 pages |
+| Migration destructive ? | 0 instruction `DROP` / `DELETE` / `RENAME` |
+| Premier passage réel | 902 URL enregistrées, **0 désactivée** |
+| Marques en base après | **903** (inchangé) |
+
+Le premier passage ne désactive rien : c'est le comportement attendu, une première
+observation ne prouve rien.
+
+Les deux chemins que les tests unitaires ne couvrent pas — l'écriture en base — ont été
+vérifiés sur la vraie base, avec une **histoire simulée** (2 échecs, le premier il y a
+4 jours), faute de pouvoir attendre 72 h :
+
+- désactivation : le produit reçoit `buyUrlDeadAt`, et `externalBuyUrl` est **conservée** ;
+- réactivation : un site vivant déclaré mort à tort est remis en ligne seul au passage
+  suivant.
+
+**L'état vrai a ensuite été rétabli** : 0 URL désactivée, 0 marque marquée morte, premier
+échec du lien Saint James daté de sa première observation réelle. La base ne garde aucune
+trace de l'histoire fabriquée pour le test.
+
+**Découvert.**
+
+1. **Le délai d'attente change le verdict.** Même parc de sites : 826 vivants à 10 s,
+   **845 à 15 s**. Dix-neuf sites étaient simplement lents. C'est la raison d'être du
+   verdict `indetermine` pour les délais dépassés — les compter comme morts aurait
+   désactivé dix-neuf marques vivantes.
+2. La forme fragile `new URL(brand.websiteUrl).hostname`, écrite sur place, était encore
+   dans `brand-detail.tsx` : elle **lève** sur une URL invalide et emporte toute la page.
+   Remplacée par `brandLogoUrl()`. Il reste 12 fichiers à reprendre.
+
+**Reste à traiter, consigné :** la désactivation effective demandera trois passages
+espacés sur plus de 72 h. Aucun n'est planifié — il n'y a pas d'ordonnanceur sur ce
+projet. À rattacher au déploiement (phase 7).
+
+**Commit.** `phase 5 (2/n): verificateur de liens morts (T5.2)`

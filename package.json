@@ -31,7 +31,9 @@
     "prepare": "husky",
     "db:import": "tsx --env-file=.env scripts/import/import-brands.ts data/brands.xlsx",
     "admin:create": "tsx --env-file=.env scripts/create-admin.ts",
-    "data:audit": "tsx --env-file=.env scripts/audit/index.ts"
+    "data:audit": "tsx --env-file=.env scripts/audit/index.ts",
+    "test:links": "tsx --test scripts/links/policy.test.ts",
+    "data:links": "tsx --env-file=.env scripts/links/run.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

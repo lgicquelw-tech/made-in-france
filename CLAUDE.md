@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`), tout framework de test.
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`), tout framework de test — **sauf** `scripts/links/policy.test.ts`, 10 tests sur le lanceur intégré à Node 22 (`pnpm test:links`). Choix délibéré : couvrir la règle qui retire du contenu sans préempter le choix de la phase 6.
 
 ---
 
@@ -133,6 +133,13 @@ pnpm lint
 pnpm admin:create         # cree ou promeut un administrateur (T3.15).
                           # POST /api/admin/setup est desactive : il creait un
                           # super_admin sans aucune authentification.
+
+# Qualité des données (phase 5)
+pnpm data:audit                      # lecture seule : combien de fiches sont publiables
+pnpm data:audit --liens              # ... en interrogeant les liens sortants
+pnpm data:links                      # desactive les liens durablement morts (jamais effaces)
+pnpm data:links --simuler            # ... sans rien ecrire
+pnpm test:links                      # 10 tests de la regle de desactivation
 
 # Données
 npx tsx scripts/stats.ts             # compte réel marques / produits en base
@@ -231,6 +238,8 @@ chemins commençant par `../`.
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |
 | Version d'API Stripe | Figée une seule fois dans `STRIPE_API_VERSION` (`index.ts`). Ne pas la redéclarer ailleurs. |
 | Clearbit | Mort. Les logos passent par Google Favicons |
+| **Un 403 n'est pas un site mort** | C'est un pare-feu qui a reconnu un robot. Une boutique derrière Cloudflare répond 403 à l'audit et 200 à un humain. `data:links` a donc **trois** verdicts, pas deux : `vivant`, `mort`, `indetermine` — et ne désactive que les `mort`. Confondre les deux retire des marques vivantes de l'annuaire, silencieusement. |
+| Désactivation d'un lien | Ne détruit **jamais** l'URL : on pose `websiteDeadAt` / `buyUrlDeadAt` et l'affichage cesse. Il faut 3 échecs consécutifs **et** un premier échec vieux de 72 h — sans la seconde condition, relancer la commande trois fois pendant une panne d'hébergeur viderait l'annuaire. |
 | **Taxonomie des secteurs** | Une seule liste fait foi, partagée par quatre endroits : `data/brands.xlsx`, `SECTOR_MAPPING` de `scripts/import/import-brands.ts`, le seed, et le front (`app/secteurs/page.tsx` + `sitemap.ts`). Les 9 slugs : `mode-accessoires`, `maison-jardin`, `gastronomie`, `cosmetique`, `enfance`, `loisirs-sport`, `animaux`, `sante-nutrition`, `high-tech`. **Modifier l'un sans les autres laisse des centaines de marques sans secteur, sans la moindre erreur.** C'est arrivé : 687 marques sur 903. |
 | Noms de marque numériques | `909`, `1083`, `1336` sont de vraies marques. XLSX lit leur nom comme un **nombre** : toute validation en `typeof === 'string'` les rejette silencieusement. |
 | `scripts/` | Est un paquet du workspace (`@mif/scripts`) avec ses propres dépendances. Il doit rester listé dans `pnpm-workspace.yaml`, sinon `pnpm install` l'ignore et aucun script ne fonctionne. |

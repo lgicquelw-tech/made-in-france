@@ -47,6 +47,7 @@ const PRODUCT_INCLUDE = {
       slug: true,
       logoUrl: true,
       websiteUrl: true,
+      websiteDeadAt: true,
       city: true,
       region: { select: { name: true } },
       sector: { select: { name: true, slug: true, color: true } },
@@ -127,6 +128,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
   // JSON-LD `Product` (T4.11). L'offre n'est déclarée que si le prix ET le
   // lien d'achat existent : annoncer un prix sans moyen d'acheter serait
   // signalé comme une donnée structurée invalide.
+  //
+  // Et le lien doit être **vivant** (T5.2) : déclarer une offre qui pointe sur
+  // un 404 est pire que ne rien déclarer — un moteur le compte comme une
+  // donnée structurée mensongère, pas comme une donnée absente.
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -135,7 +140,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
     ...(product.descriptionShort ? { description: product.descriptionShort } : {}),
     ...(product.imageUrl ? { image: product.imageUrl } : {}),
     brand: { '@type': 'Brand', name: product.brand.name },
-    ...(product.priceMin && product.externalBuyUrl
+    ...(product.priceMin && product.externalBuyUrl && !product.buyUrlDeadAt
       ? {
           offers: {
             '@type': 'Offer',

@@ -137,7 +137,8 @@ export default async function BrandPage({ params }: { params: { slug: string } }
     url: `${siteUrl()}/marques/${brand.slug}`,
     ...(brand.descriptionShort ? { description: brand.descriptionShort } : {}),
     ...(brand.logoUrl ? { logo: brand.logoUrl } : {}),
-    ...(brand.websiteUrl ? { sameAs: [brand.websiteUrl] } : {}),
+    // `sameAs` ne doit pointer que sur un site vivant (T5.2).
+    ...(brand.websiteUrl && !brand.websiteDeadAt ? { sameAs: [brand.websiteUrl] } : {}),
     ...(brand.yearFounded ? { foundingDate: String(brand.yearFounded) } : {}),
     ...(brand.city
       ? {
