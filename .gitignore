@@ -15,3 +15,6 @@ tsconfig.tsbuildinfo
 # Sauvegardes de base
 *.dump
 *.sql.gz
+
+# Configuration de lancement propre a chaque machine (chemins absolus)
+.claude/launch.json

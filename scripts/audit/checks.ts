@@ -174,10 +174,17 @@ export interface FicheProduit {
   galleryUrls: unknown;
   materials: unknown;
   madeInFranceLevel: string | null;
+  /** Posé par `pnpm data:links` quand le lien d'achat ne répond plus (T5.2). */
+  buyUrlDeadAt?: Date | null;
 }
 
-/** Le lien d'achat effectif : l'affiliation prime, sinon le lien direct. */
+/**
+ * Le lien d'achat effectif : l'affiliation prime, sinon le lien direct.
+ * Un lien déclaré mort par `data:links` ne compte pas — un bouton vers un 404
+ * est pire qu'un bouton absent.
+ */
 export function lienAchat(p: FicheProduit): string | null {
+  if (p.buyUrlDeadAt) return null;
   if (urlPlausible(p.affiliateUrl)) return p.affiliateUrl!.trim();
   if (urlPlausible(p.externalBuyUrl)) return p.externalBuyUrl!.trim();
   return null;

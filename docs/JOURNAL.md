@@ -311,3 +311,43 @@ produit retiré du catalogue marchand reste en base tel qu'il était. À traiter
 planification des passages (phase 7).
 
 **Commit.** `phase 5 (4/n): import idempotent et provenance (T5.5, T5.6)`
+
+### 2026-09-11 · T5.8 — Publication au seuil de complétude
+
+**But.** Que le statut `ACTIVE` d'un produit découle de l'audit, et non du seul fait
+d'avoir été scrappé ou saisi.
+
+**Fait.** `scripts/publish/policy.ts`, règle pure : `DRAFT` complet → `ACTIVE` ;
+`ACTIVE` incomplet → `DRAFT` ; `OUT_OF_STOCK` et `DISCONTINUED` jamais touchés — ce sont
+des décisions, pas des mesures. Elle importe **les mêmes contrôles** que `pnpm data:audit` :
+l'audit mesure, la règle décide, `pnpm data:publish` applique, un seul critère. 7 tests.
+Le contrôle « lien d'achat » tient désormais compte de `buyUrlDeadAt` : T5.2 pose la
+date, T5.8 en tire la conséquence.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test:scripts` | **34 / 34** |
+| `pnpm typecheck` | 7 / 7 |
+| Pages publiques filtrant sur `ACTIVE` | 7 / 7 requêtes |
+| Passage 1 | 10 publiés, 2 retirés |
+| Passage 2 | **0 / 0 / 12 inchangés** — idempotent |
+| Audit ↔ base | 10 publiables, 10 `ACTIVE` |
+| `/produits` dans l'aperçu | 10 produits, images via `/_next/image` (14 requêtes, 200) |
+| Fiche produit | JSON-LD `Product` avec offre 109 € et lien vivant |
+| Fiche retirée (`saint-james-pull-binic`) | HTTP 404 |
+
+**Ce qui a changé sur le site.** Les 2 seuls produits publics — Saint James, sans image
+et en 404 — sont retirés. Les 10 produits Airpur Labs, complets, sont publiés. Pour la
+première fois depuis la reconstruction, `next/image` a quelque chose à optimiser.
+
+**Ce que T5.8 ne fait pas, à dessein :** les marques. 902 sur 903 sont en
+`PENDING_REVIEW` et servies publiquement quand même. Les publier, ou cesser de les
+servir, est une **décision éditoriale** — pas une mesure de complétude — et elle reste
+en attente d'arbitrage (voir `REBUILD.md`).
+
+**À part :** `.claude/launch.json` contenait un chemin absolu propre à cette machine
+(fnm ne met pas `pnpm` sur le PATH de l'aperçu). Retiré de git, ajouté à `.gitignore`.
+
+**Commit.** `phase 5 (5/n): publication au seuil de completude (T5.8)`

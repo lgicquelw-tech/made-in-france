@@ -115,7 +115,7 @@ async function main(): Promise<void> {
       descriptionShort: true, imageUrl: true, galleryUrls: true,
       priceMin: true, externalBuyUrl: true, affiliateUrl: true,
       categoryId: true, materials: true, madeInFranceLevel: true,
-      externalSource: true, tags: true,
+      externalSource: true, tags: true, buyUrlDeadAt: true,
     },
   });
 

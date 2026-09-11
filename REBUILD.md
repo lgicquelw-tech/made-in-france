@@ -595,7 +595,7 @@ Lighthouse SEO ≥ 95 et LCP < 2,5 s restent à mesurer.
 - [x] **T5.5** — **Rendre l'import idempotent — priorité haute.** Le catalogue sera rescrappé régulierement (c'est peu couteux : quelques heures), donc la regle de fusion est centrale. Aujourd'hui, relancer un scraper peut dupliquer des lignes ou ecraser un enrichissement paye en appels de modele. Il faut une cle stable par produit et une regle explicite : le scraping met a jour prix, stock, images et URL ; il ne touche **jamais** aux champs enrichis ni au travail editorial. → **Fait.** Un seul point d'écriture, `scripts/catalogue/upsert.ts`, clé stable `(brandId, externalSource, externalId)`, règle de fusion testée. Prouvé sur une vraie boutique : passage 2 = 0 créé / 10 mis à jour, texte éditorial intact. Détail : `docs/JOURNAL.md`.
 - [x] **T5.6** — **Tracer la provenance** : source (Shopify, WooCommerce, manuel) et date de collecte pour chaque produit. Sans ça, impossible de savoir ce qui est périmé ni ce qu'un réimport a le droit de remplacer. → **Fait.** `externalSource` + `externalId` + `collectedAt`, posés par le point d'écriture unique.
 - [ ] **T5.7** — Relancer l'enrichissement IA uniquement sur les champs manquants.
-- [ ] **T5.8** — Ne publier que les produits au-dessus du seuil de complétude (`status = ACTIVE` piloté par l'audit).
+- [x] **T5.8** — Ne publier que les produits au-dessus du seuil de complétude (`status = ACTIVE` piloté par l'audit). → `pnpm data:publish`, même jeu de contrôles que l'audit, 7 tests, idempotent. Premier passage : 10 publiés, 2 retirés. **Ne touche pas aux marques** : les 902 `PENDING_REVIEW` restent une décision à prendre. Détail : `docs/JOURNAL.md`.
 
 ### La construction du logo était recopiée dans 16 fichiers
 
