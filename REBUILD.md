@@ -538,8 +538,12 @@ Aucun fichier backend ne dépasse 300 lignes.
 - [x] **T4.4** — **Fiche produit et catalogue en Server Components**, avec `generateMetadata`, canonique, Open Graph et JSON-LD `Product`. L'offre n'est déclarée que si le prix **et** le lien d'achat existent — annoncer un prix sans moyen d'acheter serait signalé comme donnée structurée invalide.
   Bug trouvé au passage : `materials` et `tags` étaient **doublement encodés** — une chaîne JSON contenant du JSON, parce que le seed appliquait `JSON.stringify` à une colonne déjà `Json`. La page plantait sur `materials.join is not a function`. Corrigé à la source, et la page normalise malgré tout : les scrapers peuvent reproduire le défaut.
   **Catalogue produit** : même traitement que l'annuaire — première page et total rendus côté serveur.
-- [ ] **T4.5** — Recherche unifiée marques + produits.
-- [ ] **T4.6** — Favoris et profil utilisateur.
+- [x] **T4.5** — **Recherche unifiée marques + produits, rendue côté serveur.** Un lien partagé vers `/recherche?q=marinière` affiche ses résultats immédiatement, au lieu d'un écran vide le temps d'un aller-retour. La frappe continue de filtrer en direct.
+  La requête passe par `Prisma.sql` : chaque valeur est un paramètre lié, et la recherche est insensible aux accents. Vérifié avec `q=l'apostrophe`.
+  ⚠️ **Les pages de résultats sont en `noindex`.** Chaque requête créerait sinon une page de contenu mince, en nombre illimité — exactement ce qu'un moteur pénalise. La page de recherche vide, elle, reste indexable.
+- [x] **T4.6** — **Favoris et profil vérifiés de bout en bout**, avec une vraie session : ajout d'un favori → +5 points → liste à jour → compteurs du profil corrects.
+  `/profil` et `/favoris` sont désormais fermés par le middleware. Ils ne fuitaient rien — l'API répond 401 — mais un visiteur non connecté voyait la coquille de la page avant d'être renvoyé par le navigateur.
+  Elles restent en rendu client, et c'est justifié : ce sont des pages personnelles, exclues de l'indexation par `robots.ts`.
 
 Transversal à ces six étapes :
 

@@ -21,6 +21,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAdminArea = pathname.startsWith('/admin');
+
+  // Pages personnelles : elles ne fuitaient rien — l'API répond 401 — mais un
+  // visiteur non connecté voyait la coquille avant d'être renvoyé par le
+  // navigateur. La porte se ferme avant le rendu.
+  const isAccountArea = pathname.startsWith('/profil') || pathname.startsWith('/favoris');
   const isStudioArea =
     pathname.startsWith('/studio') &&
     // Ces trois pages sont les points d'entrée : elles doivent rester ouvertes,
@@ -29,7 +34,7 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith('/studio/inscription') &&
     !pathname.startsWith('/studio/revendiquer');
 
-  if (isAdminArea || isStudioArea) {
+  if (isAdminArea || isStudioArea || isAccountArea) {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
     if (!token) {

@@ -7,7 +7,7 @@ import { Search, Building2, ShoppingBag, Loader2, SlidersHorizontal } from 'luci
 import { Button } from '@/components/ui/button';
 import { API_URL } from '@/lib/api';
 
-interface SearchBrand {
+export interface SearchBrand {
   type: 'brand';
   id: string;
   name: string;
@@ -20,7 +20,7 @@ interface SearchBrand {
   sectorColor: string | null;
 }
 
-interface SearchProduct {
+export interface SearchProduct {
   type: 'product';
   id: string;
   name: string;
@@ -36,12 +36,32 @@ interface SearchProduct {
 
 type FilterType = 'all' | 'brands' | 'products';
 
-export default function SearchContent() {
+export interface SearchResults {
+  brands: SearchBrand[];
+  products: SearchProduct[];
+}
+
+export interface SearchContentProps {
+  initialQuery: string;
+  initialResults: SearchResults;
+}
+
+/**
+ * Recherche unifiée marques + produits (REBUILD.md T4.5).
+ *
+ * Reste `'use client'` : la frappe filtre en direct. Mais **les résultats de
+ * la requête initiale arrivent en props** — un lien partagé vers
+ * `/recherche?q=marinière` affiche donc ses résultats immédiatement, au lieu
+ * d'un écran vide le temps d'un aller-retour.
+ */
+export default function SearchContent({ initialQuery, initialResults }: SearchContentProps) {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   
   const [searchQuery, setSearchQuery] = useState(query);
-  const [results, setResults] = useState<{ brands: SearchBrand[]; products: SearchProduct[] }>({ brands: [], products: [] });
+  const [results, setResults] = useState<SearchResults>(initialResults);
+  // La requête initiale est déjà résolue côté serveur : on ne la relance pas.
+  const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
 
@@ -68,9 +88,13 @@ export default function SearchContent() {
       }
     }
 
+    if (!hydrated && searchQuery === initialQuery) {
+      setHydrated(true);
+      return;
+    }
     const timeout = setTimeout(search, 300);
     return () => clearTimeout(timeout);
-  }, [searchQuery]);
+  }, [hydrated, initialQuery, searchQuery]);
 
   const formatPrice = (min: number | null, max: number | null) => {
     if (!min) return null;
