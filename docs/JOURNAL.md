@@ -24,8 +24,12 @@
 **Fait.** Les modifications réelles.
 **Vérifié.** La commande lancée et son résultat chiffré.
 **Découvert.** Ce que l'étape a appris et qui n'était pas prévu. (facultatif)
-**Commit.** `hash`
+**Commit.** `sujet du commit`
 ```
+
+> **Le sujet, pas le hash.** Un `git commit --amend` change le hash : l'entree pointerait
+> alors vers un commit qui n'existe plus. C'est arrive des la premiere entree. Le sujet,
+> lui, survit — et `git log --grep` le retrouve.
 
 ---
 
@@ -114,4 +118,4 @@ arbitrage de région (NANNETTA / Monaco, RECYCLED BY LISA / « France », WIA /
 T5.2 — un site peut être indisponible une journée. Il faudra N échecs consécutifs sur
 plusieurs jours, pas un verdict unique.
 
-**Commit.** `4c96d94`
+**Commit.** `phase 5 (1/n): audit de qualite des donnees (T5.1)`
