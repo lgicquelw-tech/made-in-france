@@ -588,7 +588,7 @@ Lighthouse SEO ≥ 95 et LCP < 2,5 s restent à mesurer.
 
 > C'est ce qui décide si le site paraît sérieux ou bâclé. « 40 000 produits » est un chiffre de communication ; la vraie question est combien sont affichables.
 
-- [ ] **T5.1** — Script d'audit `pnpm data:audit` : combien de produits ont une image valide, un prix, une URL d'achat qui répond en 200.
+- [x] **T5.1** — Script d'audit `pnpm data:audit` : combien de produits ont une image valide, un prix, une URL d'achat qui répond en 200. → **899 marques publiables sur 903**, **0 produit publiable sur 2**, 37 sites morts confirmés, 3 marques géolocalisées sur 903. Détail : `docs/JOURNAL.md`.
 - [ ] **T5.2** — Vérificateur de liens sur `externalBuyUrl` → désactiver automatiquement les 404. Un lien mort coûte plus de confiance qu'un produit manquant.
 - [ ] **T5.3** — Dédoublonner et filtrer le bruit : cartes cadeaux, échantillons, variantes en double, produits de test.
 - [ ] **T5.4** — Contrôles qualité sur les marques : URL valide, secteur et région reconnus, doublons, géolocalisation, statut de vérification.

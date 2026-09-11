@@ -51,3 +51,67 @@ sans aucune authentification — il contournait toutes les gardes construites au
 
 ## Phase 5 — Qualité des données
 
+### 2026-09-11 · T5.1 — Script d'audit `pnpm data:audit`
+
+**But.** Remplacer « 903 marques » par un chiffre exploitable : combien de fiches sont
+réellement affichables, et qu'est-ce qui bloque les autres.
+
+**Fait.** Quatre modules courts dans `scripts/audit/` — `checks.ts` (les contrôles),
+`links.ts` (vérification réseau), `report.ts` (mise en forme), `index.ts` (orchestration).
+Le script est en **lecture seule** : il mesure, il ne corrige pas. Options `--liens`,
+`--echantillon N`, `--simultanes N`, `--delai N`, `--json <fichier>`.
+
+Chaque contrôle est **bloquant** (la fiche ne doit pas être publiée) ou **recommandé**
+(publiable mais incomplète). C'est cette séparation qui transforme un taux en plan de
+travail.
+
+**Vérifié.** `pnpm typecheck` 7/7. `pnpm data:audit` sur les 903 marques et 2 produits.
+Balayage réseau complet : 901 sites interrogés, 10 simultanés.
+
+| Mesure | Résultat |
+|---|---|
+| Marques publiables | **899 / 903** |
+| Produits publiables | **0 / 2** |
+| Sites de marque vivants | 826 / 900 |
+| Sites morts (confirmés deux fois) | **37** |
+| Sites indéterminés (pare-feu anti-robot) | 37 |
+| Liens d'achat vivants | **0 / 2** |
+| Marques géolocalisées | **3 / 903** |
+| Marques avec un visuel en propre | **0 / 903** |
+| Noms de marque en double | 0 |
+
+**Découvert — cinq choses, dont deux erreurs de ma part.**
+
+1. **La carte est vide.** 3 marques sur 903 ont des coordonnées. `/carte` existe,
+   fonctionne, et n'a presque rien à montrer. Ce n'était listé nulle part.
+
+2. **Les deux seuls produits ont un lien d'achat mort.** `saint-james.com/pull-binic` et
+   `/mariniere-guildo` répondent 404. Combinés à l'absence d'image, cela donne 0 produit
+   publiable sur 2 — le catalogue est à reconstruire, pas à réparer.
+
+3. **Erreur de conception, corrigée.** J'avais rendu « URL de site valide » *bloquante*.
+   Cela écartait CHEZ GIOVANNI et MAY'SAPE : deux artisans sans site web, mais avec
+   Instagram, une ville, une région, un secteur et une vraie description — exactement les
+   fiches qu'un annuaire existe pour montrer. Le contrôle bloquant est devenu « un point
+   de contact (site **ou** réseau social) » ; l'URL de site est passée en recommandé.
+   Les publiables sont passées de 897 à 899.
+
+4. **Un 403 n'est pas un site mort.** Sept sites répondent 403 et quatre 503 : un
+   pare-feu a reconnu un robot, pas une page absente. Les confondre avec les 404 ferait
+   désactiver automatiquement (T5.2) des marques vivantes. D'où un troisième verdict,
+   `indetermine`, et une consigne explicite : **T5.2 ne désactive que les « morts »**.
+   Les délais dépassés tombent aussi dans `indetermine` — un serveur lent n'est pas mort.
+
+5. **Erreur d'affichage, corrigée.** Le taux était arrondi : 899 sur 903 s'affichait
+   « 100 % » alors qu'il manquait quatre fiches. L'arrondi se fait désormais vers le bas
+   sauf compte exact — le manque doit rester visible au moment précis où il compte.
+
+**Les 4 marques bloquées sont des décisions, pas des bugs.** Trois attendent un
+arbitrage de région (NANNETTA / Monaco, RECYCLED BY LISA / « France », WIA /
+« Occitanie / Normandie ») ; OBSTINNÉE a une description de 39 caractères.
+
+**Reste à traiter, consigné :** un seul passage ne suffit pas à condamner un lien pour
+T5.2 — un site peut être indisponible une journée. Il faudra N échecs consécutifs sur
+plusieurs jours, pas un verdict unique.
+
+**Commit.** `4c96d94`
