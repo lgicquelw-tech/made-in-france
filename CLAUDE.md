@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`), tout framework de test — **sauf** `scripts/links/policy.test.ts`, 10 tests sur le lanceur intégré à Node 22 (`pnpm test:links`). Choix délibéré : couvrir la règle qui retire du contenu sans préempter le choix de la phase 6.
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 86 tests : 62 sur les règles de données dans `scripts/`, 24 sur les gardes et l'enveloppe de réponse dans `apps/web`). Pas encore de Playwright (T6.4). ⚠️ `pnpm lint` ne fonctionne pas : `apps/web` n'a aucune configuration ESLint (T6.6).
 
 ---
 
@@ -127,7 +127,7 @@ pnpm typecheck            # PASSE sur les 7 tâches du monorepo. Le garder au ve
 pnpm build                # PASSE depuis le 10 septembre 2026 : 991 pages generees.
                           # Il ECHOUAIT depuis fevrier — le mode dev ne le signale pas.
                           # A lancer avant toute affirmation sur la mise en ligne.
-pnpm lint
+pnpm lint                 # NE FONCTIONNE PAS : aucune config ESLint dans apps/web (T6.6)
 
 # Administration
 pnpm admin:create         # cree ou promeut un administrateur (T3.15).
@@ -149,7 +149,9 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test:scripts                    # 62 tests : liens, bruit, fusion, publication, geocodage, URL, enrichissement
+pnpm test                            # Vitest, tout le monorepo : 86 tests
+pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
+pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)

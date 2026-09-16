@@ -1,6 +1,6 @@
 /** Tests de la règle « champs manquants seulement » (REBUILD.md T5.7). Node 22. */
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { champsManquants, appliquerEnrichissement, type ProduitAEnrichir } from './champs';
 

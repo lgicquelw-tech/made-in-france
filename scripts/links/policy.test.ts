@@ -9,7 +9,7 @@
  * désactivation à tort retire une marque vivante de l'annuaire, silencieusement.
  */
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   decider,

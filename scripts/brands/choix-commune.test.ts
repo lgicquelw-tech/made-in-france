@@ -1,6 +1,6 @@
 /** Tests du choix de commune (REBUILD.md T5.4). Lanceur intégré à Node 22. */
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { choisirCommune, formesAInterroger, type ResultatBan } from './choix-commune';
 

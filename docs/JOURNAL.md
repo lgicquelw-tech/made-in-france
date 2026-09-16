@@ -484,3 +484,59 @@ métadonnées en volume, `claude-haiku-4-5` coûte cinq fois moins ; la qualité
 « ne rien inventer » reste à comparer sur un échantillon avant de généraliser.
 
 **Commit.** `phase 5 (7/n): enrichissement IA prepare, sans appel (T5.7 partiel)`
+
+---
+
+## Phase 6 — Tests et intégration continue
+
+### 2026-09-16 · T6.1 — Vitest
+
+**But.** Un lanceur de tests unique pour tout le monorepo, branché sur `pnpm test`.
+
+**Fait.** Vitest 5 à la racine, dans `apps/web` et dans `scripts`, avec une config par
+paquet (`vitest.config.ts` ; alias `@/` → `src` côté web). `pnpm test` passe par Turbo ;
+la tâche `test` ne dépend plus d'aucun `build` — les tests unitaires lisent les sources.
+Les **62 tests de la phase 5** sont passés à Vitest en changeant **une ligne par fichier**
+(`import { test } from 'node:test'` → `'vitest'`) : leurs assertions viennent de
+`node:assert/strict`, que Vitest exécute telles quelles. C'était le but du choix de
+septembre — ne pas préempter le framework, sans rien avoir à réécrire.
+
+**Vérifié.** `pnpm test` : scripts **62 / 62**, web 24 / 24 (voir T6.2). `pnpm typecheck` 7 / 7.
+
+**Découvert.** `apps/web` n'a **aucune configuration ESLint** : `pnpm lint` ouvre un
+assistant interactif au lieu de linter. Il n'a jamais tourné. À régler en T6.6, où le
+lint doit passer en CI.
+
+**Commit.** `phase 6 (1/n): Vitest, et les gardes d'autorisation testees (T6.1, T6.2 partiel)`
+
+### 2026-09-16 · T6.2 (partiel) — Gardes d'autorisation et enveloppe de réponse
+
+**But.** Tester ce dont la casse silencieuse coûte le plus cher : une garde qui laisse
+passer ne lève aucune erreur, elle laisse passer.
+
+**Fait.** `apps/web/src/lib/guards.test.ts` (18 tests) et `api-response.test.ts` (6).
+Session et base simulées : on teste la logique de la garde, pas NextAuth ni Prisma.
+Ce qui est vérifié, c'est le **refus** : USER → 403 sur `requireAdmin`, ADMIN → 403 sur
+`requireSuperAdmin`, compte désactivé → 401 malgré une session valide, `VIEWER` → 403,
+invitation non acceptée → 403, lien désactivé → 403, marque inconnue → 404, non connecté
+→ 401 **sans même chercher la marque**. Et le test décisif : la session prétend
+`SUPER_ADMIN`, la base dit `USER`, **la base gagne**.
+
+Côté enveloppe : une exception interne contenant un mot de passe de connexion produit
+une 500 dont le corps ne contient **pas** ce mot de passe.
+
+**Vérifié — par mutation, pas seulement par exécution.** Trois gardes cassées à la main,
+une à la fois, chacune attrapée par exactement le test prévu :
+
+| Mutation | Test qui casse |
+|---|---|
+| `requireAdmin` laisse passer `USER` | « USER : 403 », « le rôle vient de la base » |
+| `VIEWER` peut écrire | « VIEWER : 403 » |
+| compte désactivé accepté | « compte désactivé : 401 » |
+
+`guards.ts` restauré à l'identique (`git diff` vide).
+
+**Reste pour T6.2 :** scoring de recherche, construction des requêtes, logique d'import
+(`import-brands.ts` — dont `cleanUrl` et la lecture des noms numériques `909`, `1083`).
+
+**Commit.** `phase 6 (1/n): Vitest, et les gardes d'autorisation testees (T6.1, T6.2 partiel)`

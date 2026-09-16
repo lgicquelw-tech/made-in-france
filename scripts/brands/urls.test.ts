@@ -1,6 +1,6 @@
 /** Tests du nettoyage d'URL (REBUILD.md T5.4). Lanceur intégré à Node 22. */
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { retirerParametresDeSuivi } from './urls';
 

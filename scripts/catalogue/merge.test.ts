@@ -5,7 +5,7 @@
  * C'est le défaut exact que la règle existe pour empêcher.
  */
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { donneesCreation, donneesMiseAJour, CHAMPS_COLLECTES, type ProduitCollecte } from './merge';
 

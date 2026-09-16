@@ -708,8 +708,8 @@ L'option 2 est la bonne, mais elle **suppose l'audit fait**. En attendant, ne pa
 
 > Pas de course à la couverture. On teste les chemins dont la casse silencieuse coûte cher.
 
-- [ ] **T6.1** — Installer Vitest.
-- [ ] **T6.2** — Tests unitaires : garde-fous d'auth (un non-admin reçoit bien 403), scoring de recherche, construction des requêtes, logique d'import.
+- [x] **T6.1** — Installer Vitest. → Vitest 5, une config par paquet, `pnpm test` via Turbo. Les 62 tests de la phase 5 migrés en changeant une ligne par fichier. **`apps/web` n'a aucune config ESLint** : `pnpm lint` n'a jamais tourné — à régler en T6.6.
+- [~] **T6.2** — Tests unitaires : garde-fous d'auth (un non-admin reçoit bien 403), scoring de recherche, construction des requêtes, logique d'import. → **Gardes faites** : 18 tests sur `guards.ts` + 6 sur `api-response.ts`, vérifiés **par mutation** (trois gardes cassées à la main, chacune attrapée). Reste : recherche, requêtes, import.
 - [ ] **T6.3** — Tests d'intégration API sur une base PostgreSQL temporaire.
 - [ ] **T6.4** — Installer Playwright.
 - [ ] **T6.5** — Parcours navigateur : recherche → marque → produit → clic d'achat ; inscription ; connexion ; favoris ; revendication de marque ; édition Studio ; édition admin.

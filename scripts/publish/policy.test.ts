@@ -1,6 +1,6 @@
 /** Tests de la règle de publication (REBUILD.md T5.8). Lanceur intégré à Node 22. */
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { deciderStatut } from './policy';
 import type { FicheProduit } from '../audit/checks';

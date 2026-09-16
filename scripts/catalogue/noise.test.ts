@@ -6,7 +6,7 @@
  * s'en aperçoive ; c'est l'erreur qu'on teste le plus.
  */
 
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { detecterBruit, dedoublonner, cleDeNom } from './noise';
 
