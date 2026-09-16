@@ -713,7 +713,7 @@ L'option 2 est la bonne, mais elle **suppose l'audit fait**. En attendant, ne pa
 - [x] **T6.3** — Tests d'intégration API sur une base PostgreSQL temporaire. → `pnpm test:integration`, base `madeinfrance_test`, 19 tests : admin rétrogradé en base refusé à la requête suivante, revendication → `PENDING` et **0 `BrandOwner`**, favori crédité une seule fois. Garde-fou : refus de démarrer sur une base qui ne finit pas par `_test`. ⚠️ La base de dev n'a plus d'administrateur (`pnpm admin:create`).
 - [ ] **T6.4** — Installer Playwright.
 - [ ] **T6.5** — Parcours navigateur : recherche → marque → produit → clic d'achat ; inscription ; connexion ; favoris ; revendication de marque ; édition Studio ; édition admin.
-- [~] **T6.6** — GitHub Actions : `install` → `prisma generate` → `typecheck` → `lint` → `test` sur chaque PR. → `.github/workflows/ci.yml`, plus tests d'intégration sur PostgreSQL 16 et **build**. `pnpm lint` fonctionne pour la première fois (aucune config n'existait). Partiel jusqu'au premier passage vert en CI.
+- [x] **T6.6** — GitHub Actions : `install` → `prisma generate` → `typecheck` → `lint` → `test` sur chaque PR. → `.github/workflows/ci.yml`, plus tests d'intégration sur PostgreSQL 16 et **build**. `pnpm lint` fonctionne pour la première fois (aucune config n'existait). **Vert en CI** le 16 septembre 2026, 2 min 11 : 107 tests unitaires, 19 d'intégration, build. Premier passage rouge sur le garde-fou anti-vidage — à raison.
 - [ ] **T6.7** — Le rouge bloque la fusion. → **Décision du propriétaire** : la protection de branche impose des PR ; tout est poussé sur `main` aujourd'hui.
 
 **Critère de sortie** : casser volontairement un garde-fou d'auth fait échouer la CI sans vérification manuelle.

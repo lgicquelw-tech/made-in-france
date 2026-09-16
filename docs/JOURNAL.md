@@ -666,3 +666,29 @@ imposerait de passer par des PR ; aujourd'hui tout est poussé directement sur `
 C'est un changement de façon de travailler, donc une décision du propriétaire.
 
 **Commit.** `phase 6 (4/n): integration continue, et un lint qui tourne enfin (T6.6)`
+
+### 2026-09-16 · T6.6 (fin) — Premier passage en CI
+
+**Passage 1 : rouge — sur mon propre garde-fou.** J'avais donné la même adresse à
+`DATABASE_URL` et `DATABASE_URL_TEST`. La règle « identiques → refus », écrite en T6.3
+contre le vidage de la base de développement, a fait exactement ce pour quoi elle
+existe. Correction : en CI, une seule base déjà nommée `_test`, et `DATABASE_URL_TEST`
+n'est pas définie. Le garde-fou reste.
+
+**Passage 2 : vert, en 2 min 11.**
+
+| Étape | Résultat en CI |
+|---|---|
+| Types | 7 / 7 |
+| Lint | 0 erreur |
+| Tests unitaires | **107** (web 32, scripts 75) |
+| Tests d'intégration, PostgreSQL 16 éphémère | **19** |
+| Build | compilé, 57 pages (la base de CI est vide — 991 en local) |
+
+Exécution : https://github.com/lgicquelw-tech/made-in-france/actions/runs/35108892767
+
+**Ce que ça change.** À partir de maintenant, chaque poussée sur `main` et chaque PR
+vérifie l'ensemble. Une erreur de type comme celle de T6.3 ne peut plus rester sur
+`main` sans qu'on le voie — elle sera rouge dans les trois minutes.
+
+**Commit.** `ci: ne pas definir DATABASE_URL_TEST — le garde-fou a refuse, a raison`
