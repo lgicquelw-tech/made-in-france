@@ -18,7 +18,7 @@ import { PrismaClient, MadeInFranceLevel, BrandStatus } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import XLSX from 'xlsx';
-import { retirerParametresDeSuivi } from '../brands/urls';
+import { slugify, cleanUrl, normalizeColumnName, lireNom } from './normalisation';
 
 const prisma = new PrismaClient();
 
@@ -247,55 +247,8 @@ const MADE_IN_FRANCE_MAPPING: Record<string, MadeInFranceLevel> = {
 // HELPERS
 // ===========================================
 
-function slugify(text: string): string {
-  return text
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '');
-}
 
-function cleanUrl(url: string | undefined | null): string | null {
-  if (!url || typeof url !== 'string') return null;
-  
-  url = url.trim();
-  if (!url) return null;
-  
-  // Add protocol if missing
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
-  }
-  
-  // ⚠️ `new URL()` ne suffit pas : les URL autorisent l'unicode dans le nom
-  // d'hote, donc `https://🌬️` est parfaitement valide a ses yeux. Combine au
-  // prefixage automatique ci-dessus, cela transformait la colonne « Image
-  // (Logo) » du fichier Excel — qui contient des EMOJIS — en 899 adresses de
-  // logo cassees. On exige donc un nom de domaine plausible.
-  try {
-    const parsed = new URL(url);
-    const host = parsed.hostname;
-    const looksLikeDomain = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(host);
-    // Les parametres de suivi (utm_*, fbclid...) identifient une campagne, pas une
-    // page : on ne les garde pas (REBUILD.md T5.4).
-    return looksLikeDomain ? retirerParametresDeSuivi(url) : null;
-  } catch {
-    return null;
-  }
-}
 
-function normalizeColumnName(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
 
 // ===========================================
 // IMPORTER CLASS
@@ -482,7 +435,7 @@ class BrandImporter {
       // brands.xlsx). XLSX les lit comme des nombres : sans cette conversion,
       // la validation ci-dessous les rejetait et trois marques reelles etaient
       // perdues en silence a chaque import.
-      const name = row.name == null ? '' : String(row.name);
+      const name = lireNom(row.name);
       if (!name.trim()) {
         this.stats.errors.push({
           row: index,

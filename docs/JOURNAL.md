@@ -536,7 +536,37 @@ une à la fois, chacune attrapée par exactement le test prévu :
 
 `guards.ts` restauré à l'identique (`git diff` vide).
 
-**Reste pour T6.2 :** scoring de recherche, construction des requêtes, logique d'import
-(`import-brands.ts` — dont `cleanUrl` et la lecture des noms numériques `909`, `1083`).
-
 **Commit.** `phase 6 (1/n): Vitest, et les gardes d'autorisation testees (T6.1, T6.2 partiel)`
+
+### 2026-09-16 · T6.2 (fin) — Recherche et logique d'import
+
+**But.** Deux extractions pour rendre testable sans base ni import réel, puis les tests.
+
+**Fait.**
+
+- **Recherche.** La construction des requêtes `Prisma.sql` sort de `recherche/page.tsx`
+  (113 → 53 lignes) vers `lib/search.ts` : `construireRequetes(query)` renvoie les deux
+  objets `Prisma.Sql`, `rechercher()` les exécute. Le test décisif est celui du
+  **constat n°4** (injection SQL par la recherche) : avec la saisie
+  `l'apostrophe'; DROP TABLE brands; --`, le texte SQL ne contient ni `DROP` ni
+  l'apostrophe, et la saisie se trouve dans `values`. 8 tests.
+- **Import.** `slugify`, `cleanUrl`, `normalizeColumnName` et `lireNom` sortent de
+  `import-brands.ts` (722 → 675 lignes, qui lance `main()` à l'import et ne pouvait donc
+  pas être importé par un test) vers `scripts/import/normalisation.ts`. 13 tests, chacun
+  lié à un défaut qui a réellement existé : les 899 émojis en `https://`, les trois
+  marques numériques perdues, les paramètres de suivi.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test` | **107 / 107** (web 32, scripts 75) |
+| `pnpm typecheck` | 7 / 7 |
+| Mutation : `Prisma.raw` réintroduit dans la requête marques | **2 tests tombent**, ceux prévus |
+| `pnpm db:import` après refactor | 903 mises à jour, 0 erreur ; marques / ACTIVE / géoloc / noms numériques **identiques** avant et après (903/1/868/3) |
+
+**Incident sans conséquence, consigné :** pendant la mutation, la copie de sauvegarde est
+partie dans `$OLDPWD` au lieu du scratchpad. Mutation défaite par remplacement inverse,
+fichier égaré supprimé, `git status` propre.
+
+**Commit.** `phase 6 (2/n): recherche et import testes, constat n°4 prouve par un test (T6.2)`
