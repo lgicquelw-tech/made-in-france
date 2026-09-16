@@ -86,7 +86,7 @@ test('un seul succes au milieu remet le compteur a zero', () => {
 
 test('un indetermine ne fait ni avancer ni reculer le compteur', () => {
   // Un 403 est un pare-feu qui a reconnu un robot, pas une page absente.
-  let etat = decider(neuf(), 'mort', T0).etat;
+  const etat = decider(neuf(), 'mort', T0).etat;
   const avant = { ...etat };
 
   const d = decider(etat, 'indetermine', plusTard(100 * HEURE));
@@ -117,7 +117,7 @@ test('un lien desactive qui repond de nouveau est reactive', () => {
 });
 
 test('un lien deja desactive ne redeclenche pas l action', () => {
-  let etat: EtatSuivi = {
+  const etat: EtatSuivi = {
     consecutiveFailures: 9,
     firstFailedAt: T0,
     disabledAt: plusTard(80 * HEURE),

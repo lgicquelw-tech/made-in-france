@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 107 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Pas encore de Playwright (T6.4). ⚠️ `pnpm lint` ne fonctionne pas : `apps/web` n'a aucune configuration ESLint (T6.6).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 107 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Pas encore de Playwright (T6.4). CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build).
 
 ---
 
@@ -127,7 +127,7 @@ pnpm typecheck            # PASSE sur les 7 tâches du monorepo. Le garder au ve
 pnpm build                # PASSE depuis le 10 septembre 2026 : 991 pages generees.
                           # Il ECHOUAIT depuis fevrier — le mode dev ne le signale pas.
                           # A lancer avant toute affirmation sur la mise en ligne.
-pnpm lint                 # NE FONCTIONNE PAS : aucune config ESLint dans apps/web (T6.6)
+pnpm lint                 # 7 paquets, 0 erreur attendue. Fonctionne depuis le 16 septembre 2026 (aucune config n'existait avant).
 
 # Administration
 pnpm admin:create         # cree ou promeut un administrateur (T3.15).

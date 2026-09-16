@@ -615,3 +615,54 @@ sur la dev → « identique à DATABASE_URL : refus », 903 marques intactes.
    `pnpm admin:create` avant toute vérification manuelle de l'admin.
 
 **Commit.** `phase 6 (3/n): tests d'integration sur une base dediee (T6.3)`
+
+### 2026-09-16 · T6.6 — Intégration continue
+
+**But.** Que les 126 tests, le typecheck, le lint et le build tournent **ailleurs que
+sur ma machine**, à chaque poussée et chaque PR. Tant qu'ils ne tournent qu'ici, ils ne
+protègent rien.
+
+**Pourquoi maintenant, avant Playwright (T6.4).** L'ordre du plan met les parcours
+navigateur avant la CI. Mais une preuve concrète est arrivée pendant T6.3 : j'ai commité
+un test d'intégration avec une **erreur de type** (`string | null` vers `string`). Vitest
+ne vérifie pas les types, et je n'avais pas relancé le typecheck après l'avoir écrit. La
+CI l'aurait attrapé à la poussée. Playwright se branchera sur cette CI, pas l'inverse.
+
+**Fait.**
+
+- `.github/workflows/ci.yml` : un travail, en séquence, du moins cher au plus cher —
+  install → `prisma generate` → typecheck → lint → tests unitaires → tests d'intégration
+  sur un service PostgreSQL 16 → build. Le premier échec arrête tout. Le **build** y est
+  parce qu'il a échoué sept mois sans que personne ne le sache. Aucun secret réel : les
+  valeurs sont factices et se présentent comme telles.
+- **`pnpm lint` n'avait jamais tourné.** `apps/web` n'avait pas de configuration ESLint
+  (`next lint` ouvrait un assistant), `database` et `shared` non plus, `api` et `scripts`
+  n'avaient pas de script. Désormais : une config racine (`@typescript-eslint/recommended`)
+  pour les paquets TypeScript, `next/core-web-vitals` pour le web, un script `lint` partout.
+- Premier passage du lint : **78 erreurs, une seule règle** — `react/no-unescaped-entities`,
+  les apostrophes du texte français en JSX. Désactivée, avec un `.eslintrc.md` qui explique
+  pourquoi : la règle attrape une guillemet JSX oubliée, pas la langue française. Puis
+  **5 erreurs réelles** corrigées plutôt qu'assouplies : un `catch` vide dans `index.ts`,
+  deux `let` jamais réassignés, deux `while (true)`.
+- 75 avertissements restent, connus et assumés : 58 `<img>` sur des favicons de 64 px
+  (T4.10), 15 `exhaustive-deps` dans les pages admin (à traiter avec le Studio), 2
+  `alt-text` qui prennent l'icône lucide `<Image>` pour une image.
+
+**Vérifié — localement.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm install --frozen-lockfile` | cohérent |
+| `pnpm typecheck` | 7 / 7 |
+| `pnpm lint` | 7 / 7, **0 erreur**, 75 avertissements |
+| `pnpm test` | 107 / 107 |
+| `pnpm test:integration` | 19 / 19 |
+
+Le premier passage **en CI** est celui de la poussée de ce commit ; son résultat est
+consigné dans l'entrée suivante — un workflow qui n'a jamais tourné n'est pas vérifié.
+
+**T6.7 — le rouge bloque la fusion — n'est pas activé.** La protection de branche
+imposerait de passer par des PR ; aujourd'hui tout est poussé directement sur `main`.
+C'est un changement de façon de travailler, donc une décision du propriétaire.
+
+**Commit.** `phase 6 (4/n): integration continue, et un lint qui tourne enfin (T6.6)`

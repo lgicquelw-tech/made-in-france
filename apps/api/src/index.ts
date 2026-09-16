@@ -1719,7 +1719,8 @@ app.post('/api/v1/chat', async (req, res) => {
       if (setting) {
         aiSettings = setting.value as any;
       }
-    } catch (e) {
+    } catch {
+      // Pas de reglage en base : on retombe sur les valeurs par defaut ci-dessous.
     }
 
     // Utiliser les settings ou les valeurs par défaut

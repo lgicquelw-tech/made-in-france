@@ -8,7 +8,8 @@
     "import:brands:dry": "tsx import/import-brands.ts --dry-run",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.125.0",

@@ -12,10 +12,13 @@ export function sessionDe(id: string | null): void {
 }
 
 export async function creerUtilisateur(role: Role = 'USER', suffixe = Math.random().toString(36).slice(2)) {
-  return prisma.user.create({
-    data: { email: `${role.toLowerCase()}-${suffixe}@test.local`, name: `Test ${role}`, role, isActive: true },
-    select: { id: true, email: true, role: true, points: true },
+  const email = `${role.toLowerCase()}-${suffixe}@test.local`;
+  const u = await prisma.user.create({
+    data: { email, name: `Test ${role}`, role, isActive: true },
+    select: { id: true, role: true, points: true },
   });
+  // `email` est nullable en base ; ici on vient de le poser, il est donc connu.
+  return { ...u, email };
 }
 
 export async function creerMarque(slug = `marque-${Math.random().toString(36).slice(2)}`) {

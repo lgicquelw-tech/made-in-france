@@ -76,7 +76,7 @@ async function fetchShopifyProducts(domain: string): Promise<ShopifyProduct[]> {
   
   console.log(`🔍 Fetching products from ${domain}...`);
   
-  while (true) {
+  for (;;) {
     const url = `https://${domain}/products.json?limit=${limit}&page=${page}`;
     
     try {

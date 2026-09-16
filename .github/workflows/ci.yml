@@ -1,0 +1,90 @@
+# Intégration continue (REBUILD.md T6.6).
+#
+# Un seul travail, en séquence, du moins cher au plus cher : installer, générer le client
+# Prisma, vérifier les types, linter, tests unitaires, tests d'intégration sur une vraie
+# base PostgreSQL, puis construire. Le premier échec arrête tout — un build de trois
+# minutes ne sert à rien si les types ne passent pas.
+#
+# Pourquoi le build est dans la liste : il a échoué pendant sept mois sans que personne
+# ne le sache, parce que le mode développement ne le signale pas (REBUILD.md, phase 4).
+#
+# La base est celle du service `postgres` ci-dessous : elle naît vide, reçoit les
+# migrations par `prisma migrate deploy` (lancé par les tests d'intégration), et meurt
+# avec le travail. Aucun secret réel n'est nécessaire — les valeurs ci-dessous sont
+# factices et le disent.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    name: types · lint · tests · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mif_user
+          POSTGRES_PASSWORD: mif_password
+          POSTGRES_DB: madeinfrance_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U mif_user"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Une seule base en CI : les tests d'intégration acceptent une adresse qui se
+      # termine déjà par `_test` et ne cherchent pas à en dériver une autre.
+      DATABASE_URL: postgresql://mif_user:mif_password@localhost:5432/madeinfrance_test?schema=public
+      DATABASE_URL_TEST: postgresql://mif_user:mif_password@localhost:5432/madeinfrance_test?schema=public
+      NEXTAUTH_SECRET: secret-factice-pour-la-ci-uniquement
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: pnpm (version épinglée par packageManager)
+        uses: pnpm/action-setup@v4
+
+      - name: Node (version épinglée par .nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Installer
+        run: pnpm install --frozen-lockfile
+
+      - name: Générer le client Prisma
+        run: pnpm db:generate
+
+      - name: Types
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tests unitaires
+        run: pnpm test
+
+      - name: Tests d'intégration (vraie base)
+        run: pnpm test:integration
+
+      - name: Build
+        run: pnpm build

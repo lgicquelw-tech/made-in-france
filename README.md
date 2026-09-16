@@ -114,7 +114,7 @@ pnpm dev                  # web + api
 pnpm --filter @mif/web dev
 pnpm --filter @mif/api dev
 
-pnpm typecheck            # api, shared et database passent ; web a encore 12 erreurs
+pnpm typecheck            # 7 paquets
 pnpm lint
 
 pnpm db:generate          # client Prisma
@@ -166,9 +166,9 @@ cher — une garde qui laisse passer un non-admin, un rescrape qui écrase un te
 éditorial, un lien vivant désactivé à tort. Les gardes sont vérifiées **par mutation** :
 chaque règle cassée à la main est attrapée par un test nommé.
 
-Playwright (parcours navigateur) et la CI GitHub sont prévus dans la suite de la phase 6
-de `REBUILD.md`. ⚠️ `pnpm lint` ne fonctionne pas encore : `apps/web` n'a pas de
-configuration ESLint.
+La CI (`.github/workflows/ci.yml`) enchaîne types, lint, tests, tests d'intégration sur
+PostgreSQL et build à chaque poussée. Playwright (parcours navigateur) est prévu dans la
+suite de la phase 6 de `REBUILD.md`.
 
 ## Limites connues
 

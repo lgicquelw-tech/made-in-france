@@ -45,7 +45,7 @@ async function fetchWooProducts(domain: string): Promise<WooProduct[]> {
 
   console.log(`🔍 Fetching products from ${domain}...`);
 
-  while (true) {
+  for (;;) {
     const url = `https://${domain}/wp-json/wc/store/products?per_page=${perPage}&page=${page}`;
 
     try {
