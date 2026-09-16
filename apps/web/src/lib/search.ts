@@ -29,23 +29,25 @@ export interface RequetesRecherche {
  * Les deux requêtes, prêtes à exécuter. Chaque `${...}` est un paramètre lié :
  * une apostrophe, un point-virgule ou un `DROP` dans la saisie ne peuvent rien casser.
  */
-export function construireRequetes(query: string): RequetesRecherche {
-  const like = `%${query}%`;
-  const likePlain = `%${sansAccents(query)}%`;
+export function construireRequetes(query: string, limite: number = LIMITE): RequetesRecherche {
+  // Les deux côtés désaccentués par `unaccent()` — voir `catalogue-public.ts`.
+  const plain = sansAccents(query);
+  const like = `%${plain}%`;
 
   const marques = Prisma.sql`
     SELECT 'brand' AS type, b.id, b.name, b.slug,
-           b.description_short AS "description", b.logo_url AS "logoUrl", b.city,
+           b.description_short AS "description", b.logo_url AS "logoUrl",
+           b.website_url AS "websiteUrl", b.city,
            s.name AS sector, s.slug AS "sectorSlug", s.color AS "sectorColor"
     FROM brands b
     LEFT JOIN sectors s ON b.sector_id = s.id
     WHERE (
-      b.name ILIKE ${like} OR b.name ILIKE ${likePlain}
-      OR b.description_short ILIKE ${like}
-      OR similarity(b.name, ${query}) > 0.3
+      unaccent(b.name) ILIKE ${like}
+      OR unaccent(b.description_short) ILIKE ${like}
+      OR similarity(unaccent(b.name), ${plain}) > 0.3
     )
-    ORDER BY similarity(b.name, ${query}) DESC, b.name ASC
-    LIMIT ${LIMITE}
+    ORDER BY (unaccent(b.name) ILIKE ${like}) DESC, similarity(unaccent(b.name), ${plain}) DESC, b.name ASC
+    LIMIT ${limite}
   `;
 
   const produits = Prisma.sql`
@@ -58,19 +60,19 @@ export function construireRequetes(query: string): RequetesRecherche {
     LEFT JOIN sectors s ON b.sector_id = s.id
     WHERE p.status = 'ACTIVE'
       AND (
-        p.name ILIKE ${like} OR p.name ILIKE ${likePlain}
-        OR similarity(p.name, ${query}) > 0.3
+        unaccent(p.name) ILIKE ${like}
+        OR similarity(unaccent(p.name), ${plain}) > 0.3
       )
-    ORDER BY similarity(p.name, ${query}) DESC, p.name ASC
-    LIMIT ${LIMITE}
+    ORDER BY similarity(unaccent(p.name), ${plain}) DESC, p.name ASC
+    LIMIT ${limite}
   `;
 
   return { marques, produits };
 }
 
-export async function rechercher(query: string): Promise<SearchResults> {
+export async function rechercher(query: string, limite: number = LIMITE): Promise<SearchResults> {
   if (!query.trim()) return { brands: [], products: [] };
-  const { marques, produits } = construireRequetes(query);
+  const { marques, produits } = construireRequetes(query, limite);
   const [brands, products] = await Promise.all([
     prisma.$queryRaw<SearchBrand[]>(marques),
     prisma.$queryRaw<SearchProduct[]>(produits),

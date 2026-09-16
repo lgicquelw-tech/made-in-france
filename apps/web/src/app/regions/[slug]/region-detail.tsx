@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { API_URL } from '@/lib/api';
 import { brandLogoUrl } from '@/lib/brand-logo';
 
 export interface Brand {
@@ -48,7 +47,8 @@ export default function RegionDetail({
   const [brands, setBrands] = useState<Brand[]>(initialBrands);
   const [pagination, setPagination] = useState<Pagination | null>(initialPagination);
   const [loading, setLoading] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  // La page 1 est rendue par le serveur ; on ne la redemande pas au montage.
+  const pageAffichee = useRef(1);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -56,11 +56,13 @@ export default function RegionDetail({
       setLoading(true);
       try {
         const response = await fetch(
-          `${API_URL}/api/v1/brands?region=${slug}&page=${currentPage}&limit=12`
+          `/api/v1/brands?region=${encodeURIComponent(slug)}&page=${currentPage}&limit=12`
         );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         setBrands(data.data || []);
         setPagination(data.pagination || null);
+        pageAffichee.current = currentPage;
       } catch (error) {
         console.error('Erreur:', error);
       } finally {
@@ -68,12 +70,9 @@ export default function RegionDetail({
       }
     }
 
-    if (!hydrated) {
-      setHydrated(true);
-      return;
-    }
+    if (currentPage === pageAffichee.current) return;
     fetchData();
-  }, [hydrated, slug, currentPage]);
+  }, [slug, currentPage]);
 
   const displayName = regionName;
 

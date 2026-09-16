@@ -730,3 +730,64 @@ les tests. Ces parcours — revendication, édition Studio — attendent la fin 
 Studio Pro »). `launch.json` (ignoré par git) prend désormais un port libre.
 
 **Commit.** `phase 6 (5/n): Playwright et les parcours navigateur (T6.4, T6.5 partiel)`
+
+### 2026-09-16 · T3.4 — La recherche, de bout en bout
+
+**But.** Que chaque endroit où l'on peut taper une requête fonctionne, sans défaut, et
+sans dépendre d'Express — qui ne tourne ni dans les tests ni, demain, en production.
+
+**Constat de départ.** Quatre points d'entrée sur cinq appelaient encore Express
+(`API_URL`) : la barre d'en-tête, la page `/recherche` dès qu'on retape, le filtre de
+`/marques`, celui de `/produits`. Seul le rendu initial de `/recherche` lisait la base.
+Dans l'aperçu — sans Express — une page blanche, puis `Failed to fetch` à chaque frappe.
+
+**Fait.**
+
+- `lib/catalogue-public.ts` : construction pure des listes de marques et de produits
+  (`Prisma.sql`, filtres qui **s'additionnent**, tri en **liste blanche**, paramètres
+  validés par Zod — un slug hostile est refusé avant toute requête). `lib/search.ts`
+  étendu (limite, `websiteUrl`).
+- Trois routes Next, mêmes chemins qu'Express : `/api/v1/search/all`, `/api/v1/brands`,
+  `/api/v1/products`. Les clients passent en **URL relative**.
+- Six clients corrigés : en-tête, `search-content`, `brand-list`, `product-list`,
+  `region-detail` ; `featured-brands.tsx` supprimé (importé nulle part).
+- Quatre routes Express retirées (483 lignes) : **28 → 24**. Il compile.
+
+**Neuf défauts trouvés et corrigés en chemin.**
+
+| Défaut | Correction |
+|---|---|
+| **« creme » ne trouvait pas « CRÈME BRÛLÉE »** — on désaccentuait la saisie, jamais la colonne. **191 marques sur 903** portent un accent dans leur nom, 151 villes aussi | extension `unaccent` (migration additive), comparaison des deux côtés ; trouvé par un test d'intégration |
+| Chercher dans `/marques` **perdait les filtres** région et secteur (bascule vers une autre route) | une seule route, tout s'additionne |
+| Double appel au montage dans **quatre** composants : `setHydrated(true)` relançait l'effet qui refaisait l'appel que le serveur venait de rendre | référence sur la dernière requête résolue |
+| L'URL de `/recherche` ne suivait pas la saisie — un lien copié montrait d'autres résultats | `router.replace` après chaque résultat |
+| Lettres à la place des logos dans les résultats (2 fichiers de plus sur les 13) | `brandLogoUrl` |
+| Recherche dans `/marques` déclenchée **à chaque touche**, sans délai | 300 ms |
+| Une réponse en erreur était lue comme un succès (`res.json()` sans `res.ok`) | vérification du statut |
+| Bouton de recherche de l'en-tête **sans nom accessible** | `aria-label`, `aria-expanded` |
+| « 1 produits de 9 secteurs » | pluriel |
+
+Et un détail de pertinence : une correspondance dans le **nom** passe avant une
+correspondance dans la description.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm lint` | 7 / 7, 0 erreur |
+| `pnpm test` | **120** (web 45, scripts 75) — dont la forme des requêtes : saisie hostile dans `values`, jamais dans `sql` ; slug hostile → rejet Zod ; tri hors liste → rejet |
+| `pnpm test:integration` | **31** — dont « creme » trouve « CRÈME BRÛLÉE », recherche + région + secteur → 1 résultat exact, brouillon jamais listé, 4 marques toujours là après une saisie `DROP TABLE` |
+| `pnpm test:e2e` | **14** — en-tête, `/recherche` (résultats **et** URL), `/marques` combiné, `/produits` |
+| Sur les 903 marques réelles | `creme` = `crème` = 6 ; `nere` → NÈRE ATELIER ; `oumami` → OÙMAMI ; `francais` → 122 |
+| Entrées hostiles sur les routes | `sort=DROP` → 400, `sector='; drop` → 400, `q` hostile → 200 et 903 marques intactes |
+| Express après retrait | compile, 24 routes |
+
+**Incident sans conséquence.** Le serveur d'aperçu avait démarré avant l'installation de
+Playwright, qui a changé le chemin résolu de `next` : cache `.next` périmé, page blanche
+(« reading 'call' »). Redémarrage propre.
+
+**Restent sur Express, et c'est visible dans l'inventaire :** `/api/v1/brands/search`
+(revendication Studio), `/brands/random`, `/with-coords*` (carte), `/regions`, `/sectors`,
+`/labels`, `/collections`, `/stats`, le chat et le webhook Stripe — T3.8.
+
+**Commit.** `recherche: tout sur Next, insensible aux accents, filtres combines (T3.4)`

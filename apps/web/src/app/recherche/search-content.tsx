@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Building2, ShoppingBag, Loader2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { API_URL } from '@/lib/api';
+import { brandLogoUrl } from '@/lib/brand-logo';
 
 export interface SearchBrand {
   type: 'brand';
@@ -14,6 +14,7 @@ export interface SearchBrand {
   slug: string;
   description: string | null;
   logoUrl: string | null;
+  websiteUrl?: string | null;
   city: string | null;
   sector: string | null;
   sectorSlug: string | null;
@@ -56,12 +57,17 @@ export interface SearchContentProps {
  */
 export default function SearchContent({ initialQuery, initialResults }: SearchContentProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const query = searchParams.get('q') || '';
   
   const [searchQuery, setSearchQuery] = useState(query);
   const [results, setResults] = useState<SearchResults>(initialResults);
-  // La requête initiale est déjà résolue côté serveur : on ne la relance pas.
-  const [hydrated, setHydrated] = useState(false);
+  // La dernière requête dont on a déjà les résultats. Au départ, celle rendue par le
+  // serveur : on ne la relance pas. L'ancien drapeau `hydrated` était dans les
+  // dépendances de l'effet ; le passer à `true` relançait l'effet, qui tombait alors
+  // dans le `setTimeout(search)` — la page refaisait **toujours** l'appel que le
+  // serveur venait de rendre.
+  const derniereResolue = useRef(initialQuery);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
 
@@ -78,9 +84,15 @@ export default function SearchContent({ initialQuery, initialResults }: SearchCo
 
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=20`);
+        // URL relative : même origine que la page, plus de dépendance à Express.
+        const res = await fetch(`/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=20`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setResults({ brands: data.brands || [], products: data.products || [] });
+        derniereResolue.current = searchQuery;
+        // L'URL suit la saisie : un lien copié montre ce qu'on voit, et le bouton
+        // « précédent » ne perd pas la recherche.
+        router.replace(`/recherche?q=${encodeURIComponent(searchQuery)}`, { scroll: false });
       } catch (error) {
         console.error('Search error:', error);
       } finally {
@@ -88,13 +100,10 @@ export default function SearchContent({ initialQuery, initialResults }: SearchCo
       }
     }
 
-    if (!hydrated && searchQuery === initialQuery) {
-      setHydrated(true);
-      return;
-    }
+    if (searchQuery === derniereResolue.current) return;
     const timeout = setTimeout(search, 300);
     return () => clearTimeout(timeout);
-  }, [hydrated, initialQuery, searchQuery]);
+  }, [searchQuery, router]);
 
   const formatPrice = (min: number | null, max: number | null) => {
     if (!min) return null;
@@ -258,12 +267,20 @@ export default function SearchContent({ initialQuery, initialResults }: SearchCo
                       href={`/marques/${brand.slug}`}
                       className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all"
                     >
-                      <div 
-                        className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
-                        style={{ backgroundColor: brand.sectorColor || '#002395' }}
-                      >
-                        {brand.name.charAt(0)}
-                      </div>
+                      {brandLogoUrl(brand) ? (
+                        <div className="w-14 h-14 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {/* Favicon de 64 px dérivé du site : pas d'optimiseur pour si petit (T4.10). */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={brandLogoUrl(brand)!} alt="" className="w-8 h-8 object-contain" />
+                        </div>
+                      ) : (
+                        <div
+                          className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                          style={{ backgroundColor: brand.sectorColor || '#002395' }}
+                        >
+                          {brand.name.charAt(0)}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900">{brand.name}</h3>
                         <p className="text-sm text-gray-500">

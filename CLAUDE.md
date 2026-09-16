@@ -59,9 +59,9 @@ les lise comme une source.
 | Monorepo | pnpm workspaces + Turborepo |
 | Node | >= 20 (testé en v22), `packageManager: pnpm@9.1.0` |
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
-| Backend | **En cours de migration vers Next.js** (option A, T0.1). `/api/admin/*`, tout l'espace marque et les routes utilisateur sont migrés et protégés. Express ne sert plus que **32 routes**, presque toutes des lectures publiques — plus `/api/v1/chat`, `/api/auth/*` et Stripe, qui restent à traiter. |
+| Backend | **En cours de migration vers Next.js** (option A, T0.1). `/api/admin/*`, tout l'espace marque et les routes utilisateur sont migrés et protégés. Express ne sert plus que **24 routes** : lectures publiques secondaires (carte, régions, secteurs, labels, collections, stats), `/api/v1/chat` et le webhook Stripe. La recherche et les listes (marques, produits) sont sur Next depuis le 16 septembre 2026. |
 | Base | PostgreSQL 16.15 (Homebrew) + Prisma 5.22 |
-| Recherche | PostgreSQL `pg_trgm` (pas Meilisearch) |
+| Recherche | PostgreSQL `pg_trgm` + **`unaccent`** (pas Meilisearch). Construction dans `lib/search.ts` et `lib/catalogue-public.ts`, servie par `/api/v1/search/all`, `/api/v1/brands`, `/api/v1/products` côté Next |
 | Auth | NextAuth v4 (Google, Email, Credentials) côté web uniquement |
 | IA | Anthropic SDK **0.125.0** (mis à jour le 11 septembre 2026 ; 0.71 n'avait pas les sorties structurées). Chat sur Claude Haiku dans `index.ts` ; enrichissement produit `pnpm data:enrich` (T5.7), qui **n'envoie rien sans `--appliquer`**. Le chemin OpenAI du chat renvoie une 400 « pas encore implémenté » ; le script d'enrichissement OpenAI a été supprimé. |
 | Images | Cloudinary |
@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 107 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Playwright : 9 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 120 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Playwright : 14 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
 
@@ -149,11 +149,11 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 107 tests
+pnpm test                            # Vitest, tout le monorepo : 120 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 19 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
-pnpm test:e2e                        # 9 parcours Playwright, serveur Next lance sur madeinfrance_test
+pnpm test:integration                # 31 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:e2e                        # 14 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)
@@ -249,6 +249,8 @@ chemins commençant par `../`.
 | **Un 403 n'est pas un site mort** | C'est un pare-feu qui a reconnu un robot. Une boutique derrière Cloudflare répond 403 à l'audit et 200 à un humain. `data:links` a donc **trois** verdicts, pas deux : `vivant`, `mort`, `indetermine` — et ne désactive que les `mort`. Confondre les deux retire des marques vivantes de l'annuaire, silencieusement. |
 | **Écriture d'un produit scrappé** | Un seul point : `scripts/catalogue/upsert.ts` → `enregistrerCollecte`. Les scrapers ne touchent **jamais** `prisma.product` directement. Clé stable `(brandId, externalSource, externalId)` ; le rescrape réécrit prix, images, lien, données brutes et `collectedAt`, et **jamais** descriptions, slug, statut, catégorie, matières, SEO. Un produit collecté naît en `DRAFT` : c'est l'audit (T5.8) qui publie. |
 | **L'import de marques ne touche pas au statut** | `brandData.status` vaut `PENDING_REVIEW` pour toute ligne du fichier. Le réécrire à la mise à jour remettait en attente chaque marque validée à chaque `pnpm bootstrap`. Le statut est une décision éditoriale, il ne vient pas du fichier. |
+| **Recherche insensible aux accents** | `unaccent()` des **deux** côtés — colonne et saisie. 191 marques sur 903 ont un accent dans leur nom : désaccentuer la seule saisie laissait « creme » sans réponse devant « CRÈME BRÛLÉE ». Toute nouvelle clause de recherche passe par `correspondance()` de `catalogue-public.ts`. |
+| **Double appel au montage** | Le motif `if (!hydrated) { setHydrated(true); return; }` avec `hydrated` dans les dépendances relance l'effet et refait l'appel que le serveur venait de rendre. Corrigé dans cinq composants ; utiliser une référence sur la dernière requête résolue, jamais ce drapeau. |
 | Géocodage | Par **commune**, via `api-adresse.data.gouv.fr` ; précision = centre de la commune. Les homonymes (cinq « Saint-Denis ») sont départagés par la région de la marque ; sans correspondance on ne devine pas. |
 | Désactivation d'un lien | Ne détruit **jamais** l'URL : on pose `websiteDeadAt` / `buyUrlDeadAt` et l'affichage cesse. Il faut 3 échecs consécutifs **et** un premier échec vieux de 72 h — sans la seconde condition, relancer la commande trois fois pendant une panne d'hébergeur viderait l'annuaire. |
 | **Taxonomie des secteurs** | Une seule liste fait foi, partagée par quatre endroits : `data/brands.xlsx`, `SECTOR_MAPPING` de `scripts/import/import-brands.ts`, le seed, et le front (`app/secteurs/page.tsx` + `sitemap.ts`). Les 9 slugs : `mode-accessoires`, `maison-jardin`, `gastronomie`, `cosmetique`, `enfance`, `loisirs-sport`, `animaux`, `sante-nutrition`, `high-tech`. **Modifier l'un sans les autres laisse des centaines de marques sans secteur, sans la moindre erreur.** C'est arrivé : 687 marques sur 903. |

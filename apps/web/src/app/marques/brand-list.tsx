@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, MapPin, ChevronLeft, ChevronRight, Filter, X, Building2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
-import { API_URL } from '@/lib/api';
 import { brandLogoUrl } from '@/lib/brand-logo';
 
 export interface Brand {
@@ -69,8 +68,10 @@ export default function BrandList({
   const [brands, setBrands] = useState<Brand[]>(initialBrands);
   const [pagination, setPagination] = useState<Pagination | null>(initialPagination);
   const [loading, setLoading] = useState(false);
-  // La première page vient du serveur : inutile de la redemander au montage.
-  const [hydrated, setHydrated] = useState(false);
+  // Signature (page, recherche, filtres) des données déjà affichées. Au départ, celle
+  // de la première page rendue par le serveur : sans recherche ni filtre. Si l'URL
+  // porte déjà `?search=`, la signature diffère et l'appel part — c'est voulu.
+  const signatureAffichee = useRef('1||||');
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,23 +86,21 @@ export default function BrandList({
     async function fetchBrands() {
       setLoading(true);
       try {
+        // Une seule route, servie par Next : recherche, région et secteur s'additionnent.
+        // L'ancienne bascule vers `/api/v1/search` perdait les filtres dès qu'on tapait.
         const params = new URLSearchParams();
         params.set('page', currentPage.toString());
         params.set('limit', '12');
-
+        if (search.trim()) params.set('q', search.trim());
         if (selectedRegion) params.set('region', selectedRegion);
         if (selectedSector) params.set('sector', selectedSector);
 
-        let url = `${API_URL}/api/v1/brands?${params.toString()}`;
-
-        if (search) {
-          url = `${API_URL}/api/v1/search?q=${encodeURIComponent(search)}&${params.toString()}`;
-        }
-
-        const response = await fetch(url);
+        const response = await fetch(`/api/v1/brands?${params.toString()}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         setBrands(data.data || []);
         setPagination(data.pagination || null);
+        signatureAffichee.current = signature;
       } catch (error) {
         console.error('Erreur lors du chargement des marques:', error);
       } finally {
@@ -109,12 +108,12 @@ export default function BrandList({
       }
     }
 
-    if (!hydrated) {
-      setHydrated(true);
-      return;
-    }
-    fetchBrands();
-  }, [hydrated, currentPage, search, selectedRegion, selectedSector]);
+    const signature = `${currentPage}|${search.trim()}|${selectedRegion}|${selectedSector}|`;
+    if (signature === signatureAffichee.current) return;
+    // Un court délai : la recherche se déclenche à la frappe, pas besoin d'un appel par touche.
+    const timeout = setTimeout(fetchBrands, search.trim() ? 300 : 0);
+    return () => clearTimeout(timeout);
+  }, [currentPage, search, selectedRegion, selectedSector]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -155,11 +155,11 @@ Deux fichiers réels, tous deux ignorés par git :
 **Vitest**, sur tout le monorepo :
 
 ```bash
-pnpm test                          # 107 tests
+pnpm test                          # 120 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
-pnpm test:integration              # 19 tests sur une vraie base, madeinfrance_test
-pnpm test:e2e                      # 9 parcours navigateur (Playwright), même base
+pnpm test:integration              # 31 tests sur une vraie base, madeinfrance_test
+pnpm test:e2e                      # 14 parcours navigateur (Playwright), même base
 ```
 
 Pas de course à la couverture : on teste les chemins dont la casse silencieuse coûte

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,7 +16,6 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { API_URL } from '@/lib/api';
 
 export interface Product {
   id: string;
@@ -68,8 +67,9 @@ export default function ProductList({
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
   const [totalProducts, setTotalProducts] = useState(initialTotal);
-  // La première page vient du serveur : on ne la redemande pas au montage.
-  const [hydrated, setHydrated] = useState(false);
+  // Signature des données déjà affichées ; au départ celle de la première page rendue
+  // par le serveur (24 produits, tri « nouveautés », sans filtre). Voir brand-list.tsx.
+  const signatureAffichee = useRef('1||newest|||');
 
   // Filters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -98,10 +98,13 @@ export default function ProductList({
         if (priceMin) params.set('priceMin', priceMin);
         if (priceMax) params.set('priceMax', priceMax);
 
-        const res = await fetch(`${API_URL}/api/v1/products?${params}`);
+        // Servie par Next (T3.4), même origine que la page.
+        const res = await fetch(`/api/v1/products?${params}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setProducts(data.data || []);
         setTotalProducts(data.pagination?.total || 0);
+        signatureAffichee.current = signature;
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -110,13 +113,11 @@ export default function ProductList({
       }
     }
 
-    if (!hydrated) {
-      setHydrated(true);
-      return;
-    }
+    const signature = `${page}|${searchQuery}|${sortBy}|${selectedSector}|${priceMin}|${priceMax}`;
+    if (signature === signatureAffichee.current) return;
     const timeout = setTimeout(fetchProducts, 300);
     return () => clearTimeout(timeout);
-  }, [hydrated, searchQuery, selectedSector, sortBy, priceMin, priceMax, page]);
+  }, [searchQuery, selectedSector, sortBy, priceMin, priceMax, page]);
 
   const loadMore = () => {
     setLoadingMore(true);
@@ -167,7 +168,7 @@ export default function ProductList({
             Produits Made in France
           </h1>
           <p className="text-xl text-white/70 max-w-2xl">
-            {totalProducts.toLocaleString()} produits de {sectors.length} secteurs
+            {totalProducts.toLocaleString('fr-FR')} {totalProducts > 1 ? 'produits' : 'produit'} de {sectors.length} secteurs
           </p>
 
           {/* Flag bar */}

@@ -32,20 +32,23 @@ describe('construireRequetes', () => {
     // doit contenir aucune valeur en clair.
     expect(marques.sql).not.toContain('marinière');
     expect(marques.sql).not.toContain('mariniere');
-    expect(marques.values).toContain('%marinière%');
+    // La saisie est désaccentuée avant d'être liée ; la colonne l'est par unaccent().
     expect(marques.values).toContain('%mariniere%');
+    expect(marques.sql).toContain('unaccent(b.name)');
   });
 
-  test('la variante sans accent est bien recherchee aussi', () => {
+  test('la saisie accentuee est comparee sans accent, des deux cotes', () => {
     const { produits } = construireRequetes('Crème');
-    expect(produits.values).toContain('%Crème%');
     expect(produits.values).toContain('%Creme%');
+    expect(produits.values).not.toContain('%Crème%');
+    expect(produits.sql).toContain('unaccent(p.name)');
   });
 
   test('la limite est un parametre, pas une valeur en dur', () => {
     const { marques } = construireRequetes('x');
     expect(marques.values).toContain(LIMITE);
     expect(marques.sql).not.toMatch(/LIMIT\s+\d+/);
+    expect(construireRequetes('x', 5).marques.values).toContain(5);
   });
 
   test('les produits sont filtres sur ACTIVE, dans le texte fixe de la requete', () => {

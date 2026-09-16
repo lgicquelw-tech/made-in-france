@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { API_URL } from '@/lib/api';
+import { brandLogoUrl } from '@/lib/brand-logo';
 
 // Composant pour l'icône IA avec animation
 function AIIcon({ className = "h-4 w-4", animated = true }: { className?: string; animated?: boolean }) {
@@ -33,6 +34,7 @@ interface SearchBrand {
   slug: string;
   description: string | null;
   logoUrl: string | null;
+  websiteUrl?: string | null;
   city: string | null;
   sector: string | null;
   sectorColor: string | null;
@@ -110,7 +112,9 @@ export function Header() {
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=5`);
+        // URL relative : la recherche est servie par Next (T3.4), plus par Express.
+        const res = await fetch(`/api/v1/search/all?q=${encodeURIComponent(searchQuery)}&limit=5`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setSearchResults({ brands: data.brands || [], products: data.products || [] });
         setShowResults(true);
@@ -259,6 +263,8 @@ export function Header() {
               {/* Search toggle */}
               <button
                 onClick={() => setShowSearch(!showSearch)}
+                aria-label={showSearch ? 'Fermer la recherche' : 'Ouvrir la recherche'}
+                aria-expanded={showSearch}
                 className={`p-2.5 rounded-full transition-all duration-300 ${
                   showSearch
                     ? 'bg-france-blue text-white shadow-md'
@@ -550,12 +556,19 @@ export function Header() {
                           onClick={handleResultClick}
                           className="flex items-center gap-4 px-4 py-3 hover:bg-france-blue/5 transition-colors border-b border-gray-50 last:border-0"
                         >
-                          <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0 shadow-sm"
-                            style={{ backgroundColor: brand.sectorColor || '#0D2B4E' }}
-                          >
-                            {brand.name.charAt(0)}
-                          </div>
+                          {brandLogoUrl(brand) ? (
+                            <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={brandLogoUrl(brand)!} alt="" className="w-7 h-7 object-contain" />
+                            </div>
+                          ) : (
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0 shadow-sm"
+                              style={{ backgroundColor: brand.sectorColor || '#0D2B4E' }}
+                            >
+                              {brand.name.charAt(0)}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-france-blue truncate">{brand.name}</p>
                             <p className="text-sm text-gray-500 truncate flex items-center gap-1">

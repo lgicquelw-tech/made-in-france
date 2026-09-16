@@ -33,6 +33,7 @@ export default async function setup(): Promise<void> {
       descriptionShort: 'Atelier de tricot breton, créé pour les parcours de test.',
     } });
     await prisma.product.create({ data: { ...DONNEES.produit, brandId: marque.id, status: 'ACTIVE', currency: 'EUR', priceMax: 89 } });
+    await prisma.brand.create({ data: { ...DONNEES.marqueAccentuee, status: 'ACTIVE', regionId: region.id, sectorId: secteur.id, descriptionShort: 'Crèmerie bretonne, semée pour tester la recherche sans accent.' } });
     await prisma.user.create({ data: {
       email: DONNEES.utilisateur.email, name: DONNEES.utilisateur.name,
       password: await bcrypt.hash(DONNEES.utilisateur.password, 10), role: 'USER', isActive: true,
