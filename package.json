@@ -36,7 +36,8 @@
     "test:scripts": "pnpm --filter @mif/scripts test",
     "data:publish": "tsx --env-file=.env scripts/publish/run.ts",
     "data:geocode": "tsx --env-file=.env scripts/brands/geocode.ts",
-    "data:enrich": "tsx --env-file=.env scripts/enrich/run.ts"
+    "data:enrich": "tsx --env-file=.env scripts/enrich/run.ts",
+    "test:integration": "pnpm --filter @mif/web test:integration"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

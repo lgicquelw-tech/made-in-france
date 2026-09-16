@@ -74,6 +74,11 @@
     },
     "generate": {
       "cache": false
+    },
+    "test:integration": {
+      "dependsOn": [],
+      "outputs": [],
+      "cache": false
     }
   }
 }

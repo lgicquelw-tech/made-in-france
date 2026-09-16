@@ -570,3 +570,48 @@ partie dans `$OLDPWD` au lieu du scratchpad. Mutation défaite par remplacement 
 fichier égaré supprimé, `git status` propre.
 
 **Commit.** `phase 6 (2/n): recherche et import testes, constat n°4 prouve par un test (T6.2)`
+
+### 2026-09-16 · T6.3 — Tests d'intégration sur une base PostgreSQL dédiée
+
+**But.** Prouver ce que les tests unitaires ne peuvent pas prouver : que la garde relit
+**réellement** le rôle en base, qu'une revendication crée **réellement** une ligne
+`PENDING` et aucun `BrandOwner`, qu'un favori crédite **réellement** 5 points une seule
+fois.
+
+**Fait.** `pnpm test:integration` (`vitest.integration.config.ts`) : les Route Handlers
+sont appelés comme des fonctions ; la session est simulée, **la base ne l'est pas**. Base
+`madeinfrance_test`, migrée avant la suite par `prisma migrate deploy` (la seule commande
+de migration autorisée), vidée avant chaque test par un `TRUNCATE` en gabarit statique —
+pas de `$executeRawUnsafe`, la règle 3 ne connaît pas d'exception. Fichiers en série.
+
+**Deux garde-fous**, parce que vider les tables sur la mauvaise base coûterait les 903
+marques : l'adresse de la base de test est dérivée de `DATABASE_URL` (suffixe `_test`) ou
+lue dans `DATABASE_URL_TEST`, et la suite **refuse de démarrer** si elle est identique à
+la base de dev ou si son nom ne finit pas par `_test`. Testé : `DATABASE_URL_TEST` pointée
+sur la dev → « identique à DATABASE_URL : refus », 903 marques intactes.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test:integration` | **19 / 19** en 3 fichiers |
+| Admin rétrogradé en base, session inchangée | 200 → **403** à la requête suivante ; désactivé → **401** |
+| Inscription avec `claimBrandSlug` | 1 `BrandClaimRequest` `PENDING`, **0 `BrandOwner`** (règle 0) |
+| Marque inconnue à l'inscription | 404 et **aucun compte orphelin** |
+| Mot de passe stocké | haché bcrypt, jamais en clair |
+| Favori ajouté deux fois | 1 ligne, **+5 points une seule fois** |
+| Deux utilisateurs | chacun ne voit que ses favoris |
+| Base de dev après la suite | 903 marques, 12 produits — **intacte** |
+
+**Découvert.**
+
+1. Le chemin du dépôt contient un espace (`1 Projets`) : `execSync` découpait le chemin
+   absolu du schéma. Chemin relatif au `cwd`.
+2. `users = 0` sur la base de dev a d'abord semblé être un débordement du `TRUNCATE`.
+   Vérifié : les 15 utilisateurs des tests sont dans la base de test, les 903 marques de
+   la dev sont intactes (un `CASCADE` les aurait emportées), et les 10 suppressions
+   cumulées sur `users` datent du nettoyage des comptes de vérification de T4.6. Pas
+   d'incident — mais **la base de dev n'a plus de compte administrateur** :
+   `pnpm admin:create` avant toute vérification manuelle de l'admin.
+
+**Commit.** `phase 6 (3/n): tests d'integration sur une base dediee (T6.3)`

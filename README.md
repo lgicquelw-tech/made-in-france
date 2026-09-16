@@ -87,6 +87,7 @@ Une machine équipée de Docker peut utiliser `docker compose up -d postgres` à
 ```bash
 createuser mif_user --createdb --pwprompt
 createdb -O mif_user madeinfrance
+createdb -O mif_user madeinfrance_test   # pour les tests d'intégration
 ```
 
 **Monter le projet** — une seule commande : installation, génération Prisma, migration,
@@ -157,6 +158,7 @@ Deux fichiers réels, tous deux ignorés par git :
 pnpm test                          # 107 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
+pnpm test:integration              # 19 tests sur une vraie base, madeinfrance_test
 ```
 
 Pas de course à la couverture : on teste les chemins dont la casse silencieuse coûte

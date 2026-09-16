@@ -152,6 +152,7 @@ pnpm data:enrich --appliquer         # appels factures — uniquement sur decisi
 pnpm test                            # Vitest, tout le monorepo : 107 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
+pnpm test:integration                # 19 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)
@@ -182,7 +183,7 @@ silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
 **La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
 perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). Elle contient
 aujourd'hui 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
-**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`) et **12 produits** — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
+**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`), **12 produits**, et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
 
 ⚠️ **Les liens `.env` sont ignorés par git** : `apps/api/.env`, `apps/web/.env` et tout
 lien équivalent n'existent pas sur un clone neuf. C'est pourquoi **toutes les commandes
