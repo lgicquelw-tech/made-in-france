@@ -23,7 +23,7 @@ fiches marque et produit, recherche, carte géolocalisée, espace B2B pour les m
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
 | Backend | **Express 4** — un seul fichier, `apps/api/src/index.ts` |
 | Base | PostgreSQL 16 + Prisma 5.22 |
-| Tests | Vitest 5 |
+| Tests | Vitest 5, Playwright 1.63 |
 | Recherche | PostgreSQL `pg_trgm` (index GIN trigram) |
 | Authentification | NextAuth v4 (Google, Email, Credentials) — **côté web uniquement** |
 | IA | SDK Anthropic (Claude Haiku) |
@@ -159,6 +159,7 @@ pnpm test                          # 107 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
 pnpm test:integration              # 19 tests sur une vraie base, madeinfrance_test
+pnpm test:e2e                      # 9 parcours navigateur (Playwright), même base
 ```
 
 Pas de course à la couverture : on teste les chemins dont la casse silencieuse coûte
@@ -167,8 +168,7 @@ cher — une garde qui laisse passer un non-admin, un rescrape qui écrase un te
 chaque règle cassée à la main est attrapée par un test nommé.
 
 La CI (`.github/workflows/ci.yml`) enchaîne types, lint, tests, tests d'intégration sur
-PostgreSQL et build à chaque poussée. Playwright (parcours navigateur) est prévu dans la
-suite de la phase 6 de `REBUILD.md`.
+PostgreSQL, build et parcours navigateur à chaque poussée.
 
 ## Limites connues
 

@@ -692,3 +692,41 @@ vérifie l'ensemble. Une erreur de type comme celle de T6.3 ne peut plus rester 
 `main` sans qu'on le voie — elle sera rouge dans les trois minutes.
 
 **Commit.** `ci: ne pas definir DATABASE_URL_TEST — le garde-fou a refuse, a raison`
+
+### 2026-09-16 · T6.4 + T6.5 (partiel) — Playwright et les parcours navigateur
+
+**But.** Vérifier dans un vrai navigateur les parcours dont la casse rend le site inutile,
+quel que soit l'état du reste.
+
+**Fait.** Playwright 1.63, Chromium seul. Le serveur Next est **lancé par Playwright sur
+la base `_test`** (mêmes garde-fous que l'intégration), semée d'un jeu de données connu :
+une région, un secteur, une marque `ACTIVE`, un produit complet, un utilisateur et un
+administrateur avec mot de passe. En local `next dev` ; en CI `next start` sur le build
+que la CI vient de produire — on teste ce qui serait déployé.
+
+Neuf parcours :
+
+| Parcours | Ce qu'il prouve |
+|---|---|
+| recherche → marque → produit → lien d'achat | la chaîne entière tient ; bonne URL, `target=_blank`, `rel=noopener` |
+| JSON-LD `Product` sur la fiche | prix et lien d'achat exacts |
+| fiche inexistante | 404 |
+| anonyme sur `/favoris` | renvoyé vers `/connexion?callbackUrl=%2Ffavoris` |
+| anonyme sur `/admin` | renvoyé vers la connexion |
+| mauvais mot de passe | refusé, message affiché, on reste sur la page |
+| connexion puis favori depuis la fiche marque | apparaît dans `/favoris` |
+| utilisateur ordinaire sur `/admin` | **404** |
+| administrateur sur `/admin` | 200 |
+
+**Vérifié.** Local **9 / 9** en 15 s. CI **verte en 3 min 12**, parcours compris, sur
+`next start`. Base de dev intacte après la suite (903 marques, 12 produits).
+
+**Non couvert, à dessein.** La revendication (`/studio/revendiquer`), l'annuaire filtré et
+`/favoris` en partie appellent encore **Express** via `API_URL`, qui ne tourne pas dans
+les tests. Ces parcours — revendication, édition Studio — attendent la fin de la migration
+(T3.4, T3.8). L'édition admin dans le navigateur n'est pas jouée non plus ; l'accès l'est.
+
+**Découvert.** Le port 3000 était tenu par un autre projet de la machine (« Le P'tit
+Studio Pro »). `launch.json` (ignoré par git) prend désormais un port libre.
+
+**Commit.** `phase 6 (5/n): Playwright et les parcours navigateur (T6.4, T6.5 partiel)`
