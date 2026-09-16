@@ -64,10 +64,9 @@
       ]
     },
     "test:e2e": {
-      "dependsOn": [
-        "build"
-      ],
-      "outputs": []
+      "dependsOn": [],
+      "outputs": [],
+      "cache": false
     },
     "clean": {
       "cache": false

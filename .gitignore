@@ -18,3 +18,8 @@ tsconfig.tsbuildinfo
 
 # Configuration de lancement propre a chaque machine (chemins absolus)
 .claude/launch.json
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/

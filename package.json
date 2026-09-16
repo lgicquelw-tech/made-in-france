@@ -18,7 +18,7 @@
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
     "test": "turbo test",
-    "test:e2e": "turbo test:e2e",
+    "test:e2e": "pnpm --filter @mif/web test:e2e",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules",
     "db:migrate": "prisma migrate dev --schema=packages/database/prisma/schema.prisma",

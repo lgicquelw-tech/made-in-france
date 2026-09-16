@@ -2,7 +2,7 @@
 #
 # Un seul travail, en séquence, du moins cher au plus cher : installer, générer le client
 # Prisma, vérifier les types, linter, tests unitaires, tests d'intégration sur une vraie
-# base PostgreSQL, puis construire. Le premier échec arrête tout — un build de trois
+# base PostgreSQL, construire, puis jouer les parcours navigateur sur ce build. Le premier échec arrête tout — un build de trois
 # minutes ne sert à rien si les types ne passent pas.
 #
 # Pourquoi le build est dans la liste : il a échoué pendant sept mois sans que personne
@@ -28,7 +28,7 @@ jobs:
   verifier:
     name: types · lint · tests · build
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -89,3 +89,19 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # Les parcours navigateur tournent sur `next start`, donc sur le build ci-dessus :
+      # on teste ce qui serait déployé, pas le mode développement.
+      - name: Navigateur Playwright
+        run: pnpm --filter @mif/web exec playwright install --with-deps chromium
+
+      - name: Parcours navigateur
+        run: pnpm test:e2e
+
+      - name: Traces des parcours en échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: apps/web/test-results/
+          retention-days: 7
