@@ -45,10 +45,11 @@ jobs:
           --health-retries 10
 
     env:
-      # Une seule base en CI : les tests d'intégration acceptent une adresse qui se
-      # termine déjà par `_test` et ne cherchent pas à en dériver une autre.
+      # Une seule base en CI, déjà nommée `_test` : les tests d'intégration l'acceptent
+      # telle quelle. Ne PAS définir DATABASE_URL_TEST à la même valeur — le garde-fou
+      # « identique à DATABASE_URL » refuserait de démarrer. Il l'a fait, au premier
+      # passage : c'est sa raison d'être, pas un défaut.
       DATABASE_URL: postgresql://mif_user:mif_password@localhost:5432/madeinfrance_test?schema=public
-      DATABASE_URL_TEST: postgresql://mif_user:mif_password@localhost:5432/madeinfrance_test?schema=public
       NEXTAUTH_SECRET: secret-factice-pour-la-ci-uniquement
       NEXTAUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
