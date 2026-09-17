@@ -13,7 +13,11 @@ import { lireFil, parametresFil } from '@/lib/feed';
  * produit, ni secteur : un moteur ne voyait qu'une page de squelettes.
  */
 
-export const revalidate = 1800;
+// Rendu **à la requête**, pas au build. L'accueil montre le catalogue du moment : avec
+// `revalidate = 1800`, Next le prérendait au build et servait trente minutes une page
+// figée — vide, en CI, puisque la base du build l'était (17 septembre 2026). Quatre
+// requêtes légères par visite, c'est le prix d'un fil à jour.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [brands, sectors] = await Promise.all([
@@ -41,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const PAR_PAGE = 20;
   const [fil, featured, sectorRows, nbMarques] = await Promise.all([
-    // La première page du fil, générique : rendue côté serveur, mise en cache 30 min.
+    // La première page du fil, générique, rendue côté serveur à chaque visite.
     // La personnalisation se fait ensuite dans le navigateur (home-feed.tsx).
     lireFil(parametresFil.parse({ limit: String(PAR_PAGE) })),
     prisma.brand.findMany({
