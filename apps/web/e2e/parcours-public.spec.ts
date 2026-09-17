@@ -46,3 +46,10 @@ test('une fiche inexistante renvoie 404', async ({ page }) => {
   const r = await page.goto('/produits/n-existe-pas');
   expect(r?.status()).toBe(404);
 });
+
+test('la carte annonce les marques geolocalisees', async ({ page }) => {
+  // Les points viennent de /api/v1/brands/with-coords-and-labels, servie par Next
+  // depuis T3.8. Le fond de carte (Mapbox) peut manquer en CI ; le compte, non.
+  await page.goto('/carte');
+  await expect(page.getByText(/2 marques affichées/)).toBeVisible({ timeout: 15_000 });
+});

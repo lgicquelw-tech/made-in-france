@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL } from '@/lib/api';
 import {
   Building2,
   BarChart3,
@@ -82,14 +81,14 @@ export default function StudioLabelsPage() {
   const fetchData = async () => {
     try {
       // Fetch brand
-      const brandRes = await fetch(`${API_URL}/api/v1/brands/${slug}`);
+      const brandRes = await fetch(`/api/v1/brands/${slug}`);
       if (brandRes.ok) {
         const data = await brandRes.json();
         setBrand(data.data || data);
       }
 
       // Fetch all labels
-      const labelsRes = await fetch(`${API_URL}/api/v1/labels`);
+      const labelsRes = await fetch(`/api/v1/labels`);
       if (labelsRes.ok) {
         const data = await labelsRes.json();
         setAllLabels(data.data || []);

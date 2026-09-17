@@ -1,8 +1,8 @@
 /** Le jeu de données semé avant les parcours — connu, minimal, stable. */
 export const DONNEES = {
-  marque: { name: 'ATELIER TEST', slug: 'atelier-test', city: 'Rennes', websiteUrl: 'https://www.atelier-test.example' },
+  marque: { name: 'ATELIER TEST', slug: 'atelier-test', city: 'Rennes', websiteUrl: 'https://www.atelier-test.example', latitude: 48.1173, longitude: -1.6778 },
   /** Une marque au nom accentué, pour prouver que « creme » la trouve. */
-  marqueAccentuee: { name: 'CRÈME DE BRETAGNE', slug: 'creme-de-bretagne', city: 'Saint-Malo' },
+  marqueAccentuee: { name: 'CRÈME DE BRETAGNE', slug: 'creme-de-bretagne', city: 'Saint-Malo', latitude: 48.6493, longitude: -2.0257 },
   produit: {
     name: 'Pull Marin Test', slug: 'atelier-test-pull-marin-test', priceMin: 89,
     imageUrl: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=640',

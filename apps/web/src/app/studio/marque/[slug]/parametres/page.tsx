@@ -45,7 +45,6 @@ import {
   Navigation
 } from 'lucide-react';
 import { RichEditor } from '@/components/ui/rich-editor';
-import { API_URL } from '@/lib/api';
 
 
 type SubscriptionTier = 'FREE' | 'PREMIUM' | 'ROYALE';
@@ -276,9 +275,9 @@ export default function StudioParametresPage() {
   const loadData = async () => {
     try {
       const [sectorsRes, regionsRes, brandRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/sectors`),
-        fetch(`${API_URL}/api/v1/regions`),
-        fetch(`${API_URL}/api/v1/brands/${slug}`),
+        fetch(`/api/v1/sectors`),
+        fetch(`/api/v1/regions`),
+        fetch(`/api/v1/brands/${slug}`),
       ]);
 
       const sectorsData = await sectorsRes.json();

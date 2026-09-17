@@ -413,7 +413,7 @@ corriger — non fait pour ne pas mélanger une maintenance Homebrew avec cette 
 - [x] **T3.6** — Espace marque migré : propriété, tableau de bord (lecture et écriture), propriétaires, labels, images, envoi de fichiers. Tout derrière `requireBrandOwner`, vérifié compte contre compte. Voir T3.12 et T3.13.
 - [~] **T3.7** — **Médias** : migrés, avec vérification du type MIME réel et liste blanche de dossiers (T3.20). **Paiements** : migrés, avec la propriété vérifiée et le prix dérivé de la base (T8.5, T8.6). **IA** : les *réglages* sont migrés et ne peuvent plus fuir de clé.
   Reste : `/api/v1/chat` lui-même, encore sur Express. Il est désormais limité à 10 appels/min et son injection SQL est fermée, mais il reste à porter.
-- [ ] **T3.8** — Supprimer l'ancien `index.ts` une fois toutes les routes migrées et vérifiées.
+- [~] **T3.8** — Supprimer l'ancien `index.ts` une fois toutes les routes migrées et vérifiées. → **1/2 le 17 septembre 2026** : 22 routes `GET` retirées (14 étaient mortes), 9 portées sur Next. Restent le chat (T3.7) et le webhook Stripe. Corrigé au passage : la fiche publique exposait `stripeCustomerId` ; les brouillons de toute marque étaient publics ; une marque `PENDING_REVIEW` ne pouvait pas se revendiquer.
 
 ### 3b — Authentification et droits
 

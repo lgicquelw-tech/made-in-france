@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL } from '@/lib/api';
 import {
   Building2,
   Search,
@@ -44,7 +43,7 @@ export default function StudioRevendiquerPage() {
     setSelectedBrand(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/v1/brands/search?q=${encodeURIComponent(searchQuery)}&limit=10`);
+      const res = await fetch(`/api/v1/brands/search?q=${encodeURIComponent(searchQuery)}&limit=10`);
       if (res.ok) {
         const data = await res.json();
         setResults(data.data || []);

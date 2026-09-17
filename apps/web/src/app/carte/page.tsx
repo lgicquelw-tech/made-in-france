@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { MapPin, X, ExternalLink, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { API_URL } from '@/lib/api';
 
 interface Brand {
   id: string;
@@ -59,7 +58,7 @@ export default function CartePage() {
   useEffect(() => {
     async function fetchBrands() {
       try {
-        const response = await fetch(`${API_URL}/api/v1/brands/with-coords-and-labels`);
+        const response = await fetch(`/api/v1/brands/with-coords-and-labels`);
         const data = await response.json();
         setAllBrands(data.data || []);
         setFilteredBrands(data.data || []);

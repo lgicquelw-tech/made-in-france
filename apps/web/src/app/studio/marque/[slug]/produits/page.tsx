@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL } from '@/lib/api';
 import {
   Building2,
   BarChart3,
@@ -104,14 +103,14 @@ export default function StudioProduitsPage() {
   const fetchData = async () => {
     try {
       // Fetch brand
-      const brandRes = await fetch(`${API_URL}/api/v1/brands/${slug}`);
+      const brandRes = await fetch(`/api/v1/brands/${slug}`);
       if (brandRes.ok) {
         const data = await brandRes.json();
         setBrand(data.data || data);
       }
 
       // Fetch products
-      const productsRes = await fetch(`${API_URL}/api/v1/brands/${slug}/products/all`);
+      const productsRes = await fetch(`/api/v1/brands/${slug}/products/all`);
       if (productsRes.ok) {
         const data = await productsRes.json();
         setProducts(data.data || data.products || []);
@@ -126,7 +125,7 @@ export default function StudioProduitsPage() {
   const toggleProductStatus = async (product: Product) => {
     try {
       const newStatus = product.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-      const res = await fetch(`${API_URL}/api/v1/products/${product.id}`, {
+      const res = await fetch(`/api/v1/products/${product.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -146,7 +145,7 @@ export default function StudioProduitsPage() {
     if (!planLimits.trending) return;
     
     try {
-      const res = await fetch(`${API_URL}/api/v1/products/${product.id}`, {
+      const res = await fetch(`/api/v1/products/${product.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isTrending: !product.isTrending }),
@@ -166,7 +165,7 @@ export default function StudioProduitsPage() {
     if (!planLimits.newBadge) return;
     
     try {
-      const res = await fetch(`${API_URL}/api/v1/products/${product.id}`, {
+      const res = await fetch(`/api/v1/products/${product.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isNewProduct: !product.isNewProduct }),
@@ -186,7 +185,7 @@ export default function StudioProduitsPage() {
     if (!planLimits.promo) return;
     
     try {
-      const res = await fetch(`${API_URL}/api/v1/products/${product.id}`, {
+      const res = await fetch(`/api/v1/products/${product.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

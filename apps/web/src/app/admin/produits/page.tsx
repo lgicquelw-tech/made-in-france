@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { API_URL } from '@/lib/api';
 import {
   Search,
   ShoppingBag,
@@ -101,7 +100,7 @@ export default function ProductsPage() {
 
   const loadSectors = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/sectors`);
+      const res = await fetch(`/api/v1/sectors`);
       if (res.ok) {
         const data = await res.json();
         setSectors(data.data || []);

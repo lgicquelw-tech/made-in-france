@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL } from '@/lib/api';
 import {
   Building2,
   Mail,
@@ -47,7 +46,7 @@ export default function SignupForm() {
   // Charger la marque si claim
   useState(() => {
     if (claimSlug) {
-      fetch(`${API_URL}/api/v1/brands/${claimSlug}`)
+      fetch(`/api/v1/brands/${claimSlug}`)
         .then(res => res.json())
         .then(data => {
           const brand = data.data || data;

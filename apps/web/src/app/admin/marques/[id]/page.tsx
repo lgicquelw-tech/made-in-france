@@ -36,7 +36,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { RichEditor } from '@/components/ui/rich-editor';
 import { IconPicker, AVAILABLE_ICONS, IconName, getIconComponent } from '@/components/ui/icon-picker';
-import { API_URL } from '@/lib/api';
 
 
 // --- INTERFACES ---
@@ -240,9 +239,9 @@ export default function EditBrandPage() {
     const loadData = async () => {
         try {
             const [sectorsRes, regionsRes, labelsRes] = await Promise.all([
-                fetch(`${API_URL}/api/v1/sectors`),
-                fetch(`${API_URL}/api/v1/regions`),
-                fetch(`${API_URL}/api/v1/labels`),
+                fetch(`/api/v1/sectors`),
+                fetch(`/api/v1/regions`),
+                fetch(`/api/v1/labels`),
             ]);
 
             const sectorsData = await sectorsRes.json();

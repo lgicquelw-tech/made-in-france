@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL } from '@/lib/api';
 import {
   Building2,
   BarChart3,
@@ -136,7 +135,7 @@ export default function StudioStatistiquesPage() {
 
   const fetchData = async () => {
     try {
-      const brandRes = await fetch(`${API_URL}/api/v1/brands/${slug}`);
+      const brandRes = await fetch(`/api/v1/brands/${slug}`);
       if (brandRes.ok) {
         const data = await brandRes.json();
         setBrand(data.data || data);

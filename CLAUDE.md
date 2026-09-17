@@ -59,7 +59,7 @@ les lise comme une source.
 | Monorepo | pnpm workspaces + Turborepo |
 | Node | >= 20 (testé en v22), `packageManager: pnpm@9.1.0` |
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
-| Backend | **En cours de migration vers Next.js** (option A, T0.1). `/api/admin/*`, tout l'espace marque et les routes utilisateur sont migrés et protégés. Express ne sert plus que **24 routes** : lectures publiques secondaires (carte, régions, secteurs, labels, collections, stats), `/api/v1/chat` et le webhook Stripe. La recherche et les listes (marques, produits) sont sur Next depuis le 16 septembre 2026. |
+| Backend | **En cours de migration vers Next.js** (option A, T0.1). `/api/admin/*`, tout l'espace marque et les routes utilisateur sont migrés et protégés. Express ne sert plus que **2 routes** : `POST /api/v1/chat` et le webhook Stripe. Toutes les lectures sont sur Next depuis le 17 septembre 2026 ; `API_URL` n'est plus utilisé que par le chat. |
 | Base | PostgreSQL 16.15 (Homebrew) + Prisma 5.22 |
 | Recherche | PostgreSQL `pg_trgm` + **`unaccent`** (pas Meilisearch). Construction dans `lib/search.ts` et `lib/catalogue-public.ts`, servie par `/api/v1/search/all`, `/api/v1/brands`, `/api/v1/products` côté Next |
 | Auth | NextAuth v4 (Google, Email, Credentials) côté web uniquement |
@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 120 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Playwright : 14 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 120 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Playwright : 15 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
 
@@ -93,7 +93,7 @@ made-in-france/
 │   │       ├── components/       # header, footer, home/*, ui/*, ChatBot
 │   │       ├── hooks/  lib/api.ts  styles/
 │   └── api/
-│       └── src/index.ts          # 4 358 lignes, 92 routes — LE monolithe
+│       └── src/index.ts          # 716 lignes, 2 routes (chat, webhook Stripe) — en voie de suppression (T3.8)
 ├── packages/
 │   ├── database/prisma/schema.prisma   # 840 lignes, 33 modèles
 ├── scripts/                      # paquet @mif/scripts — DOIT rester dans pnpm-workspace.yaml
@@ -152,8 +152,8 @@ pnpm data:enrich --appliquer         # appels factures — uniquement sur decisi
 pnpm test                            # Vitest, tout le monorepo : 120 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 31 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
-pnpm test:e2e                        # 14 parcours Playwright, serveur Next lance sur madeinfrance_test
+pnpm test:integration                # 37 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:e2e                        # 15 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)
@@ -243,6 +243,7 @@ chemins commençant par `../`.
 | Appels authentifiés depuis le front | **URL relative** (`/api/...`), jamais `${API_URL}`. Le cookie de session n'est envoyé qu'en même origine : un appel vers `localhost:4000` ne peut pas être authentifié. |
 | Données inventées | Cinq pages d'administration fabriquaient leurs chiffres quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
+| **Boutons produits du Studio** | `PUT /api/v1/products/:id` avec `status: 'INACTIVE'`, `isTrending`, `isNewProduct`, `salePrice` : aucun de ces champs n'existe, aucune route ne répond. Ces boutons n'ont jamais fonctionné. Décision de phase 8, pas à combler au passage. |
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |
 | Version d'API Stripe | Figée une seule fois dans `STRIPE_API_VERSION` (`index.ts`). Ne pas la redéclarer ailleurs. |
 | Clearbit | Mort. Les logos passent par Google Favicons |

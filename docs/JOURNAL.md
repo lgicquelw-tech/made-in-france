@@ -791,3 +791,41 @@ Playwright, qui a changé le chemin résolu de `next` : cache `.next` périmé, 
 `/labels`, `/collections`, `/stats`, le chat et le webhook Stripe — T3.8.
 
 **Commit.** `recherche: tout sur Next, insensible aux accents, filtres combines (T3.4)`
+
+### 2026-09-17 · T3.8 (1/2) — Express vidé de ses lectures
+
+**But.** Que plus rien de ce que le site affiche ne dépende d'Express.
+
+**Constat.** 24 routes restaient. Le site en appelait **10** ; **14 n'étaient appelées par
+personne** — mortes depuis la migration des pages en rendu serveur (phase 4).
+
+**Fait.** Neuf lectures portées sur Next aux mêmes chemins ; 23 appels dans 12 fichiers
+basculés en URL relative ; **22 routes `GET` retirées** d'Express (1 609 → 716 lignes).
+Il n'y reste que deux `POST` : le chat et le webhook Stripe.
+
+**Trois comportements changés, à dessein.**
+
+| Route | Avant | Après |
+|---|---|---|
+| `/brands/[slug]` | le **modèle entier** : `stripeCustomerId`, `stripeSubscriptionId`, affiliation, à quiconque connaissait un slug | forme publique, sans identifiant de paiement |
+| `/brands/[slug]/products/all` | **publique** : les brouillons de n'importe quelle marque | `requireBrandOwner` — 401 anonyme, 403 sans lien, 200 propriétaire |
+| `/brands/search` (revendication) | filtrait `ACTIVE` : avec 902 marques `PENDING_REVIEW`, **une marque ne trouvait pas sa propre fiche** pour la revendiquer | toutes les marques — la propriété ne dépend pas de la publication |
+
+**Découvert.**
+
+1. L'admin produits appelait `/api/sectors` — une route qui **n'a jamais existé**
+   (c'était `/api/v1/sectors`). Le filtre par secteur n'a jamais chargé. Corrigé.
+2. La page produits du Studio envoie des `PUT /api/v1/products/:id` avec
+   `status: 'INACTIVE'`, `isTrending`, `isNewProduct`, `salePrice` : **aucun de ces champs
+   n'existe dans le schéma**, `INACTIVE` n'est pas dans l'énumération, et aucune route
+   d'écriture n'existe côté Express. Ces boutons n'ont jamais pu fonctionner. Consigné,
+   pas comblé : ce serait ajouter des champs, donc une fonctionnalité (phase 8).
+3. `lib/api.ts` n'est plus importé que pour `API_URL`, lui-même utilisé par le seul chat.
+
+**Vérifié.** Typecheck 7/7. Smoke sur l'aperçu : 868 points de carte, `products/all`
+anonyme → 401, NANNETTA (`PENDING_REVIEW`) trouvée par la recherche de revendication,
+fiche marque **sans champ `stripe*`**. `pnpm test:integration` **37** (6 nouveaux : pas de
+secret Stripe dans la fiche, `PENDING_REVIEW` trouvable, 401/403/200 sur la liste Studio).
+`pnpm test:e2e` **15** (nouveau : `/carte` annonce ses marques géolocalisées).
+
+**Commit.** `phase 3 (T3.8, 1/2): Express vide de ses lectures, trois comportements corriges`

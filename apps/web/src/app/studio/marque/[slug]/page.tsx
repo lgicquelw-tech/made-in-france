@@ -22,7 +22,6 @@ import {
   X
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
-import { API_URL } from '@/lib/api';
 
 
 interface Brand {
@@ -67,7 +66,7 @@ export default function StudioDashboardPage() {
   const fetchBrandData = async () => {
     try {
       // Récupérer les données de la marque
-      const brandRes = await fetch(`${API_URL}/api/v1/brands/${slug}`);
+      const brandRes = await fetch(`/api/v1/brands/${slug}`);
       if (brandRes.ok) {
         const data = await brandRes.json();
         setBrand(data.data || data);

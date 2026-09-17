@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_URL } from '@/lib/api';
 import {
   ArrowLeft,
   Save,
@@ -81,7 +80,7 @@ export default function EditProductPage() {
     try {
       const [productRes, labelsRes] = await Promise.all([
         fetch(`/api/admin/products/${productId}`),
-        fetch(`${API_URL}/api/v1/labels`),
+        fetch(`/api/v1/labels`),
       ]);
 
       if (productRes.ok) {
@@ -94,7 +93,7 @@ export default function EditProductPage() {
         });
 
         // Charger les labels du produit
-        const productLabelsRes = await fetch(`${API_URL}/api/v1/products/${productId}/labels`);
+        const productLabelsRes = await fetch(`/api/v1/products/${productId}/labels`);
         if (productLabelsRes.ok) {
           const productLabelsData = await productLabelsRes.json();
           setProductLabels(productLabelsData.data || []);
