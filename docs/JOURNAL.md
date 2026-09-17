@@ -1101,3 +1101,12 @@ l'API 12. Un mot de passe de 9 passait le formulaire pour être refusé par l'AP
 seul le passage en CI (`next start` sur le build) vérifie que le rafraîchissement agit.
 
 **Commit.** `T6.5 : inscription, revendication et editions couvertes — et ce qu'elles ont trouve`
+
+**CI rouge, puis correctif.** Les tests d'intégration appellent les routes **hors** d'une
+requête Next : `revalidatePath` y lève « static generation store missing », et trois
+écritures d'audit répondaient 500 — après avoir écrit en base. Je n'avais lancé que les
+parcours et les tests unitaires en local, pas l'intégration : c'est la CI qui l'a vu.
+Un rafraîchissement de cache ne peut pas faire échouer l'écriture qu'il suit :
+`lib/revalidation.ts` l'attrape et l'écrit en avertissement. `pnpm test:integration` : 52/52.
+
+**Commit.** `correctif: un rafraichissement de cache impossible ne fait pas echouer l'ecriture`
