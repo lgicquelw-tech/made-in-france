@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/guards';
+import { journaliser } from '@/lib/audit';
 import { route, notFound } from '@/lib/api-response';
 import { productUpdateSchema } from '@/lib/validation/product';
 
@@ -27,7 +28,7 @@ export const GET = route<Context>(async (_request, { params }) => {
 });
 
 export const PUT = route<Context>(async (request, { params }) => {
-  await requireAdmin();
+  const acteur = await requireAdmin();
 
   const input = productUpdateSchema.parse(await request.json());
 
@@ -74,25 +75,28 @@ export const PUT = route<Context>(async (request, { params }) => {
       : { disconnect: true };
   }
 
-  const product = await prisma.product.update({
-    where: { id: params.id },
-    data,
-    include: { category: true },
+  const avant = await prisma.product.findUnique({ where: { id: params.id } });
+  if (!avant) throw notFound('Produit introuvable');
+
+  const product = await prisma.$transaction(async (tx) => {
+    const apres = await tx.product.update({ where: { id: params.id }, data, include: { category: true } });
+    await journaliser(tx, { acteur, action: 'product.update', cible: { type: 'product', id: apres.id, libelle: apres.name }, avant, apres });
+    return apres;
   });
 
   return NextResponse.json({ data: product });
 });
 
 export const DELETE = route<Context>(async (_request, { params }) => {
-  await requireAdmin();
+  const acteur = await requireAdmin();
 
-  const product = await prisma.product.findUnique({
-    where: { id: params.id },
-    select: { id: true, name: true },
-  });
+  const product = await prisma.product.findUnique({ where: { id: params.id } });
   if (!product) throw notFound('Produit introuvable');
 
-  await prisma.product.delete({ where: { id: params.id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.product.delete({ where: { id: params.id } });
+    await journaliser(tx, { acteur, action: 'product.delete', cible: { type: 'product', id: product.id, libelle: product.name }, avant: product, apres: null });
+  });
 
   return NextResponse.json({ message: `Produit « ${product.name} » supprimé` });
 });

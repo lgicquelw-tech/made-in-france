@@ -147,10 +147,10 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 128 tests
+pnpm test                            # Vitest, tout le monorepo : 134 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 47 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:integration                # 52 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
 pnpm test:e2e                        # 15 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
@@ -241,6 +241,7 @@ chemins commençant par `../`.
 | Données inventées | Cinq pages d'administration fabriquaient leurs chiffres quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | **Routes d'API figées au build** | Un Route Handler `GET` qui ne lit pas la requête est **prérendu au build** et sert à jamais l'état de la base de ce moment. La carte a servi `[]` en CI pour cette raison (17 septembre 2026). Chaque `route.ts` sous `app/api/` porte `export const dynamic = 'force-dynamic'` ; toute nouvelle route aussi. Et `route()` **relance** les signaux internes de Next (`DYNAMIC_SERVER_USAGE`, `NEXT_*`) au lieu de les convertir en 500. |
 | Build contre une vraie base | `next build` prérend ~1 000 pages en parallèle, chaque worker avec son pool Prisma : un PostgreSQL local (100 connexions) sature. Borner : `DATABASE_URL="...&connection_limit=5"` pour le build. |
+| **Piste d'audit** | Toute écriture sur une marque ou un produit passe par `prisma.$transaction` avec `journaliser(tx, …)` (`lib/audit.ts`) : champs modifiés seulement, jamais un secret. Une nouvelle route d'écriture **doit** la poser. Lecture : `GET /api/admin/audit`. |
 | Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
 | **Boutons produits du Studio** | `PUT /api/v1/products/:id` avec `status: 'INACTIVE'`, `isTrending`, `isNewProduct`, `salePrice` : aucun de ces champs n'existe, aucune route ne répond. Ces boutons n'ont jamais fonctionné. Décision de phase 8, pas à combler au passage. |
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |

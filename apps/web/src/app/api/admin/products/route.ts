@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/guards';
+import { journaliser } from '@/lib/audit';
 import { route, badRequest, notFound } from '@/lib/api-response';
 import { slugify } from '@/lib/utils';
 import { productCreateSchema, productListQuerySchema } from '@/lib/validation/product';
@@ -62,7 +63,7 @@ export const GET = route(async (request: Request) => {
 });
 
 export const POST = route(async (request: Request) => {
-  await requireAdmin();
+  const acteur = await requireAdmin();
 
   const input = productCreateSchema.parse(await request.json());
 
@@ -85,29 +86,33 @@ export const POST = route(async (request: Request) => {
     throw badRequest(`Cette marque a déjà un produit avec le slug « ${slug} ».`);
   }
 
-  const product = await prisma.product.create({
-    data: {
-      brandId: input.brandId,
-      name: input.name,
-      slug,
-      descriptionShort: input.descriptionShort ?? null,
-      descriptionLong: input.descriptionLong ?? null,
-      imageUrl: input.imageUrl ?? null,
-      galleryUrls: input.galleryUrls ?? [],
-      categoryId: input.categoryId ?? null,
-      priceMin: input.priceMin ?? null,
-      priceMax: input.priceMax ?? null,
-      currency: input.currency ?? 'EUR',
-      manufacturingLocation: input.manufacturingLocation ?? null,
-      materials: input.materials ?? [],
-      externalBuyUrl: input.externalBuyUrl ?? null,
-      affiliateUrl: input.affiliateUrl ?? null,
-      tags: input.tags ?? [],
-      attributes: (input.attributes ?? {}) as Prisma.InputJsonValue,
-      status: input.status ?? 'ACTIVE',
-      isFeatured: input.isFeatured ?? false,
-    },
-    include: { category: true },
+  const product = await prisma.$transaction(async (tx) => {
+    const cree = await tx.product.create({
+      data: {
+        brandId: input.brandId,
+        name: input.name,
+        slug,
+        descriptionShort: input.descriptionShort ?? null,
+        descriptionLong: input.descriptionLong ?? null,
+        imageUrl: input.imageUrl ?? null,
+        galleryUrls: input.galleryUrls ?? [],
+        categoryId: input.categoryId ?? null,
+        priceMin: input.priceMin ?? null,
+        priceMax: input.priceMax ?? null,
+        currency: input.currency ?? 'EUR',
+        manufacturingLocation: input.manufacturingLocation ?? null,
+        materials: input.materials ?? [],
+        externalBuyUrl: input.externalBuyUrl ?? null,
+        affiliateUrl: input.affiliateUrl ?? null,
+        tags: input.tags ?? [],
+        attributes: (input.attributes ?? {}) as Prisma.InputJsonValue,
+        status: input.status ?? 'ACTIVE',
+        isFeatured: input.isFeatured ?? false,
+      },
+      include: { category: true },
+    });
+    await journaliser(tx, { acteur, action: 'product.create', cible: { type: 'product', id: cree.id, libelle: cree.name }, avant: null, apres: cree });
+    return cree;
   });
 
   return NextResponse.json({ data: product }, { status: 201 });

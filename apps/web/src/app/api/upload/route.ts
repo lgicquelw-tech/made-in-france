@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { requireAdmin } from '@/lib/guards';
 import { route, badRequest } from '@/lib/api-response';
@@ -31,17 +32,17 @@ const ALLOWED_FOLDERS = [
   'products/gallery',
   'labels',
   'collections',
-];
+] as const;
 
 export const POST = route(async (request: Request) => {
   await requireAdmin();
   enforceRateLimit(request, { scope: 'upload-admin', limit: 60, windowMs: 60_000 });
 
-  const url = new URL(request.url);
-  const folder = url.searchParams.get('folder') ?? 'made-in-france';
-  if (!ALLOWED_FOLDERS.includes(folder)) {
-    throw badRequest(`Dossier non autorisé. Valeurs possibles : ${ALLOWED_FOLDERS.join(', ')}.`);
-  }
+  // Zod plutôt qu'un test à la main (règle 5) : même liste blanche, même 400, mais la
+  // validation a la même forme partout et se lit d'un coup d'œil.
+  const { folder } = z
+    .object({ folder: z.enum(ALLOWED_FOLDERS).default('made-in-france') })
+    .parse(Object.fromEntries(new URL(request.url).searchParams));
 
   const formData = await request.formData();
   const file = formData.get('file');

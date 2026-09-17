@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { requireAdmin, requireSuperAdmin } from '@/lib/guards';
+import { journaliser } from '@/lib/audit';
 import { route, notFound } from '@/lib/api-response';
 import { brandUpdateSchema } from '@/lib/validation/brand';
 
@@ -38,7 +39,7 @@ export const GET = route<Context>(async (_request, { params }) => {
 });
 
 export const PUT = route<Context>(async (request, { params }) => {
-  await requireAdmin();
+  const acteur = await requireAdmin();
 
   const input = brandUpdateSchema.parse(await request.json());
 
@@ -86,16 +87,18 @@ export const PUT = route<Context>(async (request, { params }) => {
     data.region = input.regionId ? { connect: { id: input.regionId } } : { disconnect: true };
   }
 
-  const existing = await prisma.brand.findUnique({
-    where: { id: params.id },
-    select: { id: true },
-  });
-  if (!existing) throw notFound('Marque introuvable');
+  const avant = await prisma.brand.findUnique({ where: { id: params.id } });
+  if (!avant) throw notFound('Marque introuvable');
 
-  const brand = await prisma.brand.update({
-    where: { id: params.id },
-    data,
-    include: { region: true, sector: true },
+  // Écriture et trace dans la même transaction (T3.14) : l'une sans l'autre est impossible.
+  const brand = await prisma.$transaction(async (tx) => {
+    const apres = await tx.brand.update({ where: { id: params.id }, data, include: { region: true, sector: true } });
+    await journaliser(tx, {
+      acteur, action: 'brand.update',
+      cible: { type: 'brand', id: apres.id, libelle: apres.name },
+      avant, apres,
+    });
+    return apres;
   });
 
   return NextResponse.json({ data: brand });
@@ -105,15 +108,16 @@ export const DELETE = route<Context>(async (_request, { params }) => {
   // Suppression irréversible : elle emporte en cascade les produits, les
   // images, les propriétaires et les demandes de revendication de la marque.
   // Réservée au super-administrateur.
-  await requireSuperAdmin();
+  const acteur = await requireSuperAdmin();
 
-  const brand = await prisma.brand.findUnique({
-    where: { id: params.id },
-    select: { id: true, name: true },
-  });
+  const brand = await prisma.brand.findUnique({ where: { id: params.id } });
   if (!brand) throw notFound('Marque introuvable');
 
-  await prisma.brand.delete({ where: { id: params.id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.brand.delete({ where: { id: params.id } });
+    // La trace garde l'état complet de la fiche : c'est tout ce qui en restera.
+    await journaliser(tx, { acteur, action: 'brand.delete', cible: { type: 'brand', id: brand.id, libelle: brand.name }, avant: brand, apres: null });
+  });
 
   return NextResponse.json({ message: `Marque « ${brand.name} » supprimée` });
 });

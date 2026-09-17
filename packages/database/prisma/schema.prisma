@@ -899,6 +899,30 @@ model LinkCheck {
   @@map("link_checks")
 }
 
+/// Piste d'audit (REBUILD.md T3.14) : qui a modifie quoi, quand, sur les fiches.
+///
+/// Une ligne par ecriture, avec **uniquement les champs modifies** (avant / apres),
+/// jamais un secret. `userEmail` est copie pour survivre a la suppression du compte ;
+/// `userId` null = action du systeme (webhook Stripe, commande).
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  userEmail   String?  @map("user_email")
+  /// `brand.update`, `brand.delete`, `product.create`, `subscription.change`...
+  action      String
+  targetType  String   @map("target_type")
+  targetId    String   @map("target_id")
+  /// Le nom de la fiche au moment de l'action — lisible meme apres suppression.
+  targetLabel String?  @map("target_label")
+  /// { champ: { avant, apres } }, champs modifies seulement.
+  changes     Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([targetType, targetId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
 model SiteSetting {
   id        String   @id @default(uuid())
   key       String   @unique

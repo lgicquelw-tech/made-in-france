@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { requireBrandOwner } from '@/lib/guards';
@@ -33,7 +34,7 @@ export const POST = route<Context>(async (request, { params }) => {
 
   const formData = await request.formData();
   const file = formData.get('image');
-  const type = String(formData.get('type') ?? 'photo');
+  const type = z.enum(['logo', 'photo']).default('photo').parse(formData.get('type') ?? undefined);
 
   if (!(file instanceof File)) throw badRequest('Aucun fichier envoyé.');
   if (file.size === 0) throw badRequest('Fichier vide.');
@@ -42,9 +43,6 @@ export const POST = route<Context>(async (request, { params }) => {
   }
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     throw badRequest(`Type de fichier refusé (${file.type || 'inconnu'}). Attendu : JPEG, PNG, WebP ou AVIF.`);
-  }
-  if (type !== 'logo' && type !== 'photo') {
-    throw badRequest("Le type doit valoir « logo » ou « photo ».");
   }
 
   const full = await prisma.brand.findUnique({

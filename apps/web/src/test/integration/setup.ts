@@ -32,7 +32,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await prisma.$executeRaw`
     TRUNCATE TABLE "brand_claim_requests", "brand_owners", "favorites", "brand_views",
-                   "products", "brands", "users" CASCADE`;
+                   "products", "brands", "users", "audit_logs" CASCADE`;
 });
 
 afterAll(async () => {

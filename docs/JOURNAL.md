@@ -904,3 +904,35 @@ ont épuisé les 100 connexions de mon PostgreSQL. `connection_limit=5` dans
 `DATABASE_URL` pour le build ; consigné dans `CLAUDE.md`.
 
 **Commit.** `correctif: aucune route d'API n'est figee au build, et route() laisse passer les signaux de Next`
+
+### 2026-09-17 · T3.14 — Piste d'audit, et clôture de la phase 3
+
+**But.** Savoir qui a modifié quoi, quand, sur les fiches — et fermer les quatre tâches de
+la phase 3 qui portaient une raison périmée.
+
+**Vérifié par script, pas par relecture.** Sur les 58 `route.ts` : aucune route admin,
+écriture Studio ou `/me/*` sans garde (T3.10) ; toute route lisant un corps ou une query
+string passe par Zod (T3.16) — les deux routes d'envoi de fichier validaient à la main,
+alignées. T3.2 ne portait plus que « routes publiques à migrer » : fait ce matin.
+
+**T3.14.** Table `audit_logs` (migration additive) ; `lib/audit.ts` calcule les
+**différences** entre avant et après — champs modifiés seulement, **jamais** un secret
+(`password`, `stripe*`, affiliation exclus quoi qu'il arrive), textes longs tronqués ;
+`journaliser(tx, …)` s'appelle **dans la transaction** de l'écriture qu'il trace : une
+modification sans trace, ou une trace sans modification, est impossible. Branché sur :
+marque (création, modification, suppression admin ; modification Studio), produit
+(création, modification, suppression, mise en avant, activation en masse — une ligne
+avec le nombre), palier d'abonnement changé par Stripe (acteur « système »). Lecture
+`GET /api/admin/audit`, filtrable par fiche ou par acteur, réservée aux administrateurs.
+
+**Vérifié.** Typecheck 6/6. `pnpm test` 134 (6 sur `differences`). `pnpm test:integration`
+**52** — dont : une modification admin laisse **une** trace, avec `city` et
+`descriptionShort` et sans `name` (inchangé) ni `stripeCustomerId` (secret) ; une
+suppression garde l'état complet, sans secret ; une modification Studio porte l'identité
+du propriétaire ; **une écriture qui échoue (slug déjà pris) ne laisse aucune trace** ;
+un `USER` reçoit 403 sur la lecture.
+
+**Phase 3 : 24 tâches sur 24.** Ouverte le 1er septembre avec 92 routes Express sans
+garde ; close le 17 avec zéro route Express, chaque écriture gardée, validée et tracée.
+
+**Commit.** `phase 3 (T3.14) : piste d'audit, et cloture de la phase`

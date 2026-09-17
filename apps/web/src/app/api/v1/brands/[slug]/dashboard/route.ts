@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { requireBrandOwner } from '@/lib/guards';
+import { journaliser } from '@/lib/audit';
 import { route, notFound } from '@/lib/api-response';
 import { brandDashboardUpdateSchema } from '@/lib/validation/brand-dashboard';
 
@@ -77,7 +78,7 @@ export const GET = route<Context>(async (_request, { params }) => {
 });
 
 export const PUT = route<Context>(async (request, { params }) => {
-  const { brand } = await requireBrandOwner(params.slug);
+  const { user, brand } = await requireBrandOwner(params.slug);
 
   const input = brandDashboardUpdateSchema.parse(await request.json());
 
@@ -95,7 +96,12 @@ export const PUT = route<Context>(async (request, { params }) => {
     data.region = input.regionId ? { connect: { id: input.regionId } } : { disconnect: true };
   }
 
-  const updated = await prisma.brand.update({ where: { id: brand.id }, data });
+  const avant = await prisma.brand.findUnique({ where: { id: brand.id } });
+  const updated = await prisma.$transaction(async (tx) => {
+    const apres = await tx.brand.update({ where: { id: brand.id }, data });
+    await journaliser(tx, { acteur: user, action: 'brand.update', cible: { type: 'brand', id: apres.id, libelle: apres.name }, avant, apres });
+    return apres;
+  });
 
   return NextResponse.json({ success: true, brand: updated });
 });

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/guards';
+import { journaliser } from '@/lib/audit';
 import { route, badRequest } from '@/lib/api-response';
 import { slugify } from '@/lib/utils';
 import { brandInputSchema, brandListQuerySchema } from '@/lib/validation/brand';
@@ -55,7 +56,7 @@ export const GET = route(async (request: Request) => {
 });
 
 export const POST = route(async (request: Request) => {
-  await requireAdmin();
+  const acteur = await requireAdmin();
 
   const input = brandInputSchema.parse(await request.json());
   const slug = input.slug ?? slugify(input.name);
@@ -67,34 +68,39 @@ export const POST = route(async (request: Request) => {
     throw badRequest(`Une marque utilise déjà le slug « ${slug} ».`);
   }
 
-  const brand = await prisma.brand.create({
-    data: {
-      name: input.name,
-      slug,
-      descriptionShort: input.descriptionShort ?? null,
-      descriptionLong: input.descriptionLong ?? null,
-      story: input.story ?? null,
-      logoUrl: input.logoUrl ?? null,
-      coverImageUrl: input.coverImageUrl ?? null,
-      galleryUrls: input.galleryUrls ?? [],
-      videoUrl: input.videoUrl ?? null,
-      websiteUrl: input.websiteUrl ?? null,
-      city: input.city ?? null,
-      address: input.address ?? null,
-      postalCode: input.postalCode ?? null,
-      latitude: input.latitude ?? null,
-      longitude: input.longitude ?? null,
-      yearFounded: input.yearFounded ?? null,
-      sectorId: input.sectorId ?? null,
-      regionId: input.regionId ?? null,
-      socialLinks: input.socialLinks ?? {},
-      aiGeneratedContent: (input.aiGeneratedContent ?? {}) as Prisma.InputJsonValue,
-      status: input.status ?? 'ACTIVE',
-      isFeatured: input.isFeatured ?? false,
-      isVerified: input.isVerified ?? false,
-    },
-    include: { region: true, sector: true },
+  const brand = await prisma.$transaction(async (tx) => {
+      const creee = await tx.brand.create({
+      data: {
+        name: input.name,
+        slug,
+        descriptionShort: input.descriptionShort ?? null,
+        descriptionLong: input.descriptionLong ?? null,
+        story: input.story ?? null,
+        logoUrl: input.logoUrl ?? null,
+        coverImageUrl: input.coverImageUrl ?? null,
+        galleryUrls: input.galleryUrls ?? [],
+        videoUrl: input.videoUrl ?? null,
+        websiteUrl: input.websiteUrl ?? null,
+        city: input.city ?? null,
+        address: input.address ?? null,
+        postalCode: input.postalCode ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        yearFounded: input.yearFounded ?? null,
+        sectorId: input.sectorId ?? null,
+        regionId: input.regionId ?? null,
+        socialLinks: input.socialLinks ?? {},
+        aiGeneratedContent: (input.aiGeneratedContent ?? {}) as Prisma.InputJsonValue,
+        status: input.status ?? 'ACTIVE',
+        isFeatured: input.isFeatured ?? false,
+        isVerified: input.isVerified ?? false,
+      },
+      include: { region: true, sector: true },
+      });
+    await journaliser(tx, { acteur, action: 'brand.create', cible: { type: 'brand', id: creee.id, libelle: creee.name }, avant: null, apres: creee });
+    return creee;
   });
+
 
   return NextResponse.json({ data: brand }, { status: 201 });
 });

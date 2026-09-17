@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 
 import { prisma } from '@/lib/db';
 import { stripeClient } from '@/lib/stripe';
+import { journaliser } from '@/lib/audit';
 
 // Une réponse d'API n'est jamais figée au build : sans cette ligne, un GET qui ne lit
 // pas la requête est prérendu une fois et sert à jamais l'état de la base du build.
@@ -41,9 +42,16 @@ export async function POST(request: Request): Promise<NextResponse> {
       const session = event.data.object as Stripe.Checkout.Session;
       const { brandId, plan } = session.metadata ?? {};
       if (brandId && (plan === 'PREMIUM' || plan === 'ROYALE')) {
-        await prisma.brand.update({
-          where: { id: brandId },
-          data: { subscriptionTier: plan, stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : null },
+        await prisma.$transaction(async (tx) => {
+          const avant = await tx.brand.findUnique({ where: { id: brandId }, select: { subscriptionTier: true, name: true } });
+          if (!avant) return;
+          await tx.brand.update({
+            where: { id: brandId },
+            data: { subscriptionTier: plan, stripeSubscriptionId: typeof session.subscription === 'string' ? session.subscription : null },
+          });
+          // Acteur null : c'est le systeme (Stripe) qui ecrit, pas un utilisateur.
+          await journaliser(tx, { acteur: null, action: 'subscription.change', cible: { type: 'brand', id: brandId, libelle: avant.name },
+            changements: { subscriptionTier: { avant: avant.subscriptionTier, apres: plan }, source: { avant: null, apres: 'stripe:checkout.session.completed' } } });
         });
         console.info('[stripe] abonnement activé', { brandId, plan });
       }
@@ -59,8 +67,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription;
-      const r = await prisma.brand.updateMany({ where: { stripeSubscriptionId: sub.id }, data: { subscriptionTier: 'FREE', stripeSubscriptionId: null } });
-      if (r.count) console.info('[stripe] abonnement résilié', { subscription: sub.id });
+      await prisma.$transaction(async (tx) => {
+        const touchees = await tx.brand.findMany({ where: { stripeSubscriptionId: sub.id }, select: { id: true, name: true, subscriptionTier: true } });
+        if (touchees.length === 0) return;
+        await tx.brand.updateMany({ where: { stripeSubscriptionId: sub.id }, data: { subscriptionTier: 'FREE', stripeSubscriptionId: null } });
+        for (const b of touchees) {
+          await journaliser(tx, { acteur: null, action: 'subscription.change', cible: { type: 'brand', id: b.id, libelle: b.name },
+            changements: { subscriptionTier: { avant: b.subscriptionTier, apres: 'FREE' }, source: { avant: null, apres: 'stripe:customer.subscription.deleted' } } });
+        }
+        console.info('[stripe] abonnement résilié', { subscription: sub.id });
+      });
       break;
     }
   }

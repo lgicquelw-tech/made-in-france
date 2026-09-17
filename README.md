@@ -152,10 +152,10 @@ Deux fichiers réels, tous deux ignorés par git :
 **Vitest**, sur tout le monorepo :
 
 ```bash
-pnpm test                          # 128 tests
+pnpm test                          # 134 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
-pnpm test:integration              # 47 tests sur une vraie base, madeinfrance_test
+pnpm test:integration              # 52 tests sur une vraie base, madeinfrance_test
 pnpm test:e2e                      # 15 parcours navigateur (Playwright), même base
 ```
 
