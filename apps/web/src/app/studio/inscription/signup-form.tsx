@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { connecter } from '@/lib/connexion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -137,13 +137,9 @@ export default function SignupForm() {
       }
 
       // 2. Connecter l'utilisateur
-      const signInResult = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
+      const echecConnexion = await connecter(formData.email, formData.password);
 
-      if (signInResult?.error) {
+      if (echecConnexion) {
         setError('Compte créé mais erreur de connexion. Essayez de vous connecter.');
         setLoading(false);
         return;

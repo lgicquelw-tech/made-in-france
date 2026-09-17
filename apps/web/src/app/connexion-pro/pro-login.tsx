@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { connecter } from '@/lib/connexion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -32,14 +32,10 @@ export default function ProLogin() {
     setError(null);
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
+      const echec = await connecter(email, password);
 
-      if (result?.error) {
-        setError('Email ou mot de passe incorrect');
+      if (echec) {
+        setError(echec);
         setLoading(false);
         return;
       }

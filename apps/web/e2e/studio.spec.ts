@@ -145,3 +145,23 @@ test('édition admin : modification, fiche publique, trace d audit signée', asy
   });
   expect(trace?.targetId).toBe(marque.id);
 });
+
+test('connexion : un rejet technique ne fait jamais croire qu on est connecté', async ({ page }) => {
+  // On valide le formulaire dans la seconde qui suit l'ouverture de la page — le cas qui
+  // déclenchait le rejet anti-CSRF de NextAuth. L'écran redirigeait alors vers le Studio
+  // **sans session**. Quelle que soit l'issue, l'une des deux seules fins acceptables :
+  // une session ouverte, ou un message d'erreur sur la page de connexion.
+  await page.goto('/studio/connexion');
+  await page.getByPlaceholder('contact@votre-entreprise.fr').fill(DONNEES.utilisateur.email);
+  await page.getByPlaceholder('Votre mot de passe').fill(DONNEES.utilisateur.password);
+  await page.getByRole('button', { name: /se connecter/i }).click();
+
+  await expect
+    .poll(async () => {
+      const session = await (await page.request.get('/api/auth/session')).json();
+      if (session?.user?.email) return 'session';
+      if (/\/studio\/connexion/.test(page.url()) && (await page.getByText(/échoué|incorrect/i).count()) > 0) return 'erreur affichée';
+      return 'ni l un ni l autre';
+    }, { timeout: 20_000 })
+    .not.toBe('ni l un ni l autre');
+});

@@ -41,12 +41,13 @@ interface Brand {
   subscriptionTier: SubscriptionTier;
 }
 
+// Ce tableau ne porte que la présentation — nom, icône, couleur, ce que le palier
+// contient. **Les tarifs viennent de `/api/v1/plans`**, donc de la même table que la
+// caisse : un prix écrit ici finirait par mentir le jour où le tarif change en base.
 const PLANS = [
   {
     id: 'FREE',
     name: 'Gratuit',
-    price: 0,
-    priceYearly: 0,
     description: 'Pour découvrir la plateforme',
     icon: Zap,
     color: 'slate',
@@ -72,8 +73,6 @@ const PLANS = [
   {
     id: 'PREMIUM',
     name: 'Premium',
-    price: 29,
-    priceYearly: 290,
     description: 'Pour développer votre visibilité',
     icon: Star,
     color: 'blue',
@@ -100,8 +99,6 @@ const PLANS = [
   {
     id: 'ROYALE',
     name: 'Royale',
-    price: 99,
-    priceYearly: 990,
     description: 'Pour dominer votre marché',
     icon: Crown,
     color: 'amber',
@@ -158,6 +155,10 @@ export default function StudioAbonnementPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Les tarifs viennent de la base, jamais de cette page : c'est la caisse qui les
+  // applique, et un prix affiché différent de celui facturé serait mensonger.
+  const [tarifs, setTarifs] = useState<Record<string, { mensuel: number | null; annuel: number | null }> | null>(null);
+  const [ouverturePortail, setOuverturePortail] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -178,8 +179,46 @@ export default function StudioAbonnementPage() {
 
     if (slug) {
       fetchBrand();
+      fetchTarifs();
     }
   }, [slug, status]);
+
+  const fetchTarifs = async () => {
+    try {
+      const res = await fetch('/api/v1/plans');
+      if (!res.ok) return;
+      const { data } = await res.json();
+      const parTier: Record<string, { mensuel: number | null; annuel: number | null }> = {};
+      for (const p of data as { tier: string; priceMonthly: number | null; priceYearly: number | null }[]) {
+        parTier[p.tier] = { mensuel: p.priceMonthly, annuel: p.priceYearly };
+      }
+      setTarifs(parTier);
+    } catch (error) {
+      console.error('Erreur chargement des tarifs:', error);
+    }
+  };
+
+  const ouvrirLePortail = async () => {
+    setOuverturePortail(true);
+    try {
+      const res = await fetch('/api/v1/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandSlug: slug }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      alert("Impossible d'ouvrir la gestion de l'abonnement pour le moment.");
+    } catch (error) {
+      console.error('Stripe portal error:', error);
+      alert("Impossible d'ouvrir la gestion de l'abonnement pour le moment.");
+    } finally {
+      setOuverturePortail(false);
+    }
+  };
 
   const fetchBrand = async () => {
     try {
@@ -205,10 +244,11 @@ export default function StudioAbonnementPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // L'adresse e-mail vient de la session côté serveur : l'envoyer d'ici était
+          // précisément la forme de la faille fermée en T8.6.
           brandSlug: slug,
           plan: planId,
           billingCycle,
-          userEmail: session?.user?.email,
         }),
       });
 
@@ -302,6 +342,27 @@ export default function StudioAbonnementPage() {
           </div>
         )}
 
+        {/* Gérer un abonnement en cours (T8.5) — la route du portail existait déjà mais
+            aucun écran ne l'appelait : une marque abonnée n'avait aucun moyen de changer
+            de carte, de télécharger ses factures ou de résilier. */}
+        {currentPlan !== 'FREE' && (
+          <div className="mb-8 p-5 bg-slate-800 border border-slate-700 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-white font-medium">Abonnement {currentPlan === 'ROYALE' ? 'Royale' : 'Premium'} en cours</p>
+              <p className="text-slate-400 text-sm">Moyen de paiement, factures, résiliation : tout se gère chez notre prestataire de paiement.</p>
+            </div>
+            <button
+              type="button"
+              onClick={ouvrirLePortail}
+              disabled={ouverturePortail}
+              className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white text-slate-900 font-semibold hover:bg-slate-100 transition disabled:opacity-50"
+            >
+              {ouverturePortail ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+              Gérer mon abonnement
+            </button>
+          </div>
+        )}
+
         {/* Title */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">
@@ -340,7 +401,10 @@ export default function StudioAbonnementPage() {
           {PLANS.map((plan) => {
             const colors = PLAN_COLORS[plan.color];
             const isCurrentPlan = currentPlan === plan.id;
-            const price = billingCycle === 'monthly' ? plan.price : Math.round(plan.priceYearly / 12);
+            const tarif = tarifs?.[plan.id];
+            const mensuel = tarif?.mensuel ?? null;
+            const annuel = tarif?.annuel ?? null;
+            const price = billingCycle === 'monthly' ? mensuel : annuel === null ? null : Math.round(annuel / 12);
             const Icon = plan.icon;
 
             return (
@@ -377,13 +441,18 @@ export default function StudioAbonnementPage() {
 
                 {/* Price */}
                 <div className="text-center mb-6">
-                  <div className="flex items-end justify-center gap-1">
-                    <span className="text-5xl font-bold text-white">{price}</span>
-                    <span className="text-slate-400 mb-2">€/mois</span>
-                  </div>
-                  {billingCycle === 'yearly' && plan.price > 0 && (
+                  {price === null ? (
+                    // Pas de tarif connu : on ne devine pas un prix, on le dit.
+                    <p className="text-slate-400 py-4">Tarif indisponible</p>
+                  ) : (
+                    <div className="flex items-end justify-center gap-1">
+                      <span className="text-5xl font-bold text-white">{price}</span>
+                      <span className="text-slate-400 mb-2">€/mois</span>
+                    </div>
+                  )}
+                  {billingCycle === 'yearly' && annuel !== null && annuel > 0 && (
                     <p className="text-sm text-slate-500 mt-1">
-                      Facturé {plan.priceYearly}€/an
+                      Facturé {annuel}€/an
                     </p>
                   )}
                 </div>
@@ -391,7 +460,7 @@ export default function StudioAbonnementPage() {
                 {/* CTA */}
                 <button
                   onClick={() => handleSelectPlan(plan.id)}
-                  disabled={isCurrentPlan || processingPlan !== null}
+                  disabled={isCurrentPlan || processingPlan !== null || (plan.id !== 'FREE' && price === null)}
                   className={`w-full py-3 rounded-xl font-semibold transition mb-6 flex items-center justify-center gap-2 ${
                     isCurrentPlan
                       ? 'bg-slate-700 text-slate-400 cursor-not-allowed'

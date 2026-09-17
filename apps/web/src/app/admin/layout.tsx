@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
+import { connecter } from '@/lib/connexion';
 import {
   LayoutDashboard,
   Package,
@@ -60,14 +61,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     e.preventDefault();
     setLoginError('');
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
+    // Vérifie que la session existe : un rejet anti-CSRF n'a pas d'`error`.
+    const echec = await connecter(email, password);
 
-    if (!result || result.error) {
-      setLoginError('Email ou mot de passe incorrect');
+    if (echec) {
+      setLoginError(echec);
     }
   };
 

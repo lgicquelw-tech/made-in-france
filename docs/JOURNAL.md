@@ -1161,3 +1161,51 @@ encore « 5000+ produits » et « 18 régions » en dur (35 166 et 13 en base) �
 la refonte du pied de page, pas maquillé ici.
 
 **Commit.** `T7.5 : mentions legales, confidentialite, export et suppression de compte, origine des donnees`
+
+### 2026-09-18 · T8.5 : les cas d'échec du paiement, le portail — et une connexion qui mentait
+
+**But.** Fermer T8.5 : les tests des cas d'échec de la caisse, et le portail client, dont la
+route existait depuis le 1er septembre **sans qu'aucun écran ne l'appelle** — une marque
+abonnée n'avait aucun moyen de changer de carte, de récupérer ses factures ou de résilier.
+
+**Les tests.** Stripe est remplacé par un double qui enregistre ce qu'on lui demande : on
+vérifie ce qui **part** vers Stripe, et tout ce qui est refusé **avant** qu'un appel ne parte.
+
+| Cas | Attendu, vérifié |
+|---|---|
+| Anonyme, intrus connecté | 401, 403 — et **zéro** appel à Stripe, `stripeCustomerId` de la marque toujours vide |
+| Palier `FREE`, cycle `weekly`, corps incomplet | 400 (Zod), aucune session de paiement créée |
+| Palier sans tarif en base | 400 « tarif » — **jamais un prix par défaut** |
+| Cas nominal | prix **29 000 centimes lus dans `subscription_plans`**, e-mail de la **session** (un `userEmail` glissé dans le corps est ignoré), client Stripe créé **une seule fois**, `success_url` sur la bonne marque |
+| Portail | 401 / 403 / 404 sans abonnement ; propriétaire abonné → le portail de **son** client |
+
+**Le portail, côté écran.** Carte « Abonnement en cours » avec un bouton *Gérer mon
+abonnement* sur la page d'abonnement du Studio, visible dès que le palier n'est pas gratuit.
+
+**Un prix qui pouvait mentir.** La page affichait **29, 290, 99, 990 écrits en dur** pendant
+que la caisse lisait la base : changer un tarif en base aurait facturé un montant différent de
+celui annoncé. `GET /api/v1/plans` (public, sans aucun identifiant Stripe) sert désormais les
+tarifs ; sans tarif connu, la page affiche « Tarif indisponible » et le bouton est inerte —
+pas un prix deviné. Le `userEmail` que le navigateur envoyait encore à la caisse est retiré :
+c'était la forme même de la faille fermée en T8.6.
+
+**Et le défaut le plus grave de la journée, trouvé par un test instable.** Un parcours échouait
+une fois sur deux en 401. En traçant `/api/auth/callback/credentials` : NextAuth répondait
+`{"url":".../api/auth/signin?csrf=true"}` — **rejet anti-CSRF** — et les quatre écrans qui
+appellent `signIn` ne regardaient que `result.error`, qui est `null` dans ce cas. Ils
+redirigeaient donc vers le Studio **sans session** : la personne arrivait sur une page qui la
+croyait connectée, sans le moindre message. Le rejet se produit quand on valide le formulaire
+dans la seconde qui suit l'ouverture de la page — ce que fait un gestionnaire de mots de passe.
+
+`lib/connexion.ts` : `connecter()` vérifie que **la session existe** — pas l'absence d'erreur —
+et réessaie **une** fois sur ce rejet précis, le cookie étant écrit au second appel. Les quatre
+appels (Studio, `/connexion-pro`, admin, inscription) passent par elle.
+
+| Vérification | Résultat |
+|---|---|
+| `pnpm test:integration` | **64** (56 + 8 : sept sur la caisse et le portail, un sur `/api/v1/plans` — qui vérifie aussi qu'aucun identifiant de prix Stripe ne fuit) |
+| `pnpm test:e2e` | **33** parcours, dont un nouveau : « un rejet technique ne fait jamais croire qu'on est connecté » |
+| Suite complète relancée 3 fois | 32/32, 32/32, 32/32 — l'instabilité venait du défaut, pas du test |
+| `pnpm typecheck` / `pnpm lint` / `pnpm test` | 6/6, 0 erreur, 159 |
+
+**Commit.** `T8.5 : cas d'echec du paiement, portail client, et une connexion qui se croyait reussie`

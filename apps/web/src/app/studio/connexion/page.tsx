@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { connecter } from '@/lib/connexion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -29,14 +29,12 @@ export default function StudioConnexionPage() {
     setError(null);
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
+      // `connecter` ne se contente pas de l'absence d'erreur : il vérifie que la session
+      // existe vraiment. Sans cela, un rejet anti-CSRF redirigeait vers le Studio sans session.
+      const echec = await connecter(email, password);
 
-      if (result?.error) {
-        setError('Email ou mot de passe incorrect');
+      if (echec) {
+        setError(echec);
         setLoading(false);
         return;
       }
