@@ -49,7 +49,8 @@ test('une fiche inexistante renvoie 404', async ({ page }) => {
 
 test('la carte annonce les marques geolocalisees', async ({ page }) => {
   // Les points viennent de /api/v1/brands/with-coords-and-labels, servie par Next
-  // depuis T3.8. Le fond de carte (Mapbox) peut manquer en CI ; le compte, non.
+  // depuis T3.8. Sans NEXT_PUBLIC_MAPBOX_TOKEN la page n'affiche qu'un message de
+  // configuration : la CI fournit un jeton factice, les tuiles echouent, le compte s'affiche.
   await page.goto('/carte');
   await expect(page.getByText(/2 marques affichées/)).toBeVisible({ timeout: 15_000 });
 });

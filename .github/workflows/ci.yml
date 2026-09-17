@@ -53,6 +53,10 @@ jobs:
       NEXTAUTH_SECRET: secret-factice-pour-la-ci-uniquement
       NEXTAUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # Jeton Mapbox factice : sans lui, /carte affiche un message de configuration au lieu
+      # de la page. Les tuiles ne chargeront pas en CI ; le compte des marques, servi par
+      # notre API, s'affiche quand meme — c'est lui que le parcours verifie.
+      NEXT_PUBLIC_MAPBOX_TOKEN: pk.factice-pour-la-ci
       NEXT_TELEMETRY_DISABLED: '1'
       CI: 'true'
 
