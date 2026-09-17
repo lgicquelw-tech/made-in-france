@@ -19,7 +19,6 @@ const footerLinks = {
     links: [
       { name: 'Référencer ma marque', href: '/entreprises' },
       { name: 'Espace marque', href: '/studio' },
-      { name: 'Nos offres', href: '/offres' },
     ],
   },
   apropos: {
@@ -27,7 +26,6 @@ const footerLinks = {
     links: [
       { name: 'Notre mission', href: '/a-propos' },
       { name: 'Contact', href: '/contact' },
-      { name: 'FAQ', href: '/faq' },
     ],
   },
   legal: {

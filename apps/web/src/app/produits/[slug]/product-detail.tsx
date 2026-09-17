@@ -19,6 +19,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { OrigineDonnees } from '@/components/juridique/origine-donnees';
 
 export interface Product {
   id: string;
@@ -37,6 +38,8 @@ export interface Product {
   externalBuyUrl: string | null;
   /** Posé par `pnpm data:links` quand le lien d'achat ne répond plus (T5.2). */
   buyUrlDeadAt: Date | string | null;
+  /** Date de la dernière collecte sur la boutique (T5.6) ; absente pour une fiche saisie à la main. */
+  collectedAt?: Date | string | null;
   tags: string[];
   category: {
     id: string;
@@ -300,6 +303,11 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                 {product.descriptionShort}
               </p>
             )}
+
+            {/* Origine des données (T7.5) */}
+            <div className="mb-6">
+              <OrigineDonnees source={product.externalBuyUrl} collecteLe={product.collectedAt} marque={product.brand.name} />
+            </div>
 
             {/* Actions */}
             <div className="space-y-3 mb-8">

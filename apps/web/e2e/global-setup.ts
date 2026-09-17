@@ -44,6 +44,10 @@ export default async function setup(): Promise<void> {
     } });
     await prisma.brandOwner.create({ data: { brandId: marque.id, userId: proprietaire.id, role: 'OWNER', acceptedAt: new Date() } });
     await prisma.user.create({ data: {
+      email: DONNEES.ephemere.email, name: DONNEES.ephemere.name,
+      password: await bcrypt.hash(DONNEES.ephemere.password, 10), role: 'USER', isActive: true,
+    } });
+    await prisma.user.create({ data: {
       email: DONNEES.admin.email, name: DONNEES.admin.name,
       password: await bcrypt.hash(DONNEES.admin.password, 10), role: 'ADMIN', isActive: true,
     } });

@@ -27,6 +27,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { OrigineMarque } from '@/components/juridique/origine-donnees';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { brandLogoUrl } from '@/lib/brand-logo';
@@ -723,6 +724,9 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
             {/* Produits */}
             <ProductsSection products={products} brandSlug={slug} sectorColor={sectorColor} />
+
+            {/* Origine des données (T7.5) */}
+            <OrigineMarque marque={brand.name} siteWeb={brand.websiteUrl} />
 
             {/* Mini carte */}
             {brand.latitude && brand.longitude && (

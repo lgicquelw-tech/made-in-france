@@ -14,5 +14,7 @@ export const DONNEES = {
   proprietaire: { email: 'proprietaire@test.local', password: 'mot-de-passe-proprio-long', name: 'Propriétaire Test' },
   /** Le compte que le parcours d'inscription crée ; il n'existe pas avant. */
   inscrit: { email: 'nouveau@test.local', password: 'mot-de-passe-nouveau-long', name: 'Camille Nouveau', companyName: 'Atelier Test SAS' },
+  /** Un compte que le parcours de suppression détruit ; personne d'autre ne s'en sert. */
+  ephemere: { email: 'ephemere@test.local', password: 'mot-de-passe-ephemere-long', name: 'Compte Éphémère' },
   admin: { email: 'admin@test.local', password: 'mot-de-passe-admin-long', name: 'Admin Test' },
 } as const;

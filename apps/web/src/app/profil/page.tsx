@@ -24,15 +24,16 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFavorites } from '@/hooks/useFavorites';
+import { DonneesPersonnelles } from './donnees-personnelles';
 
 
 // Email admin autorisé
-const ADMIN_EMAIL = 'lgicquelw@gmail.com';
 
 interface UserProfile {
   id: string;
   name: string | null;
   email: string | null;
+  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
   image: string | null;
   points: number;
   rank: string;
@@ -89,7 +90,8 @@ export default function ProfilPage() {
   const [loading, setLoading] = useState(true);
 
   // Vérifier si l'utilisateur est admin
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+  // Le rôle vient de /api/v1/me, relu en base — pas d'une adresse en dur dans un dépôt public.
+  const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN';
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -532,6 +534,9 @@ export default function ProfilPage() {
               </div>
             </div>
           )}
+
+          {/* Vos données : export et suppression (T7.5) */}
+          {profile?.email && <DonneesPersonnelles email={profile.email} />}
 
           {/* CTA Explorer */}
           <div className="relative overflow-hidden rounded-3xl">

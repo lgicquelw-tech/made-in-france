@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -43,8 +43,11 @@ export default function SignupForm() {
 
   const [claimedBrand, setClaimedBrand] = useState<{ name: string; slug: string; logoUrl: string | null; websiteUrl: string | null } | null>(null);
 
-  // Charger la marque si claim
-  useState(() => {
+  // Charger la marque si claim. C'était un `useState(() => …)` détourné en effet : il
+  // s'exécutait aussi côté serveur (fetch relatif impossible) et rien ne garantissait la
+  // saisie ; si la réponse tardait, le champ — verrouillé — restait vide et le formulaire
+  // refusait « Le nom de l'entreprise est requis » sans issue possible.
+  useEffect(() => {
     if (claimSlug) {
       fetch(`/api/v1/brands/${claimSlug}`)
         .then(res => res.json())
@@ -57,7 +60,7 @@ export default function SignupForm() {
         })
         .catch(console.error);
     }
-  });
+  }, [claimSlug]);
 
   const validateStep1 = () => {
     if (!formData.email) {
@@ -85,7 +88,9 @@ export default function SignupForm() {
       setError('Le nom du contact est requis');
       return false;
     }
-    if (!formData.companyName) {
+    // Avec une marque revendiquée, le nom d'entreprise est celui de la marque : le serveur
+    // le connaît par `claimBrandSlug`, on n'exige pas ce que l'utilisateur ne peut pas saisir.
+    if (!formData.companyName && !claimSlug) {
       setError('Le nom de l\'entreprise est requis');
       return false;
     }

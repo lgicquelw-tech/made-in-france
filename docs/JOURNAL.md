@@ -1110,3 +1110,54 @@ Un rafraîchissement de cache ne peut pas faire échouer l'écriture qu'il suit 
 `lib/revalidation.ts` l'attrape et l'écrit en avertissement. `pnpm test:integration` : 52/52.
 
 **Commit.** `correctif: un rafraichissement de cache impossible ne fait pas echouer l'ecriture`
+
+### 2026-09-18 · T7.5 : conformité — ce qu'on peut écrire sans inventer
+
+**But.** Les textes obligatoires pour un site français avec comptes, l'exercice des droits
+sans passer par nous, et la mention d'origine des données là où elles sont publiées.
+
+**Ce qu'on a trouvé en commençant.** Le pied de page pointait vers **cinq pages qui
+n'existaient pas** : `/mentions-legales`, `/cgu`, `/confidentialite`, `/contact`, `/faq`, plus
+`/offres`. Un test le vérifie désormais pour tout lien interne du pied de page (FAQ et Offres
+retirés : il n'y a rien à mettre derrière, on ne l'invente pas).
+
+**Ce qui est fait.**
+
+| Pièce | Où | Ce qui compte |
+|---|---|---|
+| Identité de l'éditeur | `content/editeur.ts` | **Tous les champs légaux sont `null`** : raison sociale, adresse, e-mail, direction de publication, hébergeur. Les pages affichent « [à renseigner par l'éditeur] » et un bandeau « version de travail » tant qu'un champ manque. Rien n'est inventé, et le site le dit |
+| Mentions légales, CGU, confidentialité, contact | `app/{mentions-legales,cgu,confidentialite,contact}` | Server Components, `metadata`, `robots: noindex` pour les trois textes ; gabarit commun `components/juridique/page-juridique.tsx` |
+| Origine des données | `components/juridique/origine-donnees.tsx` sur **chaque fiche produit et marque** | « Informations, prix et images relevés sur *tissage-moutet.com* le 17 septembre 2026. Le prix et la disponibilité font foi sur le site du vendeur. Vous représentez X ? Gérez cette fiche ou demandez son retrait. » Le site republie ce que les boutiques publient : il le dit à l'endroit où il le fait |
+| Export des données | `GET /api/v1/me/export` | JSON téléchargeable : compte, favoris, marques consultées, droits, demandes. **Jamais le mot de passe haché** |
+| Suppression du compte | `DELETE /api/v1/me` + `profil/donnees-personnelles.tsx` | Confirmation en retapant son adresse ; cascade favoris, historique, connexions, droits ; demandes de revendication **détachées et anonymisées** (décision sur la marque, pas sur la personne) ; trace d'audit `user.delete` avec l'identifiant opaque, **sans l'e-mail** qu'on vient d'effacer |
+
+**Deux corrections que le sujet imposait.** `profil/page.tsx` décidait « administrateur » par
+comparaison à une **adresse e-mail personnelle en dur** dans un dépôt public — remplacée par
+le rôle que `/api/v1/me` relit en base. Et la politique disait « aucun cookie sans compte » :
+**faux**, vérifié au `curl` — `/api/auth/session` pose `next-auth.csrf-token` et
+`next-auth.callback-url` (techniques, HttpOnly, exemptés de consentement). Le texte dit
+exactement cela. Chaque phrase de la page décrit un traitement qui existe dans le code.
+
+**Un troisième défaut, trouvé par la suite complète et pas par la suite isolée.** Le formulaire
+d'inscription chargeait la marque revendiquée dans un `useState(() => fetch…)` détourné en
+effet — exécuté aussi côté serveur — et exigeait un nom d'entreprise que l'utilisateur ne
+pouvait pas saisir (champ verrouillé, prérempli après coup). Si la réponse tardait : bloqué,
+sans issue. `useEffect`, et l'exigence tombe quand la marque est connue du serveur.
+
+**Décision consignée : pas de bandeau de consentement aujourd'hui.** Il n'y a aucun traceur
+à bloquer (PostHog n'est pas branché). Le bandeau arrive **avec** T7.3, pas avant : un bandeau
+sans rien derrière apprend aux gens à cliquer sans lire.
+
+| Vérification | Résultat |
+|---|---|
+| `pnpm test:integration` | **56** (52 + 4 : export avec ses données seules, sans `$2` ni `password` ; anonyme 401 ; suppression avec cascade, marque intacte, demande anonymisée, trace sans e-mail ; anonyme 401 sans effet) |
+| `pnpm test:e2e` | **32** parcours (24 + 8 : quatre pages 200 avec leur `h1`, pied de page sans 404, mention d'origine sur une fiche, export JSON, suppression puis reconnexion refusée) |
+| Aperçu | `/confidentialite` rendue, bandeau « version de travail » visible ; fiche MUMU : « relevés sur tissage-moutet.com le 17 septembre 2026 » |
+| `curl -D - /api/auth/session` | 2 `Set-Cookie` techniques, aucun sur `/`, `/marques/…`, `/produits` |
+| `pnpm typecheck` / `pnpm lint` | 6/6, 0 erreur |
+
+**Ce qui reste à toi.** Remplir `content/editeur.ts` (cinq champs). Le pied de page affiche
+encore « 5000+ produits » et « 18 régions » en dur (35 166 et 13 en base) — à décider avec
+la refonte du pied de page, pas maquillé ici.
+
+**Commit.** `T7.5 : mentions legales, confidentialite, export et suppression de compte, origine des donnees`

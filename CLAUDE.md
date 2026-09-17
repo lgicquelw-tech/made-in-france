@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, OpenAI, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 159 tests : 80 dans `scripts/` (règles de données, normalisation d'import, langue des fiches), 79 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat)). Playwright : 24 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 159 tests : 80 dans `scripts/` (règles de données, normalisation d'import, langue des fiches), 79 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat)). Playwright : 32 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
 
@@ -150,8 +150,8 @@ pnpm data:enrich --appliquer         # appels factures — uniquement sur decisi
 pnpm test                            # Vitest, tout le monorepo : 159 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 52 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
-pnpm test:e2e                        # 24 parcours Playwright, serveur Next lance sur madeinfrance_test
+pnpm test:integration                # 56 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:e2e                        # 32 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)
@@ -242,6 +242,7 @@ chemins commençant par `../`.
 | **Routes d'API figées au build** | Un Route Handler `GET` qui ne lit pas la requête est **prérendu au build** et sert à jamais l'état de la base de ce moment. La carte a servi `[]` en CI pour cette raison (17 septembre 2026). Chaque `route.ts` sous `app/api/` porte `export const dynamic = 'force-dynamic'` ; toute nouvelle route aussi. Et `route()` **relance** les signaux internes de Next (`DYNAMIC_SERVER_USAGE`, `NEXT_*`) au lieu de les convertir en 500. |
 | `next build` et `next dev` partagent `.next/` | Lancer un build pendant que le serveur dev tourne écrase ses chunks : la page rend en HTML nu, les scripts répondent 500. Arrêter le dev, ou `rm -rf apps/web/.next` puis relancer. |
 | Build contre une vraie base | `next build` prérend ~1 000 pages en parallèle, chaque worker avec son pool Prisma : un PostgreSQL local (100 connexions) sature. Borner : `DATABASE_URL="...&connection_limit=5"` pour le build. |
+| **Textes juridiques** | `content/editeur.ts` porte l'identité de l'éditeur : **tout est `null` tant que le propriétaire ne l'a pas renseigné**, et les pages l'affichent comme tel. Ne jamais y mettre une valeur plausible. `confidentialite/page.tsx` décrit les traitements **qui existent dans le code** : tout nouveau traitement (mesure d'audience, événements serveur, e-mail) modifie cette page dans le même commit. Chaque fiche produit et marque porte `<OrigineDonnees>` / `<OrigineMarque>`. |
 | **Cache des fiches publiques** | `/marques/[slug]`, `/produits/[slug]` et les listes sont en `revalidate = 3600`. Toute route qui **écrit** une marque ou un produit appelle `rafraichirMarque` / `rafraichirProduit` (`lib/revalidation.ts`) après sa transaction, sinon la page publique ment pendant une heure. Le mode dev ne met rien en cache : seule la CI (`next start`) le vérifie. |
 | **Piste d'audit** | Toute écriture sur une marque ou un produit passe par `prisma.$transaction` avec `journaliser(tx, …)` (`lib/audit.ts`) : champs modifiés seulement, jamais un secret. Une nouvelle route d'écriture **doit** la poser. Lecture : `GET /api/admin/audit`. |
 | **Fil de l'accueil** | `lib/feed.ts` : score déterministe + pénalité de diversité par marque, départage par `md5(id || date)` — **jamais `RANDOM()`**, sinon le défilement infini remontre les mêmes produits. Les préférences (`s`, `m`, `q`) viennent de `lib/signaux.ts` (localStorage), servent à ordonner et **ne sont jamais stockées** côté serveur. |
