@@ -60,7 +60,7 @@ export const GET = route(async () => {
     data: {
       // Un nom de modèle et des réglages, jamais une clé : les clés vivent
       // uniquement dans l'environnement du serveur (CLAUDE.md, règle 4).
-      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022',
+      model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
       prompt: '',
       temperature: 0.7,
       maxTokens: 1024,

@@ -11,7 +11,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import Image from 'next/image';
-import { API_URL } from '@/lib/api';
 
 export interface WeeklyBrand {
   id: string; name: string; slug: string; description: string | null;
@@ -123,7 +122,7 @@ function AISearchOverlay({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     try {
       const conversationHistory = messages.map(m => ({ role: m.role, content: m.content }));
 
-      const res = await fetch(`${API_URL}/api/v1/chat`, {
+      const res = await fetch(`/api/v1/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage, conversationHistory }),

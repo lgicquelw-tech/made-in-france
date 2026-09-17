@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { API_URL } from '@/lib/api';
 import { brandLogoUrl } from '@/lib/brand-logo';
 
 // Composant pour l'icône IA avec animation
@@ -159,7 +158,7 @@ export function Header() {
       setIsAILoading(true);
       setShowResults(true);
       try {
-        const res = await fetch(`${API_URL}/api/v1/chat`, {
+        const res = await fetch(`/api/v1/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: searchQuery }),

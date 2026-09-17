@@ -12,7 +12,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { API_URL } from '@/lib/api';
 
 export interface Product {
   id: string;

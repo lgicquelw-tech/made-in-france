@@ -53,7 +53,6 @@ jobs:
       NEXTAUTH_SECRET: secret-factice-pour-la-ci-uniquement
       NEXTAUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
-      NEXT_PUBLIC_API_URL: http://localhost:4000
       NEXT_TELEMETRY_DISABLED: '1'
       CI: 'true'
 

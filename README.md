@@ -21,7 +21,7 @@ fiches marque et produit, recherche, carte géolocalisée, espace B2B pour les m
 | Monorepo | pnpm workspaces + Turborepo |
 | Node | 22 (épinglé par `.nvmrc`), pnpm 9.1.0 |
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
-| Backend | **Express 4** — un seul fichier, `apps/api/src/index.ts` |
+| Backend | Route Handlers Next.js (`apps/web/src/app/api/`) — Express a été supprimé le 17 septembre 2026 |
 | Base | PostgreSQL 16 + Prisma 5.22 |
 | Tests | Vitest 5, Playwright 1.63 |
 | Recherche | PostgreSQL `pg_trgm` (index GIN trigram) |
@@ -47,8 +47,7 @@ made-in-france/
 │   │       ├── studio/         # espace marque B2B — LE seul
 │   │       ├── entreprises/    # landing marketing B2B (sans inscription)
 │   │       ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
-│   │       └── api/auth/[...nextauth]/route.ts   # seule route API côté web
-│   └── api/src/index.ts        # 4 358 lignes, 92 routes
+│   │       └── api/                # toutes les routes : admin, v1 (public, Studio, /me, chat, Stripe)
 ├── packages/
 │   ├── database/               # schema.prisma — 33 modèles, migrations
 │   └── shared/                 # types et constantes partagés
@@ -104,17 +103,15 @@ pnpm bootstrap
 **Lancer :**
 
 ```bash
-pnpm dev        # web sur :3000, api sur :4000
+pnpm dev        # web sur :3000
 ```
 
 ## Commandes
 
 ```bash
-pnpm dev                  # web + api
-pnpm --filter @mif/web dev
-pnpm --filter @mif/api dev
+pnpm dev                  # web (il n'y a plus d'API séparée)
 
-pnpm typecheck            # 7 paquets
+pnpm typecheck            # 6 paquets
 pnpm lint
 
 pnpm db:generate          # client Prisma
@@ -155,10 +152,10 @@ Deux fichiers réels, tous deux ignorés par git :
 **Vitest**, sur tout le monorepo :
 
 ```bash
-pnpm test                          # 120 tests
+pnpm test                          # 128 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
-pnpm test:integration              # 37 tests sur une vraie base, madeinfrance_test
+pnpm test:integration              # 47 tests sur une vraie base, madeinfrance_test
 pnpm test:e2e                      # 15 parcours navigateur (Playwright), même base
 ```
 
@@ -174,12 +171,6 @@ PostgreSQL, build et parcours navigateur à chaque poussée.
 
 Elles sont documentées et suivies dans [`REBUILD.md`](REBUILD.md) :
 
-- L'API Express **n'a aucune authentification** — les 92 routes sont ouvertes, dont
-  l'administration. Ne pas exposer ce service.
-- L'administration côté web n'est protégée que par un `localStorage`.
-- L'identité circule encore en query string sur certaines routes.
-- 42 des 45 pages sont en `'use client'`, avec un seul `generateMetadata` : le site est
-  quasiment invisible pour les moteurs de recherche.
 - Les statistiques affichées aux marques sont générées par `Math.random()`.
 - La base de données locale est repartie de zéro : le catalogue produit de janvier 2026
   a été perdu, faute de sauvegarde.

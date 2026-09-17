@@ -13,7 +13,6 @@
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
     "NEXT_PUBLIC_MAPBOX_TOKEN",
-    "NEXT_PUBLIC_API_URL",
     "NODE_ENV"
   ],
   "tasks": {

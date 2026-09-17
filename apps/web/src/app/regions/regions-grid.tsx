@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MapPin, ArrowRight, List, Map as MapIcon } from 'lucide-react';
 import { REGION_PATHS, SVG_VIEWBOX, DOMTOM_PATHS, DOMTOM_VIEWBOX } from '@/data/regionPaths';
-import { API_URL } from '@/lib/api';
 
 // Liste des DOM-TOM
 const DOMTOM_REGIONS = [

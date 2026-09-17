@@ -829,3 +829,52 @@ secret Stripe dans la fiche, `PENDING_REVIEW` trouvable, 401/403/200 sur la list
 `pnpm test:e2e` **15** (nouveau : `/carte` annonce ses marques géolocalisées).
 
 **Commit.** `phase 3 (T3.8, 1/2): Express vide de ses lectures, trois comportements corriges`
+
+### 2026-09-17 · T3.7 + T3.8 (2/2) — Le chat, le webhook, et la fin d'Express
+
+**But.** Porter les deux derniers `POST` et supprimer `apps/api`.
+
+**Le chat (T3.7).** Trois modules courts : `lib/chat/outils.ts` (les deux outils, requêtes
+construites à part et testées), `lib/chat/conversation.ts` (la boucle, les réglages),
+`api/v1/chat/route.ts` (Zod, limiteur : 30 messages par 10 minutes). Quatre défauts
+corrigés en portant :
+
+| Défaut | Correction |
+|---|---|
+| Le prompt exige d'appeler **les deux outils** sur une demande ambiguë, mais la boucle ne traitait que le **premier** `tool_use` — le second restait sans `tool_result`, l'API refusait le tour suivant | tous les résultats d'un tour dans **un** message ; testé |
+| L'énumération des secteurs était **l'ancienne taxonomie** : quatre valeurs sur huit sans correspondance en base | les 9 secteurs canoniques |
+| `search_brands` filtrait `ACTIVE` : **une** marque visible sur 903 | le chat voit ce que le site montre |
+| « Marques de pulls » ne trouvait pas une marque qui *vend* des pulls | correspondance par les produits |
+
+Et : le prompt n'affirme plus « 902 marques, 40 000 produits » ; la liste de modèles de
+l'admin ne propose plus des modèles retirés ni des GPT jamais branchés ; la température
+n'est envoyée qu'à Haiku (400 sur Sonnet 5 / Opus 5). La **clé** vient de l'environnement
+seul — testé : un `apiKey` glissé dans les réglages ne sort jamais.
+
+**Aucun appel réel au modèle** : le feu vert T5.7 est toujours en attente, et une dépense
+reste une décision. Le test d'intégration rejoue un modèle simulé sur la vraie base ; la
+route est vérifiée sur ce qui ne coûte rien (400 sur corps invalide, 429 au 31e message).
+
+**Le webhook Stripe.** Corps lu **brut** avant `constructEvent` ; un webhook non
+vérifiable échoue. 5 tests avec de **vraies signatures** (aide de test du SDK, sans
+réseau) : signé → palier activé ; non signé ou mal signé → 400 et **rien ne change** ;
+palier inconnu ignoré ; résiliation → gratuit ; secret absent → 500, jamais de repli.
+
+**`apps/api` supprimé** : 3 821 lignes, `lib/api.ts`, `NEXT_PUBLIC_API_URL`, le port 4000,
+762 lignes de lockfile. Le monorepo passe de 7 à 6 tâches.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm typecheck` / `pnpm lint` | 6 / 6, 0 erreur |
+| `pnpm test` | **128** (web 53, scripts 75) |
+| `pnpm test:integration` | **47** (chat 5, webhook 5) |
+| `pnpm test:e2e` | 15 |
+| `pnpm install --frozen-lockfile` | cohérent |
+
+**Bilan de la phase 3, ouverte le 1er septembre :** 92 routes Express au départ. Toutes
+migrées derrière une garde, ou retirées parce que mortes. Il n'y a plus qu'une
+application.
+
+**Commit.** `phase 3 (T3.7, T3.8): le chat, le webhook, et la fin d'Express`

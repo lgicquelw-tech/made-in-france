@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { API_URL } from '@/lib/api';
 import {
   Bot,
   Save,
@@ -27,12 +26,13 @@ interface AISettings {
   rules: Array<{ id: string; keyword: string; response: string; enabled: boolean }>;
 }
 
+// Modeles courants (septembre 2026). Les anciens (Claude 3 Haiku, Sonnet 3.5,
+// Sonnet 4) sont retires, et les GPT n'ont jamais ete branches — le chemin OpenAI
+// n'a jamais ete implemente.
 const AVAILABLE_MODELS = [
-  { id: 'claude-3-haiku-20240307', name: 'Claude Haiku 3', provider: 'anthropic', speed: '⚡⚡⚡', cost: '€', intelligence: '⭐⭐⭐' },
-  { id: 'claude-3-5-sonnet-20241022', name: 'Claude Sonnet 3.5', provider: 'anthropic', speed: '⚡⚡', cost: '€€', intelligence: '⭐⭐⭐⭐' },
-  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic', speed: '⚡⚡', cost: '€€€', intelligence: '⭐⭐⭐⭐⭐' },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', speed: '⚡⚡⚡', cost: '€', intelligence: '⭐⭐⭐' },
-  { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', speed: '⚡⚡', cost: '€€€', intelligence: '⭐⭐⭐⭐⭐' },
+  { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5', provider: 'anthropic', speed: '⚡⚡⚡', cost: '€', intelligence: '⭐⭐⭐' },
+  { id: 'claude-sonnet-5', name: 'Claude Sonnet 5', provider: 'anthropic', speed: '⚡⚡', cost: '€€', intelligence: '⭐⭐⭐⭐' },
+  { id: 'claude-opus-5', name: 'Claude Opus 5', provider: 'anthropic', speed: '⚡', cost: '€€€', intelligence: '⭐⭐⭐⭐⭐' },
 ];
 
 const DEFAULT_PROMPT = `Assistant shopping Made in France. Tu aides à trouver des marques et produits français.
@@ -54,7 +54,7 @@ Si aucun résultat, propose d'élargir. Reste sur le Made in France.`;
 
 export default function AdminIAPage() {
   const [settings, setSettings] = useState<AISettings>({
-    model: 'claude-3-haiku-20240307',
+    model: 'claude-haiku-4-5',
     prompt: DEFAULT_PROMPT,
     temperature: 0.7,
     maxTokens: 1024,
@@ -108,7 +108,7 @@ export default function AdminIAPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch(`${API_URL}/api/v1/chat`, {
+      const res = await fetch(`/api/v1/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Je cherche un pull en laine' })

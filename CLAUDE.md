@@ -59,17 +59,17 @@ les lise comme une source.
 | Monorepo | pnpm workspaces + Turborepo |
 | Node | >= 20 (testé en v22), `packageManager: pnpm@9.1.0` |
 | Frontend | Next.js 14.2 (App Router), React 18, TypeScript 5.4, Tailwind 3.4 |
-| Backend | **En cours de migration vers Next.js** (option A, T0.1). `/api/admin/*`, tout l'espace marque et les routes utilisateur sont migrés et protégés. Express ne sert plus que **2 routes** : `POST /api/v1/chat` et le webhook Stripe. Toutes les lectures sont sur Next depuis le 17 septembre 2026 ; `API_URL` n'est plus utilisé que par le chat. |
+| Backend | **Next.js seul** — Route Handlers sous `apps/web/src/app/api/`. Express a été **supprimé le 17 septembre 2026** (option A, T0.1 → T3.8) : 92 routes migrées ou retirées, `apps/api` n'existe plus, il n'y a plus de port 4000 ni de `NEXT_PUBLIC_API_URL`. Tout appel se fait en **URL relative**. |
 | Base | PostgreSQL 16.15 (Homebrew) + Prisma 5.22 |
 | Recherche | PostgreSQL `pg_trgm` + **`unaccent`** (pas Meilisearch). Construction dans `lib/search.ts` et `lib/catalogue-public.ts`, servie par `/api/v1/search/all`, `/api/v1/brands`, `/api/v1/products` côté Next |
 | Auth | NextAuth v4 (Google, Email, Credentials) côté web uniquement |
-| IA | Anthropic SDK **0.125.0** (mis à jour le 11 septembre 2026 ; 0.71 n'avait pas les sorties structurées). Chat sur Claude Haiku dans `index.ts` ; enrichissement produit `pnpm data:enrich` (T5.7), qui **n'envoie rien sans `--appliquer`**. Le chemin OpenAI du chat renvoie une 400 « pas encore implémenté » ; le script d'enrichissement OpenAI a été supprimé. |
+| IA | Anthropic SDK **0.125.0**. Chat : `claude-haiku-4-5` par défaut, réglable dans l'admin (Haiku 4.5, Sonnet 5, Opus 5). Enrichissement produit `pnpm data:enrich` (T5.7), qui **n'envoie rien sans `--appliquer`**. Plus aucun chemin OpenAI. |
 | Images | Cloudinary |
 | Cartes | Mapbox GL JS |
 | Paiement | Stripe (API `2024-12-18.acacia`) |
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
-**Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, Apple OAuth, PostHog, Resend.
+**Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, OpenAI, Apple OAuth, PostHog, Resend.
 **Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 120 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Playwright : 15 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
@@ -89,11 +89,11 @@ made-in-france/
 │   │       │   ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
 │   │       │   ├── admin/labels/ # fonctionnalité labels (absente de la copie locale de janvier)
 │   │       │   ├── api/auth/[...nextauth]/route.ts
-│   │       │   └── api/admin/brands/**             # migré depuis Express, derrière requireAdmin
+│   │       │   ├── api/admin/**                     # administration, derrière requireAdmin
+│   │       │   ├── api/v1/**                        # lectures publiques, Studio (requireBrandOwner), /me/*, chat, webhook Stripe
+│   │       │   └── api/v1/chat/route.ts             # le chat : lib/chat/{outils,conversation}.ts
 │   │       ├── components/       # header, footer, home/*, ui/*, ChatBot
 │   │       ├── hooks/  lib/api.ts  styles/
-│   └── api/
-│       └── src/index.ts          # 716 lignes, 2 routes (chat, webhook Stripe) — en voie de suppression (T3.8)
 ├── packages/
 │   ├── database/prisma/schema.prisma   # 840 lignes, 33 modèles
 ├── scripts/                      # paquet @mif/scripts — DOIT rester dans pnpm-workspace.yaml
@@ -112,9 +112,7 @@ made-in-france/
 docker compose up -d postgres
 
 # Développement
-pnpm dev                  # web (3000) + api (4000)
-pnpm --filter @mif/web dev
-pnpm --filter @mif/api dev
+pnpm dev                  # web sur :3000 (il n'y a plus d'API separee)
 
 # Prisma — packages/database/.env est un lien vers le .env racine, sans quoi
 # les commandes prisma ne trouvent pas DATABASE_URL
@@ -123,11 +121,11 @@ npx prisma studio  --schema=./packages/database/prisma/schema.prisma
 npx prisma migrate dev --schema=./packages/database/prisma/schema.prisma
 
 # Vérifications
-pnpm typecheck            # PASSE sur les 7 tâches du monorepo. Le garder au vert.
+pnpm typecheck            # PASSE sur les 6 tâches du monorepo. Le garder au vert.
 pnpm build                # PASSE depuis le 10 septembre 2026 : 991 pages generees.
                           # Il ECHOUAIT depuis fevrier — le mode dev ne le signale pas.
                           # A lancer avant toute affirmation sur la mise en ligne.
-pnpm lint                 # 7 paquets, 0 erreur attendue. Fonctionne depuis le 16 septembre 2026 (aucune config n'existait avant).
+pnpm lint                 # 6 paquets, 0 erreur attendue. Fonctionne depuis le 16 septembre 2026 (aucune config n'existait avant).
 
 # Administration
 pnpm admin:create         # cree ou promeut un administrateur (T3.15).
@@ -149,10 +147,10 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 120 tests
+pnpm test                            # Vitest, tout le monorepo : 128 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 37 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:integration                # 47 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
 pnpm test:e2e                        # 15 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
@@ -211,7 +209,7 @@ chemins commençant par `../`.
 7. **Aucun nouveau fichier au-delà de ~300 lignes.** Le monolithe actuel est la cause n°1 des régressions ; ne pas le reproduire.
 8. **Avant de créer une page, un composant ou une route, vérifier qu'un équivalent n'existe pas déjà.** Le projet contient déjà trois espaces B2B concurrents parce que cette règle n'existait pas. Un `grep` de 10 secondes évite un doublon d'une semaine.
 9. **`/studio` est le seul espace marque.** `/espace-marque` a été supprimé le 1er septembre 2026 ; `/entreprises` est une landing marketing sans inscription. Ne pas recréer de troisième variante. ⚠️ `/connexion-pro` coexiste toujours avec `/studio/connexion` : doublon restant, à trancher en phase 3.
-10. **Une seule source pour l'URL d'API** : `apps/web/src/lib/api.ts`, alimenté par `NEXT_PUBLIC_API_URL`. Zéro `http://localhost:4000` en dur (il y en a 57 dans 46 fichiers à nettoyer).
+10. **Tout appel d'API est relatif** (`/api/...`). Il n'y a plus d'URL d'API : `lib/api.ts`, `NEXT_PUBLIC_API_URL` et le port 4000 ont disparu avec Express le 17 septembre 2026. Ne pas les réintroduire.
 
 ### Frontend
 
@@ -232,20 +230,19 @@ chemins commençant par `../`.
 
 | Piège | Détail |
 |---|---|
-| Ordre des routes Express | Les routes statiques doivent précéder les dynamiques (`/brands/search` avant `/brands/:slug`), sinon le slug avale tout |
 | Tiptap en SSR | `immediatelyRender: false` dans `useEditor` |
-| Webhook Stripe | Le corps brut doit rester non parsé — le contournement existe déjà `index.ts:23-29`, ne pas le casser |
+| Webhook Stripe | `api/v1/stripe/webhook/route.ts` lit le corps **brut** (`request.text()`) avant `constructEvent` ; tout parsing préalable casse la signature. Un webhook non vérifiable échoue, jamais de repli. |
 | Dépôt public | `github.com/lgicquelw-tech/made-in-france` est **public**. Tout commit est immédiatement visible. Vérifier avant chaque push. |
 | Identité | Un seul modèle : `User`, avec `role` (`USER`/`ADMIN`/`SUPER_ADMIN`) et `isActive`. `AdminUser` n'existe plus. L'autorisation passe par `apps/web/src/lib/guards.ts`, qui **relit le rôle en base** — jamais depuis le jeton seul. |
 | `useSearchParams()` | Impose une frontière `Suspense` dès qu'une page est prérendue, sinon `next build` échoue. Le mode développement ne dit rien. C'est ce qui rendait le projet non constructible. |
 | Limitation de débit | En place depuis le 1er septembre 2026 : `express-rate-limit` côté API, `lib/rate-limit.ts` côté web. **Compteurs en mémoire du processus** — ils ne tiennent pas sur plusieurs instances. À reprendre au déploiement. Toute nouvelle route coûteuse (modèle payant, stockage, envoi d'e-mail) doit en poser un. |
 | Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné. |
-| Appels authentifiés depuis le front | **URL relative** (`/api/...`), jamais `${API_URL}`. Le cookie de session n'est envoyé qu'en même origine : un appel vers `localhost:4000` ne peut pas être authentifié. |
+| Appels depuis le front | **URL relative** (`/api/...`), toujours. Il n'y a plus d'autre origine. |
 | Données inventées | Cinq pages d'administration fabriquaient leurs chiffres quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
 | **Boutons produits du Studio** | `PUT /api/v1/products/:id` avec `status: 'INACTIVE'`, `isTrending`, `isNewProduct`, `salePrice` : aucun de ces champs n'existe, aucune route ne répond. Ces boutons n'ont jamais fonctionné. Décision de phase 8, pas à combler au passage. |
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |
-| Version d'API Stripe | Figée une seule fois dans `STRIPE_API_VERSION` (`index.ts`). Ne pas la redéclarer ailleurs. |
+| Version d'API Stripe | Figée une seule fois dans `lib/stripe.ts` (`STRIPE_API_VERSION`). Ne pas la redéclarer ailleurs. |
 | Clearbit | Mort. Les logos passent par Google Favicons |
 | **Un 403 n'est pas un site mort** | C'est un pare-feu qui a reconnu un robot. Une boutique derrière Cloudflare répond 403 à l'audit et 200 à un humain. `data:links` a donc **trois** verdicts, pas deux : `vivant`, `mort`, `indetermine` — et ne désactive que les `mort`. Confondre les deux retire des marques vivantes de l'annuaire, silencieusement. |
 | **Écriture d'un produit scrappé** | Un seul point : `scripts/catalogue/upsert.ts` → `enregistrerCollecte`. Les scrapers ne touchent **jamais** `prisma.product` directement. Clé stable `(brandId, externalSource, externalId)` ; le rescrape réécrit prix, images, lien, données brutes et `collectedAt`, et **jamais** descriptions, slug, statut, catégorie, matières, SEO. Un produit collecté naît en `DRAFT` : c'est l'audit (T5.8) qui publie. |
@@ -259,7 +256,7 @@ chemins commençant par `../`.
 | `scripts/` | Est un paquet du workspace (`@mif/scripts`) avec ses propres dépendances. Il doit rester listé dans `pnpm-workspace.yaml`, sinon `pnpm install` l'ignore et aucun script ne fonctionne. |
 | Champs `snake_case` | Les requêtes SQL brutes utilisent les noms de colonnes (`description_short`, `image_url`, `brand_id`), pas les noms Prisma |
 | `.env` | `apps/api/.env` et `apps/web/.env` sont des **liens symboliques** vers le `.env` racine. Les vrais fichiers sont : `.env` (racine, 34 clés) et `apps/web/.env.local` (9 clés NextAuth). Ils ne sont pas dupliqués. |
-| Clé OpenAI | Le chemin OpenAI du chat renvoie une 400 volontaire (`index.ts:~2839`) |
+| Chat | `lib/chat/outils.ts` + `conversation.ts`. Modèle et prompt viennent de `site_settings` (`ai_settings`), la **clé** uniquement de `ANTHROPIC_API_KEY`. Tous les `tool_use` d'un tour reçoivent leur `tool_result` dans **un seul** message — l'ancienne boucle n'en traitait qu'un, et l'API refusait le tour suivant. La température n'est envoyée qu'à Haiku (400 sur Sonnet 5 / Opus 5). |
 
 ---
 
