@@ -28,7 +28,21 @@ export const notFound = (message = 'Ressource introuvable') =>
 
 export const badRequest = (message = 'Requête invalide') => new HttpError(400, message);
 
+/**
+ * Les erreurs **internes de Next** ne sont pas des erreurs : `DYNAMIC_SERVER_USAGE` dit
+ * « cette route lit les en-têtes, ne la rends pas au build », `NEXT_NOT_FOUND` et
+ * `NEXT_REDIRECT` portent `notFound()` et `redirect()`. Les attraper ici les réduisait
+ * au silence : au build, chaque route admin produisait une 500 JSON au lieu d'être
+ * marquée dynamique. Découvert le 17 septembre 2026 par un parcours rouge en CI.
+ */
+function estUnSignalDeNext(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !('digest' in error)) return false;
+  const digest = (error as { digest: unknown }).digest;
+  return typeof digest === 'string' && (digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_'));
+}
+
 export function toErrorResponse(error: unknown): NextResponse {
+  if (estUnSignalDeNext(error)) throw error;
   if (error instanceof HttpError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }

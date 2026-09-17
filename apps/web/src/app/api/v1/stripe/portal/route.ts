@@ -6,6 +6,10 @@ import { requireBrandOwner } from '@/lib/guards';
 import { route, notFound } from '@/lib/api-response';
 import { stripeClient } from '@/lib/stripe';
 
+// Une réponse d'API n'est jamais figée au build : sans cette ligne, un GET qui ne lit
+// pas la requête est prérendu une fois et sert à jamais l'état de la base du build.
+export const dynamic = 'force-dynamic';
+
 /**
  * Portail de gestion d'abonnement. Migré depuis Express.
  *

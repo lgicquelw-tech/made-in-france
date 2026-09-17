@@ -5,6 +5,10 @@ import { requireBrandOwner } from '@/lib/guards';
 import { route, notFound } from '@/lib/api-response';
 import { cloudinary } from '@/lib/cloudinary';
 
+// Une réponse d'API n'est jamais figée au build : sans cette ligne, un GET qui ne lit
+// pas la requête est prérendu une fois et sert à jamais l'état de la base du build.
+export const dynamic = 'force-dynamic';
+
 /** Suppression d'une image de marque, par son propriétaire. */
 
 type Context = { params: { slug: string; imageId: string } };

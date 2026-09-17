@@ -6,6 +6,10 @@ import { route, badRequest, forbidden } from '@/lib/api-response';
 import { enforceRateLimit } from '@/lib/rate-limit';
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadImage } from '@/lib/cloudinary';
 
+// Une réponse d'API n'est jamais figée au build : sans cette ligne, un GET qui ne lit
+// pas la requête est prérendu une fois et sert à jamais l'état de la base du build.
+export const dynamic = 'force-dynamic';
+
 /**
  * Envoi d'une image de marque (logo ou photo). Migré depuis Express (T3.20).
  *

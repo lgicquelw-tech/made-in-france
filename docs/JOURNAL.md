@@ -878,3 +878,29 @@ migrées derrière une garde, ou retirées parce que mortes. Il n'y a plus qu'un
 application.
 
 **Commit.** `phase 3 (T3.7, T3.8): le chat, le webhook, et la fin d'Express`
+
+### 2026-09-17 · Correctif — les routes d'API étaient figées au build
+
+**Trouvé par la CI, invisible en local.** Le parcours « la carte annonce ses marques »
+était vert en `next dev`, rouge sur `next start` : « 0 marques affichées ». Cause : un
+Route Handler `GET` qui **ne lit pas la requête** est prérendu au build par Next et sert à
+jamais la réponse de ce moment. La route de la carte avait été construite sur une base
+vide. En production, `/api/v1/labels`, `/regions`, `/sectors`, `/brands/random` et la
+carte auraient servi un instantané figé.
+
+**Et une seconde cause, plus profonde.** Au build, Next tente aussi de prérendre les
+`GET` de l'admin ; `requireAdmin` lit les en-têtes ; Next lève son signal interne
+`DYNAMIC_SERVER_USAGE` pour dire « cette route est dynamique »… et **mon enveloppe
+`route()` l'attrapait** et le transformait en 500 JSON. Le journal du build en portait la
+trace depuis le premier `pnpm build` du 10 septembre — « erreur non gérée : Dynamic
+server usage » — sans que je le lise comme ce qu'il était.
+
+**Fait.** `toErrorResponse` relance les signaux de Next (`DYNAMIC_SERVER_USAGE`, `NEXT_*`),
+3 tests. `export const dynamic = 'force-dynamic'` sur les **58** routes d'API. Build local :
+toutes les routes `/api` en ƒ, **0** « erreur non gérée », 979 pages.
+
+**Au passage.** Le build local a d'abord échoué : ~1 000 pages prérendues en parallèle
+ont épuisé les 100 connexions de mon PostgreSQL. `connection_limit=5` dans
+`DATABASE_URL` pour le build ; consigné dans `CLAUDE.md`.
+
+**Commit.** `correctif: aucune route d'API n'est figee au build, et route() laisse passer les signaux de Next`

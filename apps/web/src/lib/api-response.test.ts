@@ -61,3 +61,26 @@ describe('route', () => {
     expect(e.name).toBe('HttpError');
   });
 });
+
+describe('signaux internes de Next', () => {
+  test('DYNAMIC_SERVER_USAGE traverse l enveloppe au lieu de devenir une 500', async () => {
+    // C'est ainsi que Next apprend qu'une route lit les en-tetes et ne doit pas etre
+    // rendue au build. L'attraper figeait une 500 JSON dans le build (17 sept. 2026).
+    const signal = Object.assign(new Error('Dynamic server usage'), { digest: 'DYNAMIC_SERVER_USAGE' });
+    expect(() => toErrorResponse(signal)).toThrow(signal);
+    const h = route(async () => { throw signal; });
+    await expect(h(new Request('http://x'), {})).rejects.toBe(signal);
+  });
+  test('NEXT_NOT_FOUND et NEXT_REDIRECT aussi', () => {
+    for (const digest of ['NEXT_NOT_FOUND', 'NEXT_REDIRECT;replace;/x;307;']) {
+      const signal = Object.assign(new Error(digest), { digest });
+      expect(() => toErrorResponse(signal)).toThrow(signal);
+    }
+  });
+  test('un digest quelconque n est PAS un signal : 500 generique', async () => {
+    const silence = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const r = toErrorResponse(Object.assign(new Error('x'), { digest: 'autre-chose' }));
+    expect(r.status).toBe(500);
+    silence.mockRestore();
+  });
+});

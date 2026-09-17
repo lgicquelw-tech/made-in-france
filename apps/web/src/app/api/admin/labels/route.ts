@@ -5,6 +5,10 @@ import { requireAdmin } from '@/lib/guards';
 import { route, badRequest } from '@/lib/api-response';
 import { labelCreateSchema } from '@/lib/validation/label';
 
+// Une réponse d'API n'est jamais figée au build : sans cette ligne, un GET qui ne lit
+// pas la requête est prérendu une fois et sert à jamais l'état de la base du build.
+export const dynamic = 'force-dynamic';
+
 /** Liste et création des labels. Migré depuis Express, désormais authentifié. */
 
 export const GET = route(async () => {

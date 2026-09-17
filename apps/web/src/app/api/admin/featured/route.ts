@@ -5,6 +5,10 @@ import { requireAdmin } from '@/lib/guards';
 import { route, notFound } from '@/lib/api-response';
 import { featuredCreateSchema } from '@/lib/validation/collection';
 
+// Une réponse d'API n'est jamais figée au build : sans cette ligne, un GET qui ne lit
+// pas la requête est prérendu une fois et sert à jamais l'état de la base du build.
+export const dynamic = 'force-dynamic';
+
 /** Liste et création des mises en avant de marque. Migré depuis Express. */
 
 export const GET = route(async () => {
