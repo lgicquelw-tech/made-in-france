@@ -754,7 +754,7 @@ L'option 2 est la bonne, mais elle **suppose l'audit fait**. En attendant, ne pa
 
 - [ ] **T8.7** — Choisir un fournisseur principal derrière une abstraction simple. Aujourd'hui la doc promet OpenAI, le serveur appelle Claude, et le chemin OpenAI renvoie une 400 volontaire (`index.ts:2817`).
 - [ ] **T8.8** — Clés exclusivement côté serveur.
-- [ ] **T8.9** — Faire d'abord fonctionner une **recommandation déterministe** à partir des filtres et des produits vérifiés.
+- [~] **T8.9** — Faire d'abord fonctionner une **recommandation déterministe** à partir des filtres et des produits vérifiés. → **Avancée au 17 septembre 2026, sur décision du propriétaire** : l'accueil devient un fil de produits (« produits d'entrée »), personnalisé par des signaux gardés **dans le navigateur** — recherches récentes, secteurs et marques consultés — sans compte ni consentement, comme Vinted en visite anonyme. Écart assumé avec `docs/SPEC-V1.md`, qui reportait le catalogue produit : la collecte complète tourne depuis ce jour (scrapers idempotents, T5.5). Le carrousel de marques passe sous le fil, réduit.
 - [ ] **T8.10** — Poser l'IA conversationnelle en surcouche de cette recherche. Le catalogue ne doit jamais dépendre d'un appel de modèle pour fonctionner.
 - [ ] **T8.11** — Plafonner coût, débit et longueur de conversation.
 - [ ] **T8.12** — Embeddings et recherche sémantique **seulement** après évaluation de la qualité réelle des données produit, et après avoir installé pgvector (absent aujourd'hui).

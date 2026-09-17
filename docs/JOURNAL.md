@@ -936,3 +936,65 @@ un `USER` reçoit 403 sur la lecture.
 garde ; close le 17 avec zéro route Express, chaque écriture gardée, validée et tracée.
 
 **Commit.** `phase 3 (T3.14) : piste d'audit, et cloture de la phase`
+
+---
+
+## Phase 8 (avancée) — Le fil de produits
+
+### 2026-09-17 · T8.9 — Des produits d'entrée, et un fil qui s'adapte
+
+**Décision du propriétaire.** « Les gens doivent avoir une sorte d'algorithme comme sur
+Vinted : des produits en fonction de leur profil, de leurs dernières recherches ; il faut
+proposer des produits d'entrée. » C'est T8.9 du plan, avancé ; c'est aussi un écart avec
+`docs/SPEC-V1.md`, qui reportait le catalogue produit. Consigné dans `REBUILD.md`. Deux
+choix validés : signaux **dans le navigateur, sans compte** ; **produits d'abord**,
+carrousel réduit dessous.
+
+**Le constat de départ.** L'accueil : un carrousel plein écran sur une seule marque, un
+bouton « Recherche IA », des « collections inspirantes » — **pas un produit dans le
+premier écran**, 838 lignes en `'use client'`, et cinq composants `components/home/*`
+importés nulle part. Et une base à **10 produits d'une marque** : le prérequis d'un fil
+n'est pas l'algorithme, c'est le catalogue. La collecte complète a été lancée sur les
+903 marques au début de la tâche (scrapers idempotents, T5.5).
+
+**Fait.**
+
+- `lib/signaux.ts` (navigateur) : recherches récentes, secteurs et marques consultés,
+  dans `localStorage`, plafonnés. `resumer()` en tire **3 secteurs, 5 marques, 6 mots** —
+  rien d'identifiant — qui partent en query string et **ne sont pas stockés** côté
+  serveur. Pas de profil, pas de consentement à demander. Noté depuis la recherche, le
+  catalogue, la fiche marque, la fiche produit. 7 tests.
+- `lib/feed.ts` (serveur) : un score déterministe — +4 marque consultée, +3 secteur
+  consulté, +2 mot d'une recherche récente, +1 récent, +1 mis en avant — puis une
+  **pénalité de diversité** (le n-ième produit d'une même marque perd 1,5 × (n−1)) : une
+  marque de 200 produits ne peut pas occuper l'écran. Départage par **hachage du produit
+  et de la date**, jamais `RANDOM()` : le fil change chaque jour mais reste stable dans la
+  journée, sinon le défilement infini remontrerait les mêmes produits. Seuls les produits
+  `ACTIVE` avec image, prix et lien d'achat vivant. 7 tests.
+- `GET /api/v1/feed` ; `components/produit-card.tsx` partagée entre fil et catalogue ;
+  `home-feed.tsx` (première page rendue par le serveur, personnalisation au montage
+  annoncée — « Pour vous · d'après vos recherches et vos visites · réinitialiser » —,
+  défilement infini) ; `home-content.tsx` réécrit en **composant serveur** de 110 lignes :
+  fil, univers, trois marques, carte. `components/home/*` supprimé.
+
+**Vérifié.**
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm test` | **150** (web 75, scripts 75) |
+| `pnpm test:integration` | 52 |
+| `pnpm test:e2e` | **18** — dont : produits dans le premier écran **dans le HTML servi** ; après une recherche, « Pour vous » et le produit cherché en tête ; « réinitialiser » efface le stockage ; visiter une marque nourrit le fil |
+| Fil, pages 1 et 2 | identifiants **disjoints** |
+| Fil avec `q=voiture` | le purificateur pour voiture en tête (score 3) |
+| Console de l'accueil | 0 erreur |
+
+**Ce que ce n'est pas encore.** Un « algorithme » au sens apprentissage demande des
+mois de signaux réels ; celui-ci est déterministe et lisible, ce que fait Vinted à 80 %.
+Les signaux **serveur** (vues, clics sortants, favoris → statistiques des marques) sont
+T8.2 et attendent le consentement de T7.5. Et le fil vaut ce que vaut le catalogue : il
+prendra sa forme quand la collecte aura fini et que `pnpm data:publish` aura publié.
+
+**Incident.** Un `next build` local pendant que le serveur dev tournait a écrasé `.next/`
+partagé : page en HTML nu, scripts en 500. Consigné dans `CLAUDE.md`.
+
+**Commit.** `accueil: des produits d'entree, un fil personnalise par le navigateur (T8.9)`

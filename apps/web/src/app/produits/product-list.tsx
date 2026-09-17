@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Image from 'next/image';
+import { noter } from '@/lib/signaux';
+import { ProduitCard } from '@/components/produit-card';
 import Link from 'next/link';
 import {
   Search,
@@ -105,6 +106,7 @@ export default function ProductList({
         setProducts(data.data || []);
         setTotalProducts(data.pagination?.total || 0);
         signatureAffichee.current = signature;
+        if (searchQuery.trim()) noter.recherche(searchQuery);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -355,45 +357,14 @@ export default function ProductList({
               gridCols === 3 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 md:grid-cols-4'
             }`}>
               {products.map((product) => (
-                <Link
+                <ProduitCard
                   key={product.id}
-                  href={`/produits/${product.slug}`}
-                  className="group bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/50 shadow-soft hover:shadow-soft-lg transition-all duration-300"
-                >
-                  <div className="aspect-square bg-gray-50 relative overflow-hidden">
-                    {product.imageUrl ? (
-                      <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 300px"
-                        className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center text-4xl font-bold text-white"
-                        style={{ backgroundColor: product.brand.sector?.color || '#0D2B4E' }}
-                      >
-                        {product.name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <p className="text-xs text-gray-500 mb-1.5 font-medium">{product.brand.name}</p>
-                    <h3 className="font-semibold text-france-blue line-clamp-2 group-hover:text-france-red transition-colors mb-2">
-                      {product.name}
-                    </h3>
-                    {product.priceMin && (
-                      <p className="text-lg font-bold" style={{ color: product.brand.sector?.color || '#0D2B4E' }}>
-                        {formatPrice(product.priceMin, product.priceMax)}
-                      </p>
-                    )}
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center text-sm font-medium text-france-blue group-hover:text-france-red transition-colors">
-                      Voir le produit
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
+                  produit={{
+                    id: product.id, name: product.name, slug: product.slug, imageUrl: product.imageUrl,
+                    priceMin: product.priceMin, priceMax: product.priceMax,
+                    brandName: product.brand.name, brandSlug: product.brand.slug, sectorColor: product.brand.sector?.color ?? null,
+                  }}
+                />
               ))}
             </div>
 

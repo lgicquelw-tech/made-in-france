@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { getIconComponent } from '@/components/ui/icon-picker';
 import { brandLogoUrl } from '@/lib/brand-logo';
+import { noter } from '@/lib/signaux';
 
 // Composant pour les produits
 function ProductsSection({
@@ -437,6 +438,9 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
   // ne clique — d'où la vérification automatique plutôt que le signalement.
   // L'URL, elle, reste en base : on cesse de l'afficher, on ne la détruit pas.
   const siteVivant = brand.websiteDeadAt ? null : brand.websiteUrl;
+
+  // Signal pour le fil de l'accueil (T8.9) : cette marque et son secteur, dans le navigateur.
+  useEffect(() => { noter.marque(brand.slug, brand.sector?.slug); }, [brand.slug, brand.sector?.slug]);
 
   // Le logo passait par `new URL(brand.websiteUrl).hostname` écrit sur place — la
   // forme recopiée dans 16 fichiers, qui **lève** sur une URL invalide et emporte

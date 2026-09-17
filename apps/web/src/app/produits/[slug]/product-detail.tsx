@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { noter } from '@/lib/signaux';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
@@ -97,6 +98,8 @@ export interface ProductDetailProps {
  * page ne contenait qu'un « Chargement… ».
  */
 export default function ProductDetail({ product, similarProducts }: ProductDetailProps) {
+  // Signal pour le fil de l'accueil (T8.9) : la marque et le secteur de ce produit.
+  useEffect(() => { noter.marque(product.brand.slug, product.brand.sector?.slug); }, [product.brand.slug, product.brand.sector?.slug]);
   const slug = product.slug;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);

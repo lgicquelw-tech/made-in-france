@@ -8,7 +8,7 @@
 
 ## Le projet en cinq lignes
 
-Plateforme de découverte des marques et produits fabriqués en France : annuaire, fiches marque et produit, recherche, carte géolocalisée, espace B2B pour les marques.
+Plateforme de découverte des marques et produits fabriqués en France : **un fil de produits à l'accueil** (déterministe, personnalisé par des signaux gardés dans le navigateur — T8.9), annuaire, fiches marque et produit, recherche, carte géolocalisée, espace B2B pour les marques.
 
 Le projet a été développé sur 18 sessions entre décembre 2025 et janvier 2026, puis arrêté. Il est en **reconstruction contrôlée** : on garde les données, le design et le schéma métier, on refait le socle (backend, base, authentification, tests).
 
@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, OpenAI, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 120 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Playwright : 15 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 120 tests : 75 dans `scripts/` (règles de données, normalisation d'import), 32 dans `apps/web` (gardes, enveloppe de réponse, construction des requêtes de recherche)). Playwright : 18 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
 
@@ -147,11 +147,11 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 134 tests
+pnpm test                            # Vitest, tout le monorepo : 150 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
 pnpm test:integration                # 52 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
-pnpm test:e2e                        # 15 parcours Playwright, serveur Next lance sur madeinfrance_test
+pnpm test:e2e                        # 18 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)
@@ -240,8 +240,10 @@ chemins commençant par `../`.
 | Appels depuis le front | **URL relative** (`/api/...`), toujours. Il n'y a plus d'autre origine. |
 | Données inventées | Cinq pages d'administration fabriquaient leurs chiffres quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | **Routes d'API figées au build** | Un Route Handler `GET` qui ne lit pas la requête est **prérendu au build** et sert à jamais l'état de la base de ce moment. La carte a servi `[]` en CI pour cette raison (17 septembre 2026). Chaque `route.ts` sous `app/api/` porte `export const dynamic = 'force-dynamic'` ; toute nouvelle route aussi. Et `route()` **relance** les signaux internes de Next (`DYNAMIC_SERVER_USAGE`, `NEXT_*`) au lieu de les convertir en 500. |
+| `next build` et `next dev` partagent `.next/` | Lancer un build pendant que le serveur dev tourne écrase ses chunks : la page rend en HTML nu, les scripts répondent 500. Arrêter le dev, ou `rm -rf apps/web/.next` puis relancer. |
 | Build contre une vraie base | `next build` prérend ~1 000 pages en parallèle, chaque worker avec son pool Prisma : un PostgreSQL local (100 connexions) sature. Borner : `DATABASE_URL="...&connection_limit=5"` pour le build. |
 | **Piste d'audit** | Toute écriture sur une marque ou un produit passe par `prisma.$transaction` avec `journaliser(tx, …)` (`lib/audit.ts`) : champs modifiés seulement, jamais un secret. Une nouvelle route d'écriture **doit** la poser. Lecture : `GET /api/admin/audit`. |
+| **Fil de l'accueil** | `lib/feed.ts` : score déterministe + pénalité de diversité par marque, départage par `md5(id || date)` — **jamais `RANDOM()`**, sinon le défilement infini remontre les mêmes produits. Les préférences (`s`, `m`, `q`) viennent de `lib/signaux.ts` (localStorage), servent à ordonner et **ne sont jamais stockées** côté serveur. |
 | Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
 | **Boutons produits du Studio** | `PUT /api/v1/products/:id` avec `status: 'INACTIVE'`, `isTrending`, `isNewProduct`, `salePrice` : aucun de ces champs n'existe, aucune route ne répond. Ces boutons n'ont jamais fonctionné. Décision de phase 8, pas à combler au passage. |
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |

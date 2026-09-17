@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Search, Building2, ShoppingBag, Loader2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { brandLogoUrl } from '@/lib/brand-logo';
+import { noter } from '@/lib/signaux';
 
 export interface SearchBrand {
   type: 'brand';
@@ -73,6 +74,7 @@ export default function SearchContent({ initialQuery, initialResults }: SearchCo
 
   useEffect(() => {
     setSearchQuery(query);
+    if (query.trim()) noter.recherche(query);
   }, [query]);
 
   useEffect(() => {
@@ -90,6 +92,8 @@ export default function SearchContent({ initialQuery, initialResults }: SearchCo
         const data = await res.json();
         setResults({ brands: data.brands || [], products: data.products || [] });
         derniereResolue.current = searchQuery;
+        // Signal pour le fil de l'accueil (T8.9) : gardé dans le navigateur, jamais stocké ailleurs.
+        noter.recherche(searchQuery);
         // L'URL suit la saisie : un lien copié montre ce qu'on voit, et le bouton
         // « précédent » ne perd pas la recherche.
         router.replace(`/recherche?q=${encodeURIComponent(searchQuery)}`, { scroll: false });
