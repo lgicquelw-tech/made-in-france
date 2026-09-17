@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { noter } from '@/lib/signaux';
-import Image from 'next/image';
+import { ImageProduit } from '@/components/image-produit';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -184,10 +184,9 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                 <>
                   {/* Image principale : c'est l'element LCP de la fiche.
                       `priority` evite un chargement paresseux qui le retarderait. */}
-                  <Image
+                  <ImageProduit
                     src={allImages[currentImageIndex]}
                     alt={product.name}
-                    fill
                     priority
                     sizes="(max-width: 1024px) 100vw, 600px"
                     className="object-contain p-8 transition-transform duration-500 group-hover:scale-105"

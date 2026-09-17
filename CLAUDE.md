@@ -147,7 +147,7 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 150 tests
+pnpm test                            # Vitest, tout le monorepo : 156 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
 pnpm test:integration                # 52 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
@@ -182,7 +182,7 @@ silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
 **La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
 perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). Elle contient
 aujourd'hui 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
-**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`), **12 produits**, et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
+**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`), **~40 000 produits** collectés le 17 septembre 2026 par les scrapers (dont ~35 000 publiés par `pnpm data:publish`), et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
 
 ⚠️ **Les liens `.env` sont ignorés par git** : `apps/api/.env`, `apps/web/.env` et tout
 lien équivalent n'existent pas sur un clone neuf. C'est pourquoi **toutes les commandes
@@ -244,6 +244,7 @@ chemins commençant par `../`.
 | Build contre une vraie base | `next build` prérend ~1 000 pages en parallèle, chaque worker avec son pool Prisma : un PostgreSQL local (100 connexions) sature. Borner : `DATABASE_URL="...&connection_limit=5"` pour le build. |
 | **Piste d'audit** | Toute écriture sur une marque ou un produit passe par `prisma.$transaction` avec `journaliser(tx, …)` (`lib/audit.ts`) : champs modifiés seulement, jamais un secret. Une nouvelle route d'écriture **doit** la poser. Lecture : `GET /api/admin/audit`. |
 | **Fil de l'accueil** | `lib/feed.ts` : score déterministe + pénalité de diversité par marque, départage par `md5(id || date)` — **jamais `RANDOM()`**, sinon le défilement infini remontre les mêmes produits. Les préférences (`s`, `m`, `q`) viennent de `lib/signaux.ts` (localStorage), servent à ordonner et **ne sont jamais stockées** côté serveur. |
+| **Images de produits** | 172 hôtes distincts. `next/image` **lève et emporte la page** sur un hôte non déclaré. Toujours passer par `<ImageProduit>` (`components/image-produit.tsx`) : optimisé si l'hôte est dans `hotes-images.js` (la seule liste, lue aussi par `next.config.js`), `<img loading="lazy">` sinon. Ne jamais ouvrir `**`. |
 | Prisma côté web | Toujours `import { prisma } from '@/lib/db'`. Ne jamais faire `new PrismaClient()` dans une route : une connexion par rechargement en dev, une par invocation à froid en serverless. |
 | **Boutons produits du Studio** | `PUT /api/v1/products/:id` avec `status: 'INACTIVE'`, `isTrending`, `isNewProduct`, `salePrice` : aucun de ces champs n'existe, aucune route ne répond. Ces boutons n'ont jamais fonctionné. Décision de phase 8, pas à combler au passage. |
 | `Brand` n'a ni `email` ni `phone` | Le formulaire Studio les propose pourtant. Ces champs ne sauvegardent rien. Écart consigné dans `REBUILD.md`, à trancher — pas à combler au passage. |

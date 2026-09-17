@@ -1,5 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
+
+import { ImageProduit } from './image-produit';
 
 import { formatPriceRange } from '@/lib/utils';
 
@@ -28,10 +29,9 @@ export function ProduitCard({ produit, priorite = false }: { produit: ProduitCar
     >
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
         {produit.imageUrl ? (
-          <Image
+          <ImageProduit
             src={produit.imageUrl}
             alt={produit.name}
-            fill
             priority={priorite}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"

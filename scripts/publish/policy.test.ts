@@ -33,7 +33,11 @@ test('un DRAFT incomplet reste DRAFT, et dit pourquoi', () => {
 test('un ACTIVE devenu incomplet est retire', () => {
   const v = deciderStatut({ ...complete(), priceMin: 0 }, 'ACTIVE');
   assert.equal(v.nouveau, 'DRAFT');
-  assert.deepEqual(v.manques, ['Un prix strictement positif']);
+  assert.deepEqual(v.manques, ['Un prix plausible (0 < prix ≤ 20 000 €)']);
+  // Un placeholder de boutique a 99 999 999 999 € n'est pas un prix.
+  assert.equal(deciderStatut({ ...complete(), priceMin: 99_999_999_999 }, 'ACTIVE').nouveau, 'DRAFT');
+  // Une spatule a 0,80 €, si.
+  assert.equal(deciderStatut({ ...complete(), priceMin: 0.8 }, 'DRAFT').nouveau, 'ACTIVE');
 });
 
 test('un ACTIVE complet ne bouge pas', () => {

@@ -67,7 +67,8 @@ const REGLES_SUR_LE_NOM: Regle[] = [
   },
   {
     raison: 'produit de test',
-    motif: /^(test|essai|dummy|sample product|produit[ -]test|lorem ipsum|ne pas commander|do not (?:buy|order))\b/i,
+    // Volontairement etroit : « La Veritable Histoire du test de Bechdel » est un livre.
+    motif: /^(test|essai|dummy|sample product|produit[ -]test|lorem ipsum|ne pas commander|do not (?:buy|order))\b|\bproduit[ -]test\b|^[A-Z0-9-]*TEST[A-Z0-9-]*$/i,
   },
 ];
 

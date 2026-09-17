@@ -39,7 +39,7 @@ test('frais et services', () => {
 });
 
 test('produit de test', () => {
-  for (const name of ['Test', 'test produit', 'TEST - ne pas commander', 'Lorem ipsum', 'Dummy product']) {
+  for (const name of ['Test', 'test produit', 'TEST - ne pas commander', 'Lorem ipsum', 'Dummy product', 'A produit test', 'NBK-SPL-TEST']) {
     assert.equal(detecterBruit({ name }), 'produit de test', name);
   }
 });
@@ -76,6 +76,8 @@ test('de vrais produits ne sont pas rejetes', () => {
     'Sac de livraison isotherme',    // « livraison » sans « frais de »
     'Papier cadeau recyclé',         // un produit, pas un service
     'Sampler de thés',               // « sampler » n'est pas « sample »
+    'La Véritable Histoire du test de Bechdel', // un livre : « test » au milieu d'une phrase n'est pas un produit de test
+    'Chaussette test ReGNR',         // douteux, mais on garde : en cas de doute, on garde
   ]) {
     assert.equal(detecterBruit({ name }), null, `« ${name} » doit etre garde`);
   }

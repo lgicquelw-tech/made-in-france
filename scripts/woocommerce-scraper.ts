@@ -88,7 +88,7 @@ function convertir(brandSlug: string, p: WooProduct): ProduitAEnregistrer {
   return {
     externalSource: 'woocommerce',
     externalId: String(p.id),
-    name: p.name,
+    name: texteDepuisHtml(p.name) || p.name,
     slug: createProductSlug(brandSlug, p.slug),
     descriptionShort: courte ? courte.slice(0, 500) : null,
     descriptionLong: longue || null,

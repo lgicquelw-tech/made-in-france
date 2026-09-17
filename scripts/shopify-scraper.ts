@@ -144,7 +144,8 @@ function convertir(brandSlug: string, domain: string, p: ShopifyProduct): Produi
   return {
     externalSource: 'shopify',
     externalId: String(p.id),
-    name: p.title,
+    // Le titre Shopify porte parfois des balises ou des entités HTML (« &#8211; », « <br/> »).
+    name: texteDepuisHtml(p.title) || p.title,
     slug: createProductSlug(brandSlug, p.handle),
     descriptionShort: description ? description.slice(0, 500) : null,
     descriptionLong: description || null,

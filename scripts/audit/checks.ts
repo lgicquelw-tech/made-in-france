@@ -199,9 +199,12 @@ export const CONTROLES_PRODUIT: Controle<FicheProduit>[] = [
   },
   {
     cle: 'prix',
-    libelle: 'Un prix strictement positif',
+    // Pas de borne basse : une spatule à 0,80 € existe. Une borne haute : le premier
+    // catalogue complet (17 septembre 2026) contenait un « Offer » à 99 999 999 999 €,
+    // un placeholder de boutique. Les vrais produits chers du fichier plafonnent à 17 200 €.
+    libelle: 'Un prix plausible (0 < prix ≤ 20 000 €)',
     severite: 'BLOQUANT',
-    ok: (p) => typeof p.priceMin === 'number' && p.priceMin > 0,
+    ok: (p) => typeof p.priceMin === 'number' && p.priceMin > 0 && p.priceMin <= 20_000,
   },
   {
     cle: 'achat',

@@ -154,7 +154,7 @@ Deux fichiers réels, tous deux ignorés par git :
 **Vitest**, sur tout le monorepo :
 
 ```bash
-pnpm test                          # 150 tests
+pnpm test                          # 156 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
 pnpm test:integration              # 52 tests sur une vraie base, madeinfrance_test
@@ -174,8 +174,8 @@ PostgreSQL, build et parcours navigateur à chaque poussée.
 Elles sont documentées et suivies dans [`REBUILD.md`](REBUILD.md) :
 
 - Les statistiques affichées aux marques sont générées par `Math.random()`.
-- La base de données locale est repartie de zéro : le catalogue produit de janvier 2026
-  a été perdu, faute de sauvegarde.
+- Le catalogue produit a été reconstruit le 17 septembre 2026 par les scrapers (~40 000
+  fiches, ~35 000 publiées). Celui de janvier 2026 avait été perdu, faute de sauvegarde.
 
 ## Documentation
 

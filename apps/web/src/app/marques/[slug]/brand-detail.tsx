@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
+import { ImageProduit } from '@/components/image-produit';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -62,10 +62,9 @@ function ProductsSection({
           >
             {product.imageUrl ? (
               <div className="relative aspect-square bg-gray-50">
-                <Image
+                <ImageProduit
                   src={product.imageUrl}
                   alt={product.name}
-                  fill
                   sizes="(max-width: 768px) 50vw, 200px"
                   className="object-contain p-2 group-hover:scale-105 transition-transform"
                 />

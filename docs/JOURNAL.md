@@ -998,3 +998,31 @@ prendra sa forme quand la collecte aura fini et que `pnpm data:publish` aura pub
 partagé : page en HTML nu, scripts en 500. Consigné dans `CLAUDE.md`.
 
 **Commit.** `accueil: des produits d'entree, un fil personnalise par le navigateur (T8.9)`
+
+### 2026-09-17 · Le premier catalogue complet, et ce qu'il a révélé
+
+**La collecte.** Lancée en début de tâche sur les 903 marques. Shopify terminé :
+**199 marques importées, 23 328 produits créés, 150 lignes de bruit écartées** (119
+cartes cadeaux, 22 échantillons, 7 frais), **2 935 doublons de nom**, 5 erreurs.
+WooCommerce en cours : 40 225 produits pour 392 marques au moment de cette entrée.
+
+**Ce que 37 000 vraies fiches ont montré que 10 ne pouvaient pas.**
+
+| Défaut | Ampleur | Correction |
+|---|---|---|
+| **Du HTML dans les noms** — « Cuillère à café `<br/>` Corinthe », « Lacets `&#8211;` embouts gris » | **4 627** fiches | `texteDepuisHtml` sur le titre dans les deux scrapers ; entités nommées et numériques décodées ; `reparer-noms.ts` pour l'existant → 0 restant |
+| **Prix invraisemblables** — un « Offer » à 99 999 999 999 € | 1 au-dessus de 20 000 € | borne haute à 20 000 € dans l'audit et la publication. **Pas de borne basse** : une spatule à 0,80 €, une aiguillette à 0,40 € existent |
+| Produits de test — « A produit test », « NBK-SPL-TEST » | 3 | deux motifs de plus, étroits : « La Véritable Histoire du **test** de Bechdel » est un livre et doit rester |
+| **`next/image` fait tomber la page** dès qu'un hôte n'est pas déclaré | **172 hôtes** d'images distincts, un par boutique WooCommerce | une seule liste `hotes-images.js` partagée entre `next.config.js` et `image-optimisable.ts` ; `<ImageProduit>` optimise les hôtes connus (22 000 images sur `cdn.shopify.com`) et sert le reste en `<img loading="lazy">`. On n'ouvre pas `**` : l'optimiseur deviendrait un proxy d'images public |
+
+**Publication.** `pnpm data:publish` : **34 919 publiés**, 0 retiré. Restent en brouillon :
+2 832 descriptions trop courtes, 701 prix absents ou implausibles, 270 sans image.
+
+**Le fil à l'échelle.** 20 marques distinctes sur les 20 premières cartes ; ~100 ms par
+page en mode dev ; pages 1 et 2 disjointes ; « voiture » en signal remonte le purificateur
+pour voiture. Accueil : 13 images optimisées, 7 brutes, 0 erreur.
+
+**Vérifié.** Typecheck 6/6, lint 0 erreur, **156** tests unitaires, 52 d'intégration, 18
+parcours.
+
+**Commit.** `catalogue: 35 000 produits publies, et ce qu'ils ont revele`
