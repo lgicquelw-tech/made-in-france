@@ -1026,3 +1026,45 @@ pour voiture. Accueil : 13 images optimisées, 7 brutes, 0 erreur.
 parcours.
 
 **Commit.** `catalogue: 35 000 produits publies, et ce qu'ils ont revele`
+
+### 2026-09-17 · Fin de la collecte WooCommerce : 1 824 traductions prises pour des produits
+
+**La collecte.** WooCommerce terminé (code 0) : **260 boutiques détectées, 17 997 produits
+récupérés**, 7 marques avec des erreurs d'écriture — 30 messages `Unique constraint failed
+(brand_id, slug)` dans le journal de collecte. Une contrainte qui refuse est une information,
+pas un bruit : on a regardé.
+
+**Deux causes, toutes deux à la source.**
+
+| Défaut | Ampleur | Correction |
+|---|---|---|
+| **Les traductions sont des produits distincts** dans l'API Store des boutiques WPML / Polylang : même fiche, un identifiant par langue, une adresse préfixée `/en/product/…`, `/de/produkt/…`. Le scraper les a toutes prises. Pire : arrivées avant les originales, elles ont pris leur slug, et les fiches **françaises** ont été refusées (LE PULL FRANÇAIS : 74 anglaises créées, 74 françaises rejetées ; TISSAGE MOUTET : 96 françaises perdues) | **1 824 fiches** en anglais, allemand, espagnol, néerlandais sur 11 marques — dont **1 330 déjà publiées** par `data:publish` (LE COLIBRI FRENCHY : 838 à lui seul) | `catalogue/langue.ts` : `estFicheFrancaise(permalien)` garde une fiche sans préfixe de langue ou en `fr`. Le scraper filtre avant `enregistrerCollecte` et dit combien il ignore |
+| **Pas de `slug` dans l'API** de deux boutiques → toutes leurs fiches recevaient `<marque>-undefined`, une seule survivait | 2 marques, 124 fiches perdues (DES HOMMES ET DES BOEUFS 74, MAISON BEDEL 49) | repli sur le dernier segment du permalien, puis sur l'identifiant |
+
+**Réparation de l'existant.** `catalogue/retirer-traductions.ts` (simulation d'abord) a
+**supprimé 1 824 fiches** collectées — des lignes créées par le script une heure plus tôt,
+jamais une fiche saisie à la main. Puis recollecte des 11 marques : **0 erreur**, 2 173
+traductions ignorées, et les originales retrouvées — LE PULL FRANÇAIS 74, DES HOMMES ET
+DES BOEUFS 75, MAISON BEDEL 50, TISSAGE MOUTET 128 de plus.
+
+**Suite du protocole.** `reparer-noms.ts` : 108 noms réparés (la collecte WooCommerce
+avait démarré avant le correctif HTML). `pnpm data:audit` : bruit 3, doublons de nom 19.
+`pnpm data:publish` : **35 166 publiés**, 0 retiré ; en brouillon 2 925 descriptions
+courtes, 766 prix, 323 sans image.
+
+| Vérification | Résultat |
+|---|---|
+| `retirer-traductions.ts --simuler` après recollecte | 0 fiche à retirer |
+| Catalogue | **38 770 produits, 392 marques**, 35 166 ACTIVE, 3 604 DRAFT, 0 slug `-undefined` |
+| Provenance | 23 338 shopify, 15 430 woocommerce, 2 manuels |
+| `/api/v1/feed?limit=40` | 40 marques distinctes, 0 nom anglais, 86 ms |
+| Accueil (aperçu, port 57647) | « 35 166 produits », cartes rendues |
+| `pnpm test` | **159** tests (web 79, scripts 80, dont 3 nouveaux sur `langue.ts`) |
+| `pnpm typecheck` / `pnpm lint` | 6/6, 0 erreur |
+
+**Ce qu'on retient.** Une collecte n'est pas finie quand le script s'arrête, elle est finie
+quand on a lu ses erreurs. Et le seul moyen de voir ce défaut-là était de compter les
+préfixes de langue dans les permaliens : aucun test unitaire sur dix fiches d'Airpur Labs
+ne l'aurait montré.
+
+**Commit.** `catalogue: les traductions WooCommerce n'etaient pas des produits`

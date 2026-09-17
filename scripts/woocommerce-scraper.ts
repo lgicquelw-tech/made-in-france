@@ -13,6 +13,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { PrismaClient } from '@prisma/client';
 import { texteDepuisHtml } from './catalogue/html';
+import { estFicheFrancaise, slugDepuisPermalien } from './catalogue/langue';
 import { enregistrerCollecte, afficherBilan, type ProduitAEnregistrer } from './catalogue/upsert';
 
 const prisma = new PrismaClient();
@@ -34,8 +35,10 @@ interface WooProduct {
   tags?: { id: number; name: string; slug: string }[];
 }
 
-function createProductSlug(brandSlug: string, productSlug: string): string {
-  return `${brandSlug}-${productSlug}`;
+function createProductSlug(brandSlug: string, p: WooProduct): string {
+  // Certaines boutiques omettent `slug` : repli sur l'adresse, puis sur l'identifiant.
+  const propre = p.slug || slugDepuisPermalien(p.permalink) || String(p.id);
+  return `${brandSlug}-${propre}`;
 }
 
 async function fetchWooProducts(domain: string): Promise<WooProduct[]> {
@@ -89,7 +92,7 @@ function convertir(brandSlug: string, p: WooProduct): ProduitAEnregistrer {
     externalSource: 'woocommerce',
     externalId: String(p.id),
     name: texteDepuisHtml(p.name) || p.name,
-    slug: createProductSlug(brandSlug, p.slug),
+    slug: createProductSlug(brandSlug, p),
     descriptionShort: courte ? courte.slice(0, 500) : null,
     descriptionLong: longue || null,
     priceMin: Number.isFinite(prix) && prix > 0 ? prix : null,
@@ -108,7 +111,14 @@ async function importProducts(brandSlug: string, products: WooProduct[]): Promis
   const brand = await prisma.brand.findUnique({ where: { slug: brandSlug }, select: { id: true, name: true } });
   if (!brand) throw new Error(`Marque introuvable : ${brandSlug}`);
 
-  const bilan = await enregistrerCollecte(prisma, brand.id, products.map((p) => convertir(brandSlug, p)));
+  // Les traductions (WPML, Polylang) sont des produits distincts dans l'API Store :
+  // on ne garde que les fiches françaises, sinon elles prennent le slug des originales.
+  const francais = products.filter((p) => estFicheFrancaise(p.permalink));
+  if (francais.length < products.length) {
+    console.log(`  ${products.length - francais.length} traductions ignorées`);
+  }
+
+  const bilan = await enregistrerCollecte(prisma, brand.id, francais.map((p) => convertir(brandSlug, p)));
   afficherBilan(brand.name, bilan);
 }
 

@@ -147,7 +147,7 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 156 tests
+pnpm test                            # Vitest, tout le monorepo : 159 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
 pnpm test:integration                # 52 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
@@ -182,7 +182,7 @@ silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
 **La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
 perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). Elle contient
 aujourd'hui 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
-**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`), **~40 000 produits** collectés le 17 septembre 2026 par les scrapers (dont ~35 000 publiés par `pnpm data:publish`), et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
+**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`), **38 770 produits** pour 392 marques, collectés le 17 septembre 2026 par les scrapers (35 166 publiés par `pnpm data:publish`), et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
 
 ⚠️ **Les liens `.env` sont ignorés par git** : `apps/api/.env`, `apps/web/.env` et tout
 lien équivalent n'existent pas sur un clone neuf. C'est pourquoi **toutes les commandes
@@ -252,6 +252,7 @@ chemins commençant par `../`.
 | Clearbit | Mort. Les logos passent par Google Favicons |
 | **Un 403 n'est pas un site mort** | C'est un pare-feu qui a reconnu un robot. Une boutique derrière Cloudflare répond 403 à l'audit et 200 à un humain. `data:links` a donc **trois** verdicts, pas deux : `vivant`, `mort`, `indetermine` — et ne désactive que les `mort`. Confondre les deux retire des marques vivantes de l'annuaire, silencieusement. |
 | **Écriture d'un produit scrappé** | Un seul point : `scripts/catalogue/upsert.ts` → `enregistrerCollecte`. Les scrapers ne touchent **jamais** `prisma.product` directement. Clé stable `(brandId, externalSource, externalId)` ; le rescrape réécrit prix, images, lien, données brutes et `collectedAt`, et **jamais** descriptions, slug, statut, catégorie, matières, SEO. Un produit collecté naît en `DRAFT` : c'est l'audit (T5.8) qui publie. |
+| **Traductions WooCommerce** | Dans l'API Store d'une boutique WPML / Polylang, **chaque traduction est un produit** : même fiche, un identifiant par langue, permalien préfixé (`/en/product/…`). Sans filtre, 1 824 fiches en anglais, allemand, espagnol et néerlandais sont entrées au catalogue le 17 septembre 2026 — et, arrivées avant, elles ont pris le slug des originales françaises, refusées ensuite. `catalogue/langue.ts` ne garde que les fiches sans préfixe ou en `fr` ; le slug se replie sur le permalien quand l'API n'en donne pas. Après une collecte, **lire les erreurs du journal** : une contrainte qui refuse dit quelque chose. |
 | **L'import de marques ne touche pas au statut** | `brandData.status` vaut `PENDING_REVIEW` pour toute ligne du fichier. Le réécrire à la mise à jour remettait en attente chaque marque validée à chaque `pnpm bootstrap`. Le statut est une décision éditoriale, il ne vient pas du fichier. |
 | **Recherche insensible aux accents** | `unaccent()` des **deux** côtés — colonne et saisie. 191 marques sur 903 ont un accent dans leur nom : désaccentuer la seule saisie laissait « creme » sans réponse devant « CRÈME BRÛLÉE ». Toute nouvelle clause de recherche passe par `correspondance()` de `catalogue-public.ts`. |
 | **Double appel au montage** | Le motif `if (!hydrated) { setHydrated(true); return; }` avec `hydrated` dans les dépendances relance l'effet et refait l'appel que le serveur venait de rendre. Corrigé dans cinq composants ; utiliser une référence sur la dernière requête résolue, jamais ce drapeau. |
