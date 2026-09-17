@@ -158,7 +158,7 @@ pnpm test                          # 159 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
 pnpm test:integration              # 52 tests sur une vraie base, madeinfrance_test
-pnpm test:e2e                      # 18 parcours navigateur (Playwright), même base
+pnpm test:e2e                      # 24 parcours navigateur (Playwright), même base
 ```
 
 Pas de course à la couverture : on teste les chemins dont la casse silencieuse coûte

@@ -549,9 +549,11 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
                 />
               </div>
 
-              {brand.tagline && (
+              {/* La description courte est le champ que le Studio et l'admin éditent
+                  en premier ; sans accroche, c'est elle qui se lit sous le nom. */}
+              {(brand.tagline || brand.descriptionShort) && (
                 <p className="text-xl text-white/90 mb-4">
-                  {brand.tagline}
+                  {brand.tagline || brand.descriptionShort}
                 </p>
               )}
 

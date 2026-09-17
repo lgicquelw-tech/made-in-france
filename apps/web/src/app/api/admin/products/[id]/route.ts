@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/guards';
 import { journaliser } from '@/lib/audit';
+import { rafraichirProduit } from '@/lib/revalidation';
 import { route, notFound } from '@/lib/api-response';
 import { productUpdateSchema } from '@/lib/validation/product';
 
@@ -75,14 +76,18 @@ export const PUT = route<Context>(async (request, { params }) => {
       : { disconnect: true };
   }
 
-  const avant = await prisma.product.findUnique({ where: { id: params.id } });
-  if (!avant) throw notFound('Produit introuvable');
+  const complet = await prisma.product.findUnique({ where: { id: params.id }, include: { brand: { select: { slug: true } } } });
+  if (!complet) throw notFound('Produit introuvable');
+  // La marque sert au rafraîchissement du cache, pas à la trace d'audit.
+  const { brand: marque, ...avant } = complet;
 
   const product = await prisma.$transaction(async (tx) => {
     const apres = await tx.product.update({ where: { id: params.id }, data, include: { category: true } });
     await journaliser(tx, { acteur, action: 'product.update', cible: { type: 'product', id: apres.id, libelle: apres.name }, avant, apres });
     return apres;
   });
+  rafraichirProduit(product.slug, marque.slug);
+  if (avant.slug !== product.slug) rafraichirProduit(avant.slug);
 
   return NextResponse.json({ data: product });
 });
@@ -90,13 +95,14 @@ export const PUT = route<Context>(async (request, { params }) => {
 export const DELETE = route<Context>(async (_request, { params }) => {
   const acteur = await requireAdmin();
 
-  const product = await prisma.product.findUnique({ where: { id: params.id } });
+  const product = await prisma.product.findUnique({ where: { id: params.id }, include: { brand: { select: { slug: true } } } });
   if (!product) throw notFound('Produit introuvable');
 
   await prisma.$transaction(async (tx) => {
     await tx.product.delete({ where: { id: params.id } });
     await journaliser(tx, { acteur, action: 'product.delete', cible: { type: 'product', id: product.id, libelle: product.name }, avant: product, apres: null });
   });
+  rafraichirProduit(product.slug, product.brand.slug);
 
   return NextResponse.json({ message: `Produit « ${product.name} » supprimé` });
 });

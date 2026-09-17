@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { requireBrandOwner } from '@/lib/guards';
 import { journaliser } from '@/lib/audit';
+import { rafraichirMarque } from '@/lib/revalidation';
 import { route, notFound } from '@/lib/api-response';
 import { brandDashboardUpdateSchema } from '@/lib/validation/brand-dashboard';
 
@@ -102,6 +103,7 @@ export const PUT = route<Context>(async (request, { params }) => {
     await journaliser(tx, { acteur: user, action: 'brand.update', cible: { type: 'brand', id: apres.id, libelle: apres.name }, avant, apres });
     return apres;
   });
+  rafraichirMarque(updated.slug, brand.slug);
 
   return NextResponse.json({ success: true, brand: updated });
 });

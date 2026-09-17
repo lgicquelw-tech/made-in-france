@@ -68,8 +68,8 @@ export default function SignupForm() {
       setError('Email invalide');
       return false;
     }
-    if (formData.password.length < 8) {
-      setError('Le mot de passe doit faire au moins 8 caractères');
+    if (formData.password.length < 12) {
+      setError('Le mot de passe doit faire au moins 12 caractères');
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -292,7 +292,7 @@ export default function SignupForm() {
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="w-full pl-12 pr-12 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Minimum 8 caractères"
+                        placeholder="Minimum 12 caractères"
                         required
                       />
                       <button

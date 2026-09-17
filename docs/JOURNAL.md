@@ -1068,3 +1068,36 @@ préfixes de langue dans les permaliens : aucun test unitaire sur dix fiches d'A
 ne l'aurait montré.
 
 **Commit.** `catalogue: les traductions WooCommerce n'etaient pas des produits`
+
+### 2026-09-17 · T6.5 : les quatre parcours qui attendaient la fin d'Express
+
+**But.** Couvrir inscription, revendication, édition Studio et édition admin — laissés de
+côté en phase 6 parce que ces pages appelaient encore Express. Il n'y a plus d'Express.
+
+**Ce qu'on vérifie.** Pas l'écran : **la base**. Une inscription avec revendication doit
+laisser une `BrandClaimRequest` en `PENDING` et **zéro** `BrandOwner` (règle n°0) ; le
+tableau de bord doit répondre 403 au revendiquant connecté ; une édition doit laisser une
+ligne d'audit signée. `e2e/base.ts` ouvre la base de test depuis les parcours pour cela.
+Jeu de données : un propriétaire validé d'ATELIER TEST (`proprietaire@test.local`).
+
+**Ce que les parcours ont trouvé — trois défauts réels, tous dans le chemin d'édition.**
+
+| Défaut | Effet | Correction |
+|---|---|---|
+| **Page paramètres du Studio : deux chargements** (`useEffect` sur `[slug, status]`, exécuté à `loading` puis à `authenticated`) | le second écrasait ce que l'utilisateur avait déjà saisi ; la sauvegarde renvoyait « enregistré » et l'audit consignait `{}` — **rien n'avait changé** | on attend que la session soit connue avant de charger. Le même motif que le « double appel au montage » de `CLAUDE.md` |
+| **Fiches publiques en cache une heure** (`revalidate = 3600`) et aucune écriture ne les rafraîchissait | une marque corrigeait sa description, sa page restait fausse une heure, sans le dire | `lib/revalidation.ts` : `rafraichirMarque` / `rafraichirProduit`, appelés **après** la transaction dans les routes d'écriture (admin marque, Studio, admin produit, suppressions) |
+| **La description courte n'était affichée nulle part** sur la fiche marque — seulement `tagline` et `story` | le premier champ que le Studio et l'admin proposent d'éditer n'avait aucun effet visible sur la page | sous le nom : `tagline`, sinon `descriptionShort` |
+
+Et un écart de règle : le formulaire d'inscription exigeait 8 caractères de mot de passe,
+l'API 12. Un mot de passe de 9 passait le formulaire pour être refusé par l'API. Aligné à 12.
+
+| Vérification | Résultat |
+|---|---|
+| `pnpm test:e2e` | **24 parcours verts** (18 + 6) |
+| dont | inscription simple (compte USER, mot de passe haché, 0 propriétaire) ; mot de passe court refusé sans appel ; revendication (PENDING, 0 droit, dashboard 403) ; édition Studio (fiche publique à jour, audit `descriptionShort` avant/après) ; utilisateur ordinaire → PUT 403, base intacte ; édition admin (audit signé `admin@test.local`, `targetId` = la marque) |
+| `pnpm typecheck` / `pnpm lint` / tests unitaires | 6/6, 0 erreur, 159 |
+
+**Ce que ça ne prouve pas en local.** En `next dev`, les pages ne sont pas mises en cache :
+seul le passage en CI (`next start` sur le build) vérifie que le rafraîchissement agit.
+
+**Commit.** `T6.5 : inscription, revendication et editions couvertes — et ce qu'elles ont trouve`

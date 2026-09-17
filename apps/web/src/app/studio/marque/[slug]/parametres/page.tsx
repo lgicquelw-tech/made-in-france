@@ -266,6 +266,9 @@ export default function StudioParametresPage() {
       router.push('/studio/connexion');
       return;
     }
+    // Attendre que la session soit connue : chargé à « loading » puis à « authenticated »,
+    // le second chargement écrasait ce que l'utilisateur avait déjà saisi entre les deux.
+    if (status === 'loading') return;
 
     if (slug) {
       loadData();

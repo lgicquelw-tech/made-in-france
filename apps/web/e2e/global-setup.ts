@@ -23,7 +23,7 @@ export default async function setup(): Promise<void> {
   const prisma = new PrismaClient({ datasources: { db: { url } } });
   try {
     await prisma.$executeRaw`
-      TRUNCATE TABLE "brand_claim_requests", "brand_owners", "favorites", "brand_views",
+      TRUNCATE TABLE "audit_logs", "brand_claim_requests", "brand_owners", "favorites", "brand_views",
                      "products", "brands", "users", "sectors", "regions" CASCADE`;
 
     const region = await prisma.region.create({ data: { name: 'Bretagne', slug: 'bretagne' } });
@@ -38,6 +38,11 @@ export default async function setup(): Promise<void> {
       email: DONNEES.utilisateur.email, name: DONNEES.utilisateur.name,
       password: await bcrypt.hash(DONNEES.utilisateur.password, 10), role: 'USER', isActive: true,
     } });
+    const proprietaire = await prisma.user.create({ data: {
+      email: DONNEES.proprietaire.email, name: DONNEES.proprietaire.name,
+      password: await bcrypt.hash(DONNEES.proprietaire.password, 10), role: 'USER', isActive: true,
+    } });
+    await prisma.brandOwner.create({ data: { brandId: marque.id, userId: proprietaire.id, role: 'OWNER', acceptedAt: new Date() } });
     await prisma.user.create({ data: {
       email: DONNEES.admin.email, name: DONNEES.admin.name,
       password: await bcrypt.hash(DONNEES.admin.password, 10), role: 'ADMIN', isActive: true,

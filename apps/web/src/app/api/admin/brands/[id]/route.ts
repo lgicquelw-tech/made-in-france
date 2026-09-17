@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { requireAdmin, requireSuperAdmin } from '@/lib/guards';
 import { journaliser } from '@/lib/audit';
+import { rafraichirMarque } from '@/lib/revalidation';
 import { route, notFound } from '@/lib/api-response';
 import { brandUpdateSchema } from '@/lib/validation/brand';
 
@@ -100,6 +101,7 @@ export const PUT = route<Context>(async (request, { params }) => {
     });
     return apres;
   });
+  rafraichirMarque(brand.slug, avant.slug);
 
   return NextResponse.json({ data: brand });
 });
@@ -118,6 +120,7 @@ export const DELETE = route<Context>(async (_request, { params }) => {
     // La trace garde l'état complet de la fiche : c'est tout ce qui en restera.
     await journaliser(tx, { acteur, action: 'brand.delete', cible: { type: 'brand', id: brand.id, libelle: brand.name }, avant: brand, apres: null });
   });
+  rafraichirMarque(brand.slug);
 
   return NextResponse.json({ message: `Marque « ${brand.name} » supprimée` });
 });

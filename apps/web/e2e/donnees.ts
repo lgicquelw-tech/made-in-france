@@ -10,5 +10,9 @@ export const DONNEES = {
     descriptionShort: 'Un pull marin en laine vierge tricoté en Bretagne, pour les tests de parcours.',
   },
   utilisateur: { email: 'visiteur@test.local', password: 'mot-de-passe-de-test-long', name: 'Visiteur Test' },
+  /** Propriétaire déjà validé d'ATELIER TEST : le seul à pouvoir l'éditer dans le Studio. */
+  proprietaire: { email: 'proprietaire@test.local', password: 'mot-de-passe-proprio-long', name: 'Propriétaire Test' },
+  /** Le compte que le parcours d'inscription crée ; il n'existe pas avant. */
+  inscrit: { email: 'nouveau@test.local', password: 'mot-de-passe-nouveau-long', name: 'Camille Nouveau', companyName: 'Atelier Test SAS' },
   admin: { email: 'admin@test.local', password: 'mot-de-passe-admin-long', name: 'Admin Test' },
 } as const;
