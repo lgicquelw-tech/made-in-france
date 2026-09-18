@@ -1402,3 +1402,32 @@ Les 24 autres non géolocalisées portent une région, un département ou « Fra
 colonne Ville : la liste classée est dans l'entrée précédente.
 
 **Commit.** `donnees: six communes corrigees a la source, 875 marques placees`
+
+### 2026-09-18 · Le pied de page disait « 5000+ produits » sur toutes les pages
+
+**Ce qui était écrit en dur**, dans un composant affiché sur chaque page publique :
+« 900+ marques », « 5000+ produits », « 18 régions » — pendant que la base servait 899,
+35 137 et 20. Et plus bas, **une adresse de contact et un siège** : `contact@madeinfrance.fr`,
+« Paris, France » — alors que les mentions légales, sur la même page, disaient « à
+renseigner ». Le domaine n'est même pas acquis (T7.6). La landing B2B répétait l'adresse.
+
+**Correction.** `lib/chiffres.ts` compte en base — marques publiques, leurs produits actifs,
+régions occupées — avec un cache d'une heure (`unstable_cache`) ; le `RootLayout` (serveur)
+passe le résultat au pied de page (client). Sans base : pas de compteurs, **jamais un
+chiffre inventé**. Le type et le formatage vivent dans `chiffres-format.ts`, séparé, pour
+que Prisma ne finisse pas dans le paquet du navigateur.
+
+Le contact lit `content/editeur.ts` : e-mail renseigné → affiché ; sinon « Nous écrire » →
+`/contact`. L'adresse n'apparaît que si elle existe.
+
+| Vérification | Résultat |
+|---|---|
+| Pied de page rendu | **899** marques françaises · **35 137** produits référencés · **20** régions couvertes |
+| `grep contact@madeinfrance.fr` dans les pages | 0 (hors placeholders de formulaires) |
+| Test d'intégration `compter` | marque suspendue, produit brouillon, région vide : **non comptés** |
+| `pnpm test:integration` / `pnpm test:e2e` | **77** (+1) / 35 |
+
+**Une donnée de `CLAUDE.md` était périmée** : « 13 régions ». La base en a **20** depuis
+l'outre-mer (T4), toutes occupées par au moins une marque publique. Corrigé.
+
+**Commit.** `pied de page: des chiffres lus en base, un contact qui n'invente rien`

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { Heart, ArrowUpRight, Mail, MapPin, Phone } from 'lucide-react';
+import { formaterNombre, type Chiffres } from '@/lib/chiffres-format';
+import { EDITEUR } from '@/content/editeur';
 
 const footerLinks = {
   decouvrir: {
@@ -38,13 +40,16 @@ const footerLinks = {
   },
 };
 
-const stats = [
-  { value: '900+', label: 'Marques françaises' },
-  { value: '5000+', label: 'Produits référencés' },
-  { value: '18', label: 'Régions couvertes' },
-];
+export function Footer({ chiffres }: { chiffres: Chiffres | null }) {
+  // Rien d'écrit en dur : sans base, pas de compteurs — jamais un chiffre inventé.
+  const stats = chiffres
+    ? [
+        { value: formaterNombre(chiffres.marques), label: 'Marques françaises' },
+        { value: formaterNombre(chiffres.produits), label: 'Produits référencés' },
+        { value: formaterNombre(chiffres.regions), label: 'Régions couvertes' },
+      ]
+    : null;
 
-export function Footer() {
   return (
     <footer className="relative overflow-hidden">
       {/* Gradient background */}
@@ -57,14 +62,16 @@ export function Footer() {
 
       <div className="relative container py-16 md:py-20">
         {/* Stats bar */}
-        <div className="grid grid-cols-3 gap-4 md:gap-8 mb-16 p-6 md:p-8 bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-100 shadow-soft">
-          {stats.map((stat, index) => (
-            <div key={index} className="text-center">
-              <div className="text-2xl md:text-4xl font-bold text-france-blue mb-1">{stat.value}</div>
-              <div className="text-xs md:text-sm text-gray-500 font-medium">{stat.label}</div>
-            </div>
-          ))}
-        </div>
+        {stats && (
+          <div className="grid grid-cols-3 gap-4 md:gap-8 mb-16 p-6 md:p-8 bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-100 shadow-soft">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-2xl md:text-4xl font-bold text-france-blue mb-1">{stat.value}</div>
+                <div className="text-xs md:text-sm text-gray-500 font-medium">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Main footer content */}
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-6 mb-16">
@@ -92,20 +99,24 @@ export function Footer() {
               La plateforme de référence pour découvrir et soutenir les marques et produits fabriqués en France.
             </p>
 
-            {/* Contact info */}
+            {/* Contact : l'identité de l'éditeur, jamais une adresse plausible écrite ici.
+                « contact@madeinfrance.fr » et « Paris, France » s'affichaient alors que les
+                mentions légales disaient « à renseigner » — sur la même page. */}
             <div className="space-y-3">
-              <a href="mailto:contact@madeinfrance.fr" className="flex items-center gap-3 text-sm text-gray-500 hover:text-france-blue transition-colors group">
+              <Link href={EDITEUR.email ? `mailto:${EDITEUR.email}` : '/contact'} className="flex items-center gap-3 text-sm text-gray-500 hover:text-france-blue transition-colors group">
                 <div className="w-8 h-8 rounded-lg bg-france-blue/5 flex items-center justify-center group-hover:bg-france-blue/10 transition-colors">
                   <Mail className="w-4 h-4 text-france-blue" />
                 </div>
-                contact@madeinfrance.fr
-              </a>
-              <div className="flex items-center gap-3 text-sm text-gray-500">
-                <div className="w-8 h-8 rounded-lg bg-france-blue/5 flex items-center justify-center">
-                  <MapPin className="w-4 h-4 text-france-blue" />
+                {EDITEUR.email ?? 'Nous écrire'}
+              </Link>
+              {EDITEUR.adresse && (
+                <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <div className="w-8 h-8 rounded-lg bg-france-blue/5 flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-france-blue" />
+                  </div>
+                  {EDITEUR.adresse}
                 </div>
-                Paris, France
-              </div>
+              )}
             </div>
           </div>
 

@@ -5,6 +5,7 @@ import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { Providers } from './providers';
 import LayoutWrapper from '@/components/layout/LayoutWrapper';
+import { lireChiffres } from '@/lib/chiffres';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -76,16 +77,20 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Les compteurs du pied de page viennent de la base (cache d'une heure), plus jamais
+  // d'une constante : « 5000+ produits » s'affichait pendant que la base en servait 35 000.
+  const chiffres = await lireChiffres();
+
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
-          <LayoutWrapper>{children}</LayoutWrapper>
+          <LayoutWrapper chiffres={chiffres}>{children}</LayoutWrapper>
         </Providers>
       </body>
     </html>

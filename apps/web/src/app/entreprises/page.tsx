@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { EDITEUR } from '@/content/editeur';
 import {
   Building2,
   TrendingUp,
@@ -290,10 +291,12 @@ export default function EntreprisesPage() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <p className="text-gray-600 mb-4">
-            Des questions ? Contactez-nous à{' '}
-            <a href="mailto:contact@madeinfrance.fr" className="text-blue-600 hover:underline">
-              contact@madeinfrance.fr
-            </a>
+            Des questions ?{' '}
+            {EDITEUR.email ? (
+              <a href={`mailto:${EDITEUR.email}`} className="text-blue-600 hover:underline">{EDITEUR.email}</a>
+            ) : (
+              <Link href="/contact" className="text-blue-600 hover:underline">Écrivez-nous</Link>
+            )}
           </p>
         </div>
       </section>

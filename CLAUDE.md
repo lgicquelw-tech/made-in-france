@@ -153,7 +153,7 @@ pnpm data:enrich --appliquer         # appels factures — uniquement sur decisi
 pnpm test                            # Vitest, tout le monorepo : 159 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 76 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:integration                # 77 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
 pnpm test:e2e                        # 35 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
@@ -184,7 +184,7 @@ silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
 
 **La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
 perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). Elle contient
-aujourd'hui 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
+aujourd'hui 20 régions (dont l'outre-mer), 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
 **903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`, dont **899 validées** le 18 septembre 2026 par `pnpm data:publish:brands`), **38 770 produits** pour 392 marques, collectés le 17 septembre 2026 par les scrapers (35 166 publiés par `pnpm data:publish`), et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
 
 ⚠️ **Les liens `.env` sont ignorés par git** : `apps/api/.env`, `apps/web/.env` et tout
@@ -241,7 +241,7 @@ chemins commençant par `../`.
 | Limitation de débit | En place depuis le 1er septembre 2026 : `express-rate-limit` côté API, `lib/rate-limit.ts` côté web. **Compteurs en mémoire du processus** — ils ne tiennent pas sur plusieurs instances. À reprendre au déploiement. Toute nouvelle route coûteuse (modèle payant, stockage, envoi d'e-mail) doit en poser un. |
 | Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné. |
 | Appels depuis le front | **URL relative** (`/api/...`), toujours. Il n'y a plus d'autre origine. |
-| Données inventées | Six pages d'administration fabriquaient leurs chiffres — la dernière, `/admin/studios`, jusqu'au 18 septembre 2026 : six marques réelles avec des noms de dirigeants et des adresses e-mail, plus 902/5/52/127 en dur. quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
+| Données inventées | Six pages d'administration fabriquaient leurs chiffres, et le **pied de page** de toutes les pages publiques affichait « 5000+ produits », « 18 régions » et une adresse de contact que personne n'avait ouverte (`lib/chiffres.ts` et `content/editeur.ts` depuis le 18 septembre 2026) — la dernière, `/admin/studios`, jusqu'au 18 septembre 2026 : six marques réelles avec des noms de dirigeants et des adresses e-mail, plus 902/5/52/127 en dur. quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | **Routes d'API figées au build** | Un Route Handler `GET` qui ne lit pas la requête est **prérendu au build** et sert à jamais l'état de la base de ce moment. La carte a servi `[]` en CI pour cette raison (17 septembre 2026). Chaque `route.ts` sous `app/api/` porte `export const dynamic = 'force-dynamic'` ; toute nouvelle route aussi. Et `route()` **relance** les signaux internes de Next (`DYNAMIC_SERVER_USAGE`, `NEXT_*`) au lieu de les convertir en 500. |
 | `next build` et `next dev` partagent `.next/` | Lancer un build pendant que le serveur dev tourne écrase ses chunks : la page rend en HTML nu, les scripts répondent 500. Arrêter le dev, ou `rm -rf apps/web/.next` puis relancer. |
 | Build contre une vraie base | `next build` prérend ~1 000 pages en parallèle, chaque worker avec son pool Prisma : un PostgreSQL local (100 connexions) sature. Borner : `DATABASE_URL="...&connection_limit=5"` pour le build. |
