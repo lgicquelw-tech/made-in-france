@@ -2,7 +2,7 @@
 
 > Contexte permanent pour Claude Code. Lis ce fichier avant toute action.
 > Le plan de travail détaillé est dans `REBUILD.md`.
-> Dernière vérification du contenu de ce fichier contre le code : **1er septembre 2026**.
+> Dernière vérification du contenu de ce fichier contre le code : **18 septembre 2026**.
 
 ---
 
@@ -66,7 +66,7 @@ les lise comme une source.
 | IA | Anthropic SDK **0.125.0**. Chat : `claude-haiku-4-5` par défaut, réglable dans l'admin (Haiku 4.5, Sonnet 5, Opus 5). Enrichissement produit `pnpm data:enrich` (T5.7), qui **n'envoie rien sans `--appliquer`**. Plus aucun chemin OpenAI. |
 | Images | Cloudinary |
 | Cartes | Mapbox GL JS |
-| Paiement | Stripe (API `2024-12-18.acacia`) |
+| Paiement | Stripe (API `2025-12-15.clover`, figée dans `lib/stripe.ts`) |
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, OpenAI, Apple OAuth, PostHog, Resend.
@@ -79,28 +79,31 @@ les lise comme une source.
 ```
 made-in-france/
 ├── apps/
-│   ├── web/                      # Next.js — 45 pages, dont 42 en 'use client'
-│   │   ├── middleware.ts         # ne protège RIEN, pose juste un header x-pathname
-│   │   └── src/
-│   │       ├── app/
-│   │       │   ├── admin/        # back-office (10 pages)
-│   │       │   ├── studio/       # espace marque B2B  ← LE canonique
-│   │       │   ├── entreprises/  # landing marketing B2B UNIQUEMENT (plus d'inscription)
-│   │       │   ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
-│   │       │   ├── admin/labels/ # fonctionnalité labels (absente de la copie locale de janvier)
-│   │       │   ├── api/auth/[...nextauth]/route.ts
-│   │       │   ├── api/admin/**                     # administration, derrière requireAdmin
-│   │       │   ├── api/v1/**                        # lectures publiques, Studio (requireBrandOwner), /me/*, chat, webhook Stripe
-│   │       │   └── api/v1/chat/route.ts             # le chat : lib/chat/{outils,conversation}.ts
-│   │       ├── components/       # header, footer, home/*, ui/*, ChatBot
-│   │       ├── hooks/  lib/api.ts  styles/
+│   └── web/                      # Next.js — 50 pages, dont 31 en 'use client' (admin, studio, formulaires)
+│       └── src/
+│           ├── middleware.ts     # pose x-pathname et ferme /admin, /studio, /profil, /favoris aux anonymes
+│           ├── app/
+│           │   ├── admin/        # back-office (15 sections, dont revendications/)
+│           │   ├── studio/       # espace marque B2B  ← LE canonique
+│           │   ├── entreprises/  # landing marketing B2B UNIQUEMENT (plus d'inscription)
+│           │   ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
+│           │   ├── mentions-legales/ cgu/ confidentialite/ contact/   # T7.5
+│           │   ├── api/auth/[...nextauth]/route.ts
+│           │   ├── api/admin/**                     # administration, derrière requireAdmin (claims/, studios/, audit/…)
+│           │   ├── api/v1/**                        # lectures publiques, Studio (requireBrandOwner), /me/*, chat, feed, plans, webhook Stripe
+│           │   └── api/v1/chat/route.ts             # le chat : lib/chat/{outils,conversation}.ts
+│           ├── components/       # layout/ (header, footer), juridique/, ui/, produit-card, image-produit, ChatBot
+│           ├── content/editeur.ts  # identité de l'éditeur — null tant que non renseignée
+│           ├── lib/              # guards, audit, search, catalogue-public, feed, signaux, marque-publique, revalidation, connexion…
+│           ├── hooks/  styles/
+│           └── e2e/  src/test/   # Playwright, Vitest (unitaire + intégration)
 ├── packages/
-│   ├── database/prisma/schema.prisma   # 840 lignes, 33 modèles
+│   └── database/prisma/schema.prisma   # 933 lignes, 34 modèles (+ AuditLog, LinkCheck)
 ├── scripts/                      # paquet @mif/scripts — DOIT rester dans pnpm-workspace.yaml
-│   └── shared/                   # types + constantes partagés
-├── scripts/                      # imports, scrapers, enrichissement, stats
+│   ├── audit/ links/ publish/ brands/ catalogue/ enrich/ import/   # qualité des données (phase 5)
+│   └── shopify-scraper.ts woocommerce-scraper.ts create-admin.ts
 ├── data/brands.xlsx              # 996 lignes (source des marques)
-└── docker-compose.yml            # postgres, redis, meilisearch, minio, mailhog
+└── docker-compose.yml            # conservé, inutilisable ici (Docker absent)
 ```
 
 ---
@@ -108,8 +111,7 @@ made-in-france/
 ## Commandes
 
 ```bash
-# Base (préférer Docker à brew services)
-docker compose up -d postgres
+# Base — Docker est absent de cette machine : voir « Démarrer PostgreSQL » plus bas
 
 # Développement
 pnpm dev                  # web sur :3000 (il n'y a plus d'API separee)
@@ -122,7 +124,7 @@ npx prisma migrate dev --schema=./packages/database/prisma/schema.prisma
 
 # Vérifications
 pnpm typecheck            # PASSE sur les 6 tâches du monorepo. Le garder au vert.
-pnpm build                # PASSE depuis le 10 septembre 2026 : 991 pages generees.
+pnpm build                # PASSE depuis le 10 septembre 2026 (~1 000 pages) ; verifie a chaque CI.
                           # Il ECHOUAIT depuis fevrier — le mode dev ne le signale pas.
                           # A lancer avant toute affirmation sur la mise en ligne.
 pnpm lint                 # 6 paquets, 0 erreur attendue. Fonctionne depuis le 16 septembre 2026 (aucune config n'existait avant).
@@ -150,7 +152,7 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 159 tests
+pnpm test                            # Vitest, tout le monorepo : 165 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
 pnpm test:integration                # 77 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
@@ -211,7 +213,7 @@ chemins commençant par `../`.
 
 7. **Aucun nouveau fichier au-delà de ~300 lignes.** Le monolithe actuel est la cause n°1 des régressions ; ne pas le reproduire.
 8. **Avant de créer une page, un composant ou une route, vérifier qu'un équivalent n'existe pas déjà.** Le projet contient déjà trois espaces B2B concurrents parce que cette règle n'existait pas. Un `grep` de 10 secondes évite un doublon d'une semaine.
-9. **`/studio` est le seul espace marque.** `/espace-marque` a été supprimé le 1er septembre 2026 ; `/entreprises` est une landing marketing sans inscription. Ne pas recréer de troisième variante. ⚠️ `/connexion-pro` coexiste toujours avec `/studio/connexion` : doublon restant, à trancher en phase 3.
+9. **`/studio` est le seul espace marque.** `/espace-marque` a été supprimé le 1er septembre 2026 ; `/entreprises` est une landing marketing sans inscription. Ne pas recréer de troisième variante. ⚠️ `/connexion-pro` coexiste toujours avec `/studio/connexion` : doublon restant, **décision du propriétaire** (une redirection suffirait).
 10. **Tout appel d'API est relatif** (`/api/...`). Il n'y a plus d'URL d'API : `lib/api.ts`, `NEXT_PUBLIC_API_URL` et le port 4000 ont disparu avec Express le 17 septembre 2026. Ne pas les réintroduire.
 
 ### Frontend
@@ -238,10 +240,10 @@ chemins commençant par `../`.
 | Dépôt public | `github.com/lgicquelw-tech/made-in-france` est **public**. Tout commit est immédiatement visible. Vérifier avant chaque push. |
 | Identité | Un seul modèle : `User`, avec `role` (`USER`/`ADMIN`/`SUPER_ADMIN`) et `isActive`. `AdminUser` n'existe plus. L'autorisation passe par `apps/web/src/lib/guards.ts`, qui **relit le rôle en base** — jamais depuis le jeton seul. |
 | `useSearchParams()` | Impose une frontière `Suspense` dès qu'une page est prérendue, sinon `next build` échoue. Le mode développement ne dit rien. C'est ce qui rendait le projet non constructible. |
-| Limitation de débit | En place depuis le 1er septembre 2026 : `express-rate-limit` côté API, `lib/rate-limit.ts` côté web. **Compteurs en mémoire du processus** — ils ne tiennent pas sur plusieurs instances. À reprendre au déploiement. Toute nouvelle route coûteuse (modèle payant, stockage, envoi d'e-mail) doit en poser un. |
-| Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné. |
+| Limitation de débit | En place depuis le 1er septembre 2026 : `lib/rate-limit.ts` (Express n'existe plus). **Compteurs en mémoire du processus** — ils ne tiennent pas sur plusieurs instances. À reprendre au déploiement. Toute nouvelle route coûteuse (modèle payant, stockage, envoi d'e-mail) doit en poser un. |
+| Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné ; il a été supprimé. |
 | Appels depuis le front | **URL relative** (`/api/...`), toujours. Il n'y a plus d'autre origine. |
-| Données inventées | Six pages d'administration fabriquaient leurs chiffres, et le **pied de page** de toutes les pages publiques affichait « 5000+ produits », « 18 régions » et une adresse de contact que personne n'avait ouverte (`lib/chiffres.ts` et `content/editeur.ts` depuis le 18 septembre 2026) — la dernière, `/admin/studios`, jusqu'au 18 septembre 2026 : six marques réelles avec des noms de dirigeants et des adresses e-mail, plus 902/5/52/127 en dur. quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
+| Données inventées | Six pages d'administration fabriquaient leurs chiffres quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…) — la dernière, `/admin/studios`, jusqu'au 18 septembre 2026 : six marques réelles avec des noms de dirigeants et des adresses e-mail, plus 902/5/52/127 en dur. Et le **pied de page** de toutes les pages publiques affichait « 5000+ produits », « 18 régions » et une adresse de contact que personne n'avait ouverte — remplacés par `lib/chiffres.ts` et `content/editeur.ts`. Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | **Routes d'API figées au build** | Un Route Handler `GET` qui ne lit pas la requête est **prérendu au build** et sert à jamais l'état de la base de ce moment. La carte a servi `[]` en CI pour cette raison (17 septembre 2026). Chaque `route.ts` sous `app/api/` porte `export const dynamic = 'force-dynamic'` ; toute nouvelle route aussi. Et `route()` **relance** les signaux internes de Next (`DYNAMIC_SERVER_USAGE`, `NEXT_*`) au lieu de les convertir en 500. |
 | `next build` et `next dev` partagent `.next/` | Lancer un build pendant que le serveur dev tourne écrase ses chunks : la page rend en HTML nu, les scripts répondent 500. Arrêter le dev, ou `rm -rf apps/web/.next` puis relancer. |
 | Build contre une vraie base | `next build` prérend ~1 000 pages en parallèle, chaque worker avec son pool Prisma : un PostgreSQL local (100 connexions) sature. Borner : `DATABASE_URL="...&connection_limit=5"` pour le build. |
@@ -270,7 +272,7 @@ chemins commençant par `../`.
 | Noms de marque numériques | `909`, `1083`, `1336` sont de vraies marques. XLSX lit leur nom comme un **nombre** : toute validation en `typeof === 'string'` les rejette silencieusement. |
 | `scripts/` | Est un paquet du workspace (`@mif/scripts`) avec ses propres dépendances. Il doit rester listé dans `pnpm-workspace.yaml`, sinon `pnpm install` l'ignore et aucun script ne fonctionne. |
 | Champs `snake_case` | Les requêtes SQL brutes utilisent les noms de colonnes (`description_short`, `image_url`, `brand_id`), pas les noms Prisma |
-| `.env` | `apps/api/.env` et `apps/web/.env` sont des **liens symboliques** vers le `.env` racine. Les vrais fichiers sont : `.env` (racine, 34 clés) et `apps/web/.env.local` (9 clés NextAuth). Ils ne sont pas dupliqués. |
+| `.env` | Un seul vrai fichier : `.env` à la racine (plus `apps/web/.env.local` pour NextAuth). `apps/web/.env` est un lien symbolique ignoré par git ; `apps/api/` n'existe plus. Toutes les commandes tournent depuis la racine. |
 | Chat | `lib/chat/outils.ts` + `conversation.ts`. Modèle et prompt viennent de `site_settings` (`ai_settings`), la **clé** uniquement de `ANTHROPIC_API_KEY`. Tous les `tool_use` d'un tour reçoivent leur `tool_result` dans **un seul** message — l'ancienne boucle n'en traitait qu'un, et l'API refusait le tour suivant. La température n'est envoyée qu'à Haiku (400 sur Sonnet 5 / Opus 5). |
 
 ---

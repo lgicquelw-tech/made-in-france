@@ -42,16 +42,20 @@ Resend. `pgvector` n'est pas installé : il n'y a pas de recherche sémantique.
 ```
 made-in-france/
 ├── apps/
-│   ├── web/                    # Next.js — 45 pages
-│   │   ├── middleware.ts       # ne protège rien, pose un header x-pathname
-│   │   └── src/app/
-│   │       ├── admin/          # back-office
-│   │       ├── studio/         # espace marque B2B — LE seul
-│   │       ├── entreprises/    # landing marketing B2B (sans inscription)
-│   │       ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
-│   │       └── api/                # toutes les routes : admin, v1 (public, Studio, /me, chat, Stripe)
+│   └── web/                    # Next.js — 50 pages
+│       └── src/
+│           ├── middleware.ts   # ferme /admin, /studio, /profil, /favoris aux anonymes
+│           ├── app/
+│           │   ├── admin/      # back-office, dont l'examen des revendications
+│           │   ├── studio/     # espace marque B2B — LE seul
+│           │   ├── entreprises/  # landing marketing B2B (sans inscription)
+│           │   ├── marques/ produits/ secteurs/ regions/ carte/ recherche/
+│           │   ├── mentions-legales/ cgu/ confidentialite/ contact/
+│           │   └── api/        # toutes les routes : admin, v1 (public, Studio, /me, chat, feed, Stripe)
+│           ├── content/editeur.ts  # identité de l'éditeur — à renseigner avant la mise en ligne
+│           └── lib/            # gardes, audit, recherche, fil, statut public des marques…
 ├── packages/
-│   ├── database/               # schema.prisma — 33 modèles, migrations
+│   ├── database/               # schema.prisma — 34 modèles, migrations
 │   └── shared/                 # types et constantes partagés
 ├── scripts/                    # imports, scrapers, enrichissement, statistiques
 │   ├── audit/                  # pnpm data:audit — qualité des données, lecture seule
@@ -142,9 +146,9 @@ divergé en janvier 2026, faisant perdre trois tables. Uniquement `prisma migrat
 Deux fichiers réels, tous deux ignorés par git :
 
 - **`.env`** à la racine — base de données, services, clés serveur. Toutes les commandes
-  `db:*` tournent depuis la racine pour le lire directement. `apps/api/.env` et
-  `apps/web/.env` sont des liens symboliques vers lui : pratiques, mais **ignorés par
-  git**, donc absents d'un clone neuf. Ne rien faire qui en dépende.
+  `db:*` tournent depuis la racine pour le lire directement. `apps/web/.env` est un lien
+  symbolique vers lui : pratique, mais **ignoré par git**, donc absent d'un clone neuf.
+  Ne rien faire qui en dépende.
 - **`apps/web/.env.local`** — NextAuth (`NEXTAUTH_SECRET`, OAuth Google, SMTP).
 
 `.env.example` liste toutes les clés attendues, sans aucune valeur.
