@@ -1253,3 +1253,51 @@ aurait fallu créer un administrateur avec un mot de passe inventé pour prendre
 d'écran. Le parcours navigateur fait mieux, et il tourne en CI.
 
 **Commit.** `T8.1 : l'examen humain des revendications, et les dernieres donnees inventees`
+
+### 2026-09-18 · Les 902 marques en attente : décision prise, et un statut qui veut enfin dire quelque chose
+
+**La décision du propriétaire** (« valide ») : valider **en bloc** les marques du fichier
+source qui passent tous les contrôles bloquants de l'audit. Ce n'est pas la complétude qui
+remplace l'éditorial — c'est l'éditorial qui constate que ces 903 fiches, choisies une à une
+dans `data/brands.xlsx`, n'ont pas besoin d'un second examen pour être montrées.
+
+**`pnpm data:publish:brands`** (`scripts/publish/marques-policy.ts` + `marques.ts`, 4 tests) :
+simulation d'abord, puis exécution. **899 validées**, une ligne d'audit `brand.publish`
+chacune, avec le motif de la décision. Ne touche jamais un `ACTIVE`, `SUSPENDED`, `REJECTED`
+ou `DRAFT` : ce sont des décisions, pas des états d'attente. Relancée : 0 validée.
+
+**Restent 4 en attente, et on sait pourquoi :**
+
+| Marque | Ce qui manque |
+|---|---|
+| NANNETTA, RECYCLED BY LISA, WIA | pas de région (Monaco, « (Boutique en ligne) », ville vide) |
+| OBSTINNÉE | description de 38 caractères — « Bijoux fantaisie graphiques et colorés. » |
+
+**La moitié qui manquait.** Un statut ne vaut que si quelque chose le lit. Depuis février,
+**aucune** lecture publique ne filtrait sur `status` — c'était cohérent quand 902 marques sur
+903 étaient en attente, ce serait absurde maintenant. `lib/marque-publique.ts` porte la règle
+en deux formes (Prisma et SQL), appliquée à **onze** endroits : annuaire, recherche, fil de
+l'accueil, carte, marque au hasard, secteurs, régions, outre-mer, accueil, sitemap, assistant.
+
+Une nuance qui compte : une fiche **en attente reste joignable** par son adresse et par la
+recherche de revendication — elle existe, elle n'est simplement pas mise en avant, sans quoi
+son propriétaire ne pourrait jamais la réclamer. Une fiche **suspendue ou refusée** répond
+404 : elle n'existe plus pour le public.
+
+| Vérification | Avant | Après |
+|---|---|---|
+| `/api/v1/brands` | 903 | **899** |
+| Carte | 868 | **867** |
+| Fil de l'accueil | 35 166 produits | **35 137** (29 appartenaient aux 4 marques en attente) |
+| `/marques/nannetta` (en attente) | 200 | **200** — joignable |
+| La même, passée `SUSPENDED` | 200 | **404** |
+| Annuaire à l'écran | « 903 marques » | « **899 marques françaises référencées** » |
+
+**Tests.** 84 unitaires côté scripts (+4), **76** d'intégration (+4 : annuaire/recherche/carte
+sur `ACTIVE` seulement, marque au hasard qui préfère 404 à une fiche non publique, fiche en
+attente toujours revendicable et visible par son propriétaire, assistant aveugle à une marque
+suspendue), 35 parcours. Deux assertions **disaient l'ancien monde** et ont changé avec lui :
+« aucun filtre de statut : le chat voit ce que le site montre » et « sans filtre : pas de
+WHERE ». Elles étaient justes hier, elles auraient été fausses demain.
+
+**Commit.** `marques: 899 validees en bloc, et un statut que les lectures publiques respectent`

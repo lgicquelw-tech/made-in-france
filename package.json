@@ -35,6 +35,7 @@
     "data:links": "tsx --env-file=.env scripts/links/run.ts",
     "test:scripts": "pnpm --filter @mif/scripts test",
     "data:publish": "tsx --env-file=.env scripts/publish/run.ts",
+    "data:publish:brands": "tsx --env-file=.env scripts/publish/marques.ts",
     "data:geocode": "tsx --env-file=.env scripts/brands/geocode.ts",
     "data:enrich": "tsx --env-file=.env scripts/enrich/run.ts",
     "test:integration": "pnpm --filter @mif/web test:integration"

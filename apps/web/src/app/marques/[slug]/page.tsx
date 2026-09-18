@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
 import { JsonLd, breadcrumbList } from '@/lib/json-ld';
 import BrandDetail, { type Brand, type BrandProduct, type SimilarBrand } from './brand-detail';
+import { OU_MARQUE_ACCESSIBLE, OU_MARQUE_PUBLIQUE } from '@/lib/marque-publique';
 
 /**
  * Fiche marque — **Server Component** (REBUILD.md T4.2, T4.7, T4.8, T4.9, T4.11).
@@ -25,8 +26,9 @@ export const revalidate = 3600;
 export const dynamicParams = true;
 
 async function getBrand(slug: string) {
-  return prisma.brand.findUnique({
-    where: { slug },
+  // `findFirst` : une fiche suspendue ou refusée n'existe plus pour le public (404).
+  return prisma.brand.findFirst({
+    where: { slug, ...OU_MARQUE_ACCESSIBLE },
     include: {
       region: { select: { id: true, name: true, slug: true } },
       sector: { select: { id: true, name: true, slug: true, color: true } },
@@ -36,7 +38,7 @@ async function getBrand(slug: string) {
 }
 
 export async function generateStaticParams() {
-  const brands = await prisma.brand.findMany({ select: { slug: true } });
+  const brands = await prisma.brand.findMany({ where: OU_MARQUE_PUBLIQUE, select: { slug: true } });
   return brands.map((brand) => ({ slug: brand.slug }));
 }
 
@@ -103,7 +105,7 @@ export default async function BrandPage({ params }: { params: { slug: string } }
     }),
     brand.sectorId
       ? prisma.brand.findMany({
-          where: { sectorId: brand.sectorId, id: { not: brand.id } },
+          where: { ...OU_MARQUE_PUBLIQUE, sectorId: brand.sectorId, id: { not: brand.id } },
           take: 3,
           select: {
             id: true,

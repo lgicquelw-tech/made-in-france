@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { OU_MARQUE_PUBLIQUE } from '@/lib/marque-publique';
 
 /**
  * Plan du site (REBUILD.md T4.12).
@@ -24,11 +25,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
 
   const [brands, products, sectors, regions] = await Promise.all([
-    // On liste ce que le site sert réellement. ⚠️ 902 marques sur 903 sont en
-    // `PENDING_REVIEW` et pourtant publiques : c'est l'incohérence signalée en
-    // phase 5. Le jour où la liste publique filtrera sur `ACTIVE`, ce filtre
-    // devra suivre — sinon le sitemap annoncera des pages introuvables.
-    prisma.brand.findMany({ select: { slug: true, updatedAt: true }, orderBy: { name: 'asc' } }),
+    // On liste ce que le site met en avant : les marques publiques (validées en bloc le
+    // 18 septembre 2026), comme l'annuaire.
+    prisma.brand.findMany({ where: OU_MARQUE_PUBLIQUE, select: { slug: true, updatedAt: true }, orderBy: { name: 'asc' } }),
     prisma.product.findMany({
       where: { status: 'ACTIVE' },
       select: { slug: true, updatedAt: true },

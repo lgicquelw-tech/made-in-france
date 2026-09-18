@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { sansAccents } from '@/lib/search';
+import { SQL_MARQUE_PUBLIQUE } from '../marque-publique';
 
 /**
  * Les deux outils du chat : chercher des produits, chercher des marques
@@ -75,7 +76,7 @@ const secteurPropre = (s: unknown): string | null =>
 
 export function construireRechercheProduits(p: ParamsProduits): Prisma.Sql {
   const conditions: Prisma.Sql[] = [
-    Prisma.sql`p.status = 'ACTIVE'`, Prisma.sql`p.price_min > 0`, Prisma.sql`p.image_url IS NOT NULL`,
+    Prisma.sql`p.status = 'ACTIVE'`, SQL_MARQUE_PUBLIQUE, Prisma.sql`p.price_min > 0`, Prisma.sql`p.image_url IS NOT NULL`,
   ];
   const secteur = secteurPropre(p.sector);
   if (secteur) conditions.push(Prisma.sql`s.name = ${secteur}`);
@@ -115,7 +116,10 @@ export function construireRechercheMarques(p: ParamsMarques): Prisma.Sql {
         OR EXISTS (SELECT 1 FROM products p WHERE p.brand_id = b.id AND p.status = 'ACTIVE' AND unaccent(p.name) ILIKE ${like}))`;
     }), ' OR ')})`);
   }
-  const where = conditions.length ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}` : Prisma.empty;
+  // Le filtre `b.status = 'ACTIVE'` avait été retiré quand 1 marque sur 903 l'était (T3.7) ;
+  // depuis la validation en bloc du 18 septembre 2026, il dit ce qu'il doit dire.
+  conditions.push(SQL_MARQUE_PUBLIQUE);
+  const where = Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
   const premier = `%${mots[0] ?? ''}%`;
   return Prisma.sql`
     SELECT b.id, b.name, b.slug, b.description_short, b.logo_url, b.website_url, b.city, b.year_founded,

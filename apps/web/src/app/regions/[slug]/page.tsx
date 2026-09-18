@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
 import { JsonLd, breadcrumbList, itemList } from '@/lib/json-ld';
 import RegionDetail, { type Brand, type Pagination } from './region-detail';
+import { OU_MARQUE_PUBLIQUE } from '@/lib/marque-publique';
 
 /** Marques d'une région — Server Component (REBUILD.md T4.3, T4.8). */
 
@@ -30,7 +31,7 @@ export async function generateMetadata({
   const region = await getRegion(params.slug);
   if (!region) return { title: 'Région introuvable' };
 
-  const count = await prisma.brand.count({ where: { regionId: region.id } });
+  const count = await prisma.brand.count({ where: { ...OU_MARQUE_PUBLIQUE, regionId: region.id } });
   const title = `Marques de ${region.name}`;
   const description = `${count} marque${count > 1 ? 's' : ''} française${count > 1 ? 's' : ''} fabriquant en ${region.name}.`;
   const url = `${siteUrl()}/regions/${region.slug}`;
@@ -58,7 +59,7 @@ export default async function RegionPage({ params }: { params: { slug: string } 
 
   const [rows, total] = await Promise.all([
     prisma.brand.findMany({
-      where: { regionId: region.id },
+      where: { ...OU_MARQUE_PUBLIQUE, regionId: region.id },
       take: PAGE_SIZE,
       orderBy: { name: 'asc' },
       select: {
@@ -73,7 +74,7 @@ export default async function RegionPage({ params }: { params: { slug: string } 
         sector: { select: { name: true, color: true } },
       },
     }),
-    prisma.brand.count({ where: { regionId: region.id } }),
+    prisma.brand.count({ where: { ...OU_MARQUE_PUBLIQUE, regionId: region.id } }),
   ]);
 
   const initialBrands = rows.map((row) => ({

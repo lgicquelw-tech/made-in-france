@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
+import { OU_MARQUE_ACCESSIBLE } from '@/lib/marque-publique';
 
 /**
  * Métadonnées de la liste de produits d'une marque (REBUILD.md T4.8).
@@ -14,8 +15,8 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const brand = await prisma.brand.findUnique({
-    where: { slug: params.slug },
+  const brand = await prisma.brand.findFirst({
+    where: { slug: params.slug, ...OU_MARQUE_ACCESSIBLE },
     select: { name: true, slug: true, _count: { select: { products: true } } },
   });
   if (!brand) return { title: 'Marque introuvable' };

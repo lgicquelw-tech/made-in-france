@@ -53,9 +53,10 @@ describe('construireListeMarques', () => {
       expect(r.values.some((v) => String(v).includes('DROP'))).toBe(true);
     }
   });
-  test('sans filtre : pas de WHERE, tri par nom', () => {
-    const { liste } = construireListeMarques(parametresMarques.parse({}));
-    expect(liste.sql).not.toContain('WHERE');
+  test('sans filtre : seules les marques publiques, tri par nom', () => {
+    const { liste, compte } = construireListeMarques(parametresMarques.parse({}));
+    expect(liste.sql).toContain("WHERE b.status = 'ACTIVE'");
+    expect(compte.sql).toContain("b.status = 'ACTIVE'");
     expect(liste.sql).toContain('ORDER BY b.name ASC');
   });
   test('pagination : OFFSET calcule depuis la page', () => {
@@ -70,6 +71,8 @@ describe('construireListeProduits', () => {
     const { liste, compte } = construireListeProduits(parametresProduits.parse({}));
     expect(liste.sql).toContain("p.status = 'ACTIVE'");
     expect(compte.sql).toContain("p.status = 'ACTIVE'");
+    // Les produits d'une marque suspendue ne sont pas publics non plus.
+    expect(liste.sql).toContain("b.status = 'ACTIVE'");
   });
   test('le secteur est un parametre lie — plus jamais concatene', () => {
     const { liste } = construireListeProduits(parametresProduits.parse({ sector: 'cosmetique' }));

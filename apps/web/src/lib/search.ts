@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { SQL_MARQUE_PUBLIQUE } from './marque-publique';
 
 import { prisma } from './db';
 import type { SearchBrand, SearchProduct, SearchResults } from '@/app/recherche/search-content';
@@ -41,7 +42,7 @@ export function construireRequetes(query: string, limite: number = LIMITE): Requ
            s.name AS sector, s.slug AS "sectorSlug", s.color AS "sectorColor"
     FROM brands b
     LEFT JOIN sectors s ON b.sector_id = s.id
-    WHERE (
+    WHERE ${SQL_MARQUE_PUBLIQUE} AND (
       unaccent(b.name) ILIKE ${like}
       OR unaccent(b.description_short) ILIKE ${like}
       OR similarity(unaccent(b.name), ${plain}) > 0.3
@@ -58,7 +59,7 @@ export function construireRequetes(query: string, limite: number = LIMITE): Requ
     FROM products p
     JOIN brands b ON p.brand_id = b.id
     LEFT JOIN sectors s ON b.sector_id = s.id
-    WHERE p.status = 'ACTIVE'
+    WHERE p.status = 'ACTIVE' AND ${SQL_MARQUE_PUBLIQUE}
       AND (
         unaccent(p.name) ILIKE ${like}
         OR similarity(unaccent(p.name), ${plain}) > 0.3

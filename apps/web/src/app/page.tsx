@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
 import HomeContent, { type MarqueMiseEnAvant, type SecteurAccueil } from './home-content';
 import { lireFil, parametresFil } from '@/lib/feed';
+import { OU_MARQUE_PUBLIQUE } from '@/lib/marque-publique';
 
 /**
  * Page d'accueil — **Server Component** (REBUILD.md T4.7).
@@ -21,7 +22,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [brands, sectors] = await Promise.all([
-    prisma.brand.count(),
+    prisma.brand.count({ where: OU_MARQUE_PUBLIQUE }),
     prisma.sector.count(),
   ]);
 
@@ -49,13 +50,13 @@ export default async function HomePage() {
     // La personnalisation se fait ensuite dans le navigateur (home-feed.tsx).
     lireFil(parametresFil.parse({ limit: String(PAR_PAGE) })),
     prisma.brand.findMany({
-      where: { isFeatured: true },
+      where: { ...OU_MARQUE_PUBLIQUE, isFeatured: true },
       take: 3,
       orderBy: { updatedAt: 'desc' },
       select: { id: true, name: true, slug: true, descriptionShort: true, city: true, logoUrl: true, websiteUrl: true, sector: { select: { name: true, color: true } } },
     }),
     prisma.sector.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, slug: true, color: true, _count: { select: { brands: true } } } }),
-    prisma.brand.count(),
+    prisma.brand.count({ where: OU_MARQUE_PUBLIQUE }),
   ]);
 
   const marques: MarqueMiseEnAvant[] = featured.map((b) => ({

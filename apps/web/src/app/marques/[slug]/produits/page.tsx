@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { prisma } from '@/lib/db';
 import BrandProducts, { type Brand, type Product } from './brand-products';
+import { OU_MARQUE_ACCESSIBLE } from '@/lib/marque-publique';
 
 /**
  * Produits d'une marque — **Server Component** (REBUILD.md T4.4, T4.7).
@@ -13,8 +14,8 @@ export const revalidate = 3600;
 export const dynamicParams = true;
 
 export default async function BrandProductsPage({ params }: { params: { slug: string } }) {
-  const brand = await prisma.brand.findUnique({
-    where: { slug: params.slug },
+  const brand = await prisma.brand.findFirst({
+    where: { slug: params.slug, ...OU_MARQUE_ACCESSIBLE },
     select: { id: true, name: true, slug: true, sector: { select: { color: true } } },
   });
   // La page affichait auparavant « Marque non trouvée » avec un code 200 :

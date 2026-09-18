@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import OverseasList, { type Brand, type RegionCount } from './overseas-list';
+import { OU_MARQUE_PUBLIQUE } from '@/lib/marque-publique';
 
 /**
  * Marques d'outre-mer — **Server Component** (REBUILD.md T4.3, T4.7).
@@ -28,7 +29,7 @@ export default async function OverseasPage() {
   });
 
   const rows = await prisma.brand.findMany({
-    where: { regionId: { in: regions.map((r) => r.id) } },
+    where: { ...OU_MARQUE_PUBLIQUE, regionId: { in: regions.map((r) => r.id) } },
     orderBy: { name: 'asc' },
     select: {
       id: true,

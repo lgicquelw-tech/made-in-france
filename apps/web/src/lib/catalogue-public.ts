@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { SQL_MARQUE_PUBLIQUE } from './marque-publique';
 import { z } from 'zod';
 
 import { prisma } from './db';
@@ -65,7 +66,7 @@ function correspondance(colonne: Prisma.Sql, q: string): Prisma.Sql {
 // ------------------------------------------------------------------ marques
 
 export function construireListeMarques(p: ParametresMarques): { liste: Prisma.Sql; compte: Prisma.Sql } {
-  const filtres: Prisma.Sql[] = [];
+  const filtres: Prisma.Sql[] = [SQL_MARQUE_PUBLIQUE];
   if (p.region) filtres.push(Prisma.sql`r.slug = ${p.region}`);
   if (p.sector) filtres.push(Prisma.sql`s.slug = ${p.sector}`);
   if (p.q) {
@@ -111,7 +112,7 @@ export async function listerMarques(p: ParametresMarques): Promise<{ data: Marqu
 
 export function construireListeProduits(p: ParametresProduits): { liste: Prisma.Sql; compte: Prisma.Sql } {
   // Seuls les produits publiés — c'est du texte fixe, pas un paramètre : il ne vient pas du client.
-  const filtres: Prisma.Sql[] = [Prisma.sql`p.status = 'ACTIVE'`];
+  const filtres: Prisma.Sql[] = [Prisma.sql`p.status = 'ACTIVE'`, SQL_MARQUE_PUBLIQUE];
   if (p.sector) filtres.push(Prisma.sql`s.slug = ${p.sector}`);
   if (p.priceMin !== undefined && p.priceMin > 0) filtres.push(Prisma.sql`p.price_min >= ${p.priceMin}`);
   if (p.priceMax !== undefined && p.priceMax > 0) filtres.push(Prisma.sql`p.price_max <= ${p.priceMax}`);

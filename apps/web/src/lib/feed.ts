@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { SQL_MARQUE_PUBLIQUE } from './marque-publique';
 import { z } from 'zod';
 
 import { prisma } from './db';
@@ -51,7 +52,7 @@ export function construireFil(p: ParametresFil, jour = new Date().toISOString().
   }
   const score = Prisma.join(termes, ' + ');
   const depuis = Prisma.sql`FROM products p JOIN brands b ON p.brand_id = b.id LEFT JOIN sectors s ON b.sector_id = s.id
-    WHERE p.status = 'ACTIVE' AND p.image_url IS NOT NULL AND p.price_min > 0 AND p.buy_url_dead_at IS NULL`;
+    WHERE p.status = 'ACTIVE' AND ${SQL_MARQUE_PUBLIQUE} AND p.image_url IS NOT NULL AND p.price_min > 0 AND p.buy_url_dead_at IS NULL`;
 
   return {
     liste: Prisma.sql`

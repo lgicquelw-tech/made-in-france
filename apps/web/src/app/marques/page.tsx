@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
 import { JsonLd, breadcrumbList, itemList } from '@/lib/json-ld';
+import { OU_MARQUE_PUBLIQUE } from '@/lib/marque-publique';
 import BrandList, {
   type Brand,
   type Pagination,
@@ -34,7 +35,7 @@ export const revalidate = 3600;
 const PAGE_SIZE = 12;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const total = await prisma.brand.count();
+  const total = await prisma.brand.count({ where: OU_MARQUE_PUBLIQUE });
   const title = 'Toutes les marques';
   const description = `${total} marques françaises référencées : mode, maison, gastronomie, cosmétique, sport et plus. Trouvez qui fabrique en France, et où.`;
   const url = `${siteUrl()}/marques`;
@@ -57,6 +58,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function BrandsPage() {
   const [rows, total, regionRows, sectorRows] = await Promise.all([
     prisma.brand.findMany({
+      where: OU_MARQUE_PUBLIQUE,
       take: PAGE_SIZE,
       orderBy: { name: 'asc' },
       select: {
@@ -71,7 +73,7 @@ export default async function BrandsPage() {
         sector: { select: { name: true, slug: true, color: true } },
       },
     }),
-    prisma.brand.count(),
+    prisma.brand.count({ where: OU_MARQUE_PUBLIQUE }),
     prisma.region.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, slug: true } }),
     prisma.sector.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, slug: true } }),
   ]);

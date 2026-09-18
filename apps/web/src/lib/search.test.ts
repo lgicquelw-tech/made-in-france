@@ -53,8 +53,10 @@ describe('construireRequetes', () => {
 
   test('les produits sont filtres sur ACTIVE, dans le texte fixe de la requete', () => {
     // Ce filtre-la DOIT etre du texte, pas un parametre : il ne vient pas du client.
-    const { produits } = construireRequetes('x');
+    const { marques, produits } = construireRequetes('x');
     expect(produits.sql).toContain("p.status = 'ACTIVE'");
+    expect(produits.sql).toContain("b.status = 'ACTIVE'");
+    expect(marques.sql).toContain("b.status = 'ACTIVE'");
   });
 });
 

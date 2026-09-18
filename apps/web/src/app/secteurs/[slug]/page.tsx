@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db';
 import { siteUrl } from '@/lib/site';
 import { brandLogoUrl } from '@/lib/brand-logo';
 import { JsonLd, breadcrumbList, itemList } from '@/lib/json-ld';
+import { OU_MARQUE_PUBLIQUE } from '@/lib/marque-publique';
 
 /**
  * Page d'un secteur (REBUILD.md T4.3, T4.8).
@@ -42,7 +43,7 @@ export async function generateMetadata({
   const sector = await getSector(params.slug);
   if (!sector) return { title: 'Secteur introuvable' };
 
-  const count = await prisma.brand.count({ where: { sectorId: sector.id } });
+  const count = await prisma.brand.count({ where: { ...OU_MARQUE_PUBLIQUE, sectorId: sector.id } });
   const title = `${sector.name} — marques françaises`;
   const description = `${count} marque${count > 1 ? 's' : ''} française${count > 1 ? 's' : ''} du secteur ${sector.name}, fabriquant en France.`;
   const url = `${siteUrl()}/secteurs/${sector.slug}`;
@@ -67,7 +68,7 @@ export default async function SecteurDetailPage({ params }: { params: { slug: st
   if (!sector) notFound();
 
   const brands = await prisma.brand.findMany({
-    where: { sectorId: sector.id },
+    where: { ...OU_MARQUE_PUBLIQUE, sectorId: sector.id },
     orderBy: { name: 'asc' },
     select: {
       id: true,

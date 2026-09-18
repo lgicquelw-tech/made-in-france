@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, OpenAI, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 159 tests : 80 dans `scripts/` (règles de données, normalisation d'import, langue des fiches), 79 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat)). Playwright : 35 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 163 tests : 80 dans `scripts/` (règles de données, normalisation d'import, langue des fiches), 79 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat)). Playwright : 35 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
 
@@ -138,6 +138,8 @@ pnpm data:audit --liens              # ... en interrogeant les liens sortants
 pnpm data:links                      # desactive les liens durablement morts (jamais effaces)
 pnpm data:links --simuler            # ... sans rien ecrire
 pnpm data:publish                    # publie les produits complets, retire les incomplets (T5.8)
+pnpm data:publish:brands             # valide les marques completes (decision du 18 septembre 2026)
+pnpm data:publish:brands --simuler   # ... sans rien ecrire
 pnpm data:geocode                    # place les marques par leur commune, API Adresse nationale (T5.4)
 
 # Données
@@ -150,7 +152,7 @@ pnpm data:enrich --appliquer         # appels factures — uniquement sur decisi
 pnpm test                            # Vitest, tout le monorepo : 159 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 72 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:integration                # 76 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
 pnpm test:e2e                        # 35 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
@@ -182,7 +184,7 @@ silencieusement le script du même nom — et qui écrit dans `~/.zshrc`.
 **La base de données locale est repartie de zéro.** Les ~40 000 produits de janvier sont
 perdus (aucune sauvegarde n'a jamais existé, cf. `REBUILD.md` T0.0). Elle contient
 aujourd'hui 13 régions, 9 secteurs, 11 catégories, 6 labels, 3 paliers d'abonnement,
-**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`), **38 770 produits** pour 392 marques, collectés le 17 septembre 2026 par les scrapers (35 166 publiés par `pnpm data:publish`), et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
+**903 marques** (importées de `data/brands.xlsx` par `pnpm bootstrap`, dont **899 validées** le 18 septembre 2026 par `pnpm data:publish:brands`), **38 770 produits** pour 392 marques, collectés le 17 septembre 2026 par les scrapers (35 166 publiés par `pnpm data:publish`), et **aucun utilisateur** — lancer `pnpm admin:create` avant de tester l'administration. Une seconde base, `madeinfrance_test`, sert aux tests d'intégration et est vidée à chaque passage — 2 saisis à la main, 10 collectés le 11 septembre 2026 sur `www.airpurlabs.com` pour prouver l'idempotence du scraping.
 
 ⚠️ **Les liens `.env` sont ignorés par git** : `apps/api/.env`, `apps/web/.env` et tout
 lien équivalent n'existent pas sur un clone neuf. C'est pourquoi **toutes les commandes
@@ -257,6 +259,7 @@ chemins commençant par `../`.
 | **Écriture d'un produit scrappé** | Un seul point : `scripts/catalogue/upsert.ts` → `enregistrerCollecte`. Les scrapers ne touchent **jamais** `prisma.product` directement. Clé stable `(brandId, externalSource, externalId)` ; le rescrape réécrit prix, images, lien, données brutes et `collectedAt`, et **jamais** descriptions, slug, statut, catégorie, matières, SEO. Un produit collecté naît en `DRAFT` : c'est l'audit (T5.8) qui publie. |
 | **Traductions WooCommerce** | Dans l'API Store d'une boutique WPML / Polylang, **chaque traduction est un produit** : même fiche, un identifiant par langue, permalien préfixé (`/en/product/…`). Sans filtre, 1 824 fiches en anglais, allemand, espagnol et néerlandais sont entrées au catalogue le 17 septembre 2026 — et, arrivées avant, elles ont pris le slug des originales françaises, refusées ensuite. `catalogue/langue.ts` ne garde que les fiches sans préfixe ou en `fr` ; le slug se replie sur le permalien quand l'API n'en donne pas. Après une collecte, **lire les erreurs du journal** : une contrainte qui refuse dit quelque chose. |
 | **L'import de marques ne touche pas au statut** | `brandData.status` vaut `PENDING_REVIEW` pour toute ligne du fichier. Le réécrire à la mise à jour remettait en attente chaque marque validée à chaque `pnpm bootstrap`. Le statut est une décision éditoriale, il ne vient pas du fichier. |
+| **Une marque publique est `ACTIVE`** | Jusqu'au 18 septembre 2026, 902 marques sur 903 étaient `PENDING_REVIEW` et servies quand même : le statut ne voulait rien dire. Depuis la validation en bloc, **toute lecture publique passe par `lib/marque-publique.ts`** (`OU_MARQUE_PUBLIQUE` en Prisma, `SQL_MARQUE_PUBLIQUE` en SQL) — annuaire, recherche, fil, carte, secteurs, régions, sitemap, assistant. Une fiche en attente reste **joignable** par son adresse et revendicable (`OU_MARQUE_ACCESSIBLE`), sinon son propriétaire ne pourrait pas la réclamer ; suspendue ou refusée, elle répond 404. L'admin et le Studio ne filtrent pas : ils doivent voir ce qui n'est pas public. |
 | **Recherche insensible aux accents** | `unaccent()` des **deux** côtés — colonne et saisie. 191 marques sur 903 ont un accent dans leur nom : désaccentuer la seule saisie laissait « creme » sans réponse devant « CRÈME BRÛLÉE ». Toute nouvelle clause de recherche passe par `correspondance()` de `catalogue-public.ts`. |
 | **Double appel au montage** | Le motif `if (!hydrated) { setHydrated(true); return; }` avec `hydrated` dans les dépendances relance l'effet et refait l'appel que le serveur venait de rendre. Corrigé dans cinq composants ; utiliser une référence sur la dernière requête résolue, jamais ce drapeau. Variante Studio : un effet sur `[slug, status]` charge à `loading` **et** à `authenticated`, et le second chargement écrase la saisie en cours — attendre que la session soit connue. |
 | Géocodage | Par **commune**, via `api-adresse.data.gouv.fr` ; précision = centre de la commune. Les homonymes (cinq « Saint-Denis ») sont départagés par la région de la marque ; sans correspondance on ne devine pas. |

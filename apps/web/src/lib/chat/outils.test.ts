@@ -38,8 +38,11 @@ describe('construireRechercheProduits', () => {
 });
 
 describe('construireRechercheMarques', () => {
-  test('aucun filtre de statut : le chat voit ce que le site montre', () => {
-    expect(construireRechercheMarques({ query: 'pull' }).sql).not.toContain('b.status');
+  test('marques publiques seulement : le chat voit ce que le site montre', () => {
+    // Le filtre avait ete retire quand 1 marque sur 903 etait ACTIVE ; depuis la validation
+    // en bloc du 18 septembre 2026, le statut dit ce qu'il doit dire, et le chat le suit.
+    expect(construireRechercheMarques({ query: 'pull' }).sql).toContain("b.status = 'ACTIVE'");
+    expect(construireRechercheMarques({ query: '' }).sql).toContain("WHERE b.status = 'ACTIVE'");
   });
   test('la region est un parametre lie, desaccentue', () => {
     const q = construireRechercheMarques({ query: 'pull', region: 'Île-de-France' });
