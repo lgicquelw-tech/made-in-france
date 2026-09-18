@@ -23,8 +23,7 @@ import {
   Sparkles,
   TrendingUp,
   Zap,
-  Award
-} from 'lucide-react';
+  Award, Inbox } from 'lucide-react';
 
 const menuItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
@@ -34,6 +33,7 @@ const menuItems = [
   { label: 'Utilisateurs', href: '/admin/utilisateurs', icon: Users },
   { label: 'Abonnements', href: '/admin/abonnements', icon: CreditCard },
   { label: 'MiF Studios', href: '/admin/studios', icon: Building2 },
+  { label: 'Revendications', href: '/admin/revendications', icon: Inbox },
   { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { label: 'IA & Chat', href: '/admin/ia', icon: Bot },
   { label: 'Collections', href: '/admin/collections', icon: FolderOpen },

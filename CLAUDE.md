@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, OpenAI, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 159 tests : 80 dans `scripts/` (règles de données, normalisation d'import, langue des fiches), 79 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat)). Playwright : 33 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 159 tests : 80 dans `scripts/` (règles de données, normalisation d'import, langue des fiches), 79 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat)). Playwright : 35 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
 
@@ -150,8 +150,8 @@ pnpm data:enrich --appliquer         # appels factures — uniquement sur decisi
 pnpm test                            # Vitest, tout le monorepo : 159 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
-pnpm test:integration                # 64 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
-pnpm test:e2e                        # 33 parcours Playwright, serveur Next lance sur madeinfrance_test
+pnpm test:integration                # 72 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
+pnpm test:e2e                        # 35 parcours Playwright, serveur Next lance sur madeinfrance_test
 ```
 
 ### Environnement de la machine (remis en état le 1er septembre 2026)
@@ -196,7 +196,7 @@ chemins commençant par `../`.
 
 ### Sécurité
 
-0. **La propriété d'une marque ne s'accorde jamais automatiquement.** Une revendication crée une `BrandClaimRequest` en `PENDING` ; seul un examen humain la transforme en `BrandOwner`. Deux routes l'accordaient directement, sans authentification, jusqu'au 1er septembre 2026.
+0. **La propriété d'une marque ne s'accorde jamais automatiquement.** Une revendication crée une `BrandClaimRequest` en `PENDING` ; seul un examen humain la transforme en `BrandOwner`. Deux routes l'accordaient directement, sans authentification, jusqu'au 1er septembre 2026. L'examen se fait sur `/admin/revendications` : `POST /api/admin/claims/[id]` est **le seul endroit du code qui crée un `BrandOwner`** — toute autre création de droit est un bug.
 1. **Aucune route API ne part sans garde-fou d'authentification.** Toute route sous `/api/admin/*` exige un rôle admin vérifié **côté serveur**. Toute route sous `/api/v1/brands/:slug/*` en écriture exige la propriété de la marque, vérifiée en base.
 2. **L'identité vient de la session, jamais du client.** Un `userId`, un e-mail ou un rôle transmis dans la query string, le corps, un en-tête **ou le chemin** n'est pas une preuve d'identité. Fait le 1er septembre 2026 : `?userId=`, `?email=` et `:userId` ont tous disparu. Les routes utilisateur sont sous **`/api/v1/me/*`**, une forme où l'on ne peut pas exprimer l'identité autrement.
 3. **Jamais de `$queryRawUnsafe`.** Il n'y en a plus une seule depuis le 1er septembre 2026 : `Prisma.sql` et `Prisma.join`, où chaque `${...}` devient un paramètre lié. Seule exception admise : une clause `ORDER BY`, qui ne peut pas être un paramètre lié — elle doit alors venir d'une **liste blanche** en dur, jamais de l'entrée.
@@ -238,7 +238,7 @@ chemins commençant par `../`.
 | Limitation de débit | En place depuis le 1er septembre 2026 : `express-rate-limit` côté API, `lib/rate-limit.ts` côté web. **Compteurs en mémoire du processus** — ils ne tiennent pas sur plusieurs instances. À reprendre au déploiement. Toute nouvelle route coûteuse (modèle payant, stockage, envoi d'e-mail) doit en poser un. |
 | Middleware | **`apps/web/src/middleware.ts`**, pas `apps/web/middleware.ts` : avec un dossier `src/`, Next.js ne charge que le premier. L'ancien n'a jamais tourné. |
 | Appels depuis le front | **URL relative** (`/api/...`), toujours. Il n'y a plus d'autre origine. |
-| Données inventées | Cinq pages d'administration fabriquaient leurs chiffres quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
+| Données inventées | Six pages d'administration fabriquaient leurs chiffres — la dernière, `/admin/studios`, jusqu'au 18 septembre 2026 : six marques réelles avec des noms de dirigeants et des adresses e-mail, plus 902/5/52/127 en dur. quand l'appel échouait (39 835 produits, des entreprises réelles présentées comme clientes payantes…). Tout a été retiré. **Ne jamais réintroduire de données de repli** : un écran vide vaut mieux qu'un écran qui ment. |
 | **Routes d'API figées au build** | Un Route Handler `GET` qui ne lit pas la requête est **prérendu au build** et sert à jamais l'état de la base de ce moment. La carte a servi `[]` en CI pour cette raison (17 septembre 2026). Chaque `route.ts` sous `app/api/` porte `export const dynamic = 'force-dynamic'` ; toute nouvelle route aussi. Et `route()` **relance** les signaux internes de Next (`DYNAMIC_SERVER_USAGE`, `NEXT_*`) au lieu de les convertir en 500. |
 | `next build` et `next dev` partagent `.next/` | Lancer un build pendant que le serveur dev tourne écrase ses chunks : la page rend en HTML nu, les scripts répondent 500. Arrêter le dev, ou `rm -rf apps/web/.next` puis relancer. |
 | Build contre une vraie base | `next build` prérend ~1 000 pages en parallèle, chaque worker avec son pool Prisma : un PostgreSQL local (100 connexions) sature. Borner : `DATABASE_URL="...&connection_limit=5"` pour le build. |

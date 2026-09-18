@@ -1209,3 +1209,47 @@ appels (Studio, `/connexion-pro`, admin, inscription) passent par elle.
 | `pnpm typecheck` / `pnpm lint` / `pnpm test` | 6/6, 0 erreur, 159 |
 
 **Commit.** `T8.5 : cas d'echec du paiement, portail client, et une connexion qui se croyait reussie`
+
+### 2026-09-18 · T8.1 : la revendication avait une file d'attente sans guichet
+
+**Ce qui manquait.** Depuis le 1er septembre 2026, une revendication de marque crée une
+demande `PENDING` au lieu d'accorder la propriété — c'est la faille la plus grave du projet,
+fermée. Mais **aucun écran ne permettait de l'examiner** : la file s'allongeait sans autre
+issue qu'un `UPDATE` à la main. Une sécurité qui n'a pas de guichet finit contournée.
+
+**Le guichet.**
+
+| Pièce | Ce qu'elle fait |
+|---|---|
+| `GET /api/admin/claims` | la file, par état, avec ce qu'il faut pour décider : demandeur, preuve déclarée, ancienneté — et **le seul indice automatique**, la comparaison entre le domaine de l'adresse et celui du site de la marque. Un indice, pas une preuve : il est présenté comme tel à l'écran |
+| `POST /api/admin/claims/[id]` | la décision. **Le seul endroit du code qui crée un `BrandOwner`.** Approuver écrit le droit et l'état dans la même transaction, avec une ligne d'audit signée ; refuser garde la raison |
+| `/admin/revendications` | l'écran : à examiner / accordées / refusées, motif facultatif, deux boutons |
+
+Refus explicites : une demande déjà traitée (400, pas de second propriétaire), une demande
+dont le compte a été supprimé entre-temps (400 — il n'y a personne à qui donner le droit),
+une décision hors liste (400, Zod), un compte ordinaire qui tente de s'accorder une marque
+(403, **zéro** droit créé).
+
+**Les dernières données inventées de l'administration.** `/admin/studios` lisait
+`/api/admin/brands` — qui ne renvoie ni propriétaire ni compteurs — et, quand l'appel
+échouait, **fabriquait six marques réelles avec des noms de dirigeants et des adresses
+e-mail plausibles** (Le Slip Français, Veja, Armor Lux, « Julie Fabre »…), plus quatre
+compteurs en dur : 902 marques, 5 Royale, 52 Premium, 127 avec propriétaire. Le tableau de
+bord de septembre avait été nettoyé de ces reprises ; celle-ci avait survécu. `GET
+/api/admin/studios` sert les marques réellement gérées, les compteurs sont comptés sur ce
+qui est affiché, et un échec laisse la page vide **en le disant**.
+
+Deux liens de cette page menaient vers `/studio/medias`, qui n'existe pas — remplacés par
+l'édition de la fiche dans l'administration.
+
+| Vérification | Résultat |
+|---|---|
+| `pnpm test:integration` | **72** (64 + 8) : file fermée à 401/403, indice de domaine, accord (un seul propriétaire, trace signée, second appel refusé), refus, compte supprimé, Zod, et `/admin/studios` qui ne liste que les marques gérées |
+| `pnpm test:e2e` | **35** parcours (33 + 2) : le tour complet — 403 avant décision, l'administrateur accorde depuis l'écran, `BrandOwner` + audit en base, **puis** la personne obtient 200 sur son tableau de bord ; et la file fermée à un compte ordinaire (403 sur l'API, 404 sur la page) |
+| `pnpm typecheck` / `pnpm lint` | 6/6, 0 erreur |
+
+**Non vérifié à la main, et pourquoi.** La base de développement n'a aucun utilisateur : il
+aurait fallu créer un administrateur avec un mot de passe inventé pour prendre une capture
+d'écran. Le parcours navigateur fait mieux, et il tourne en CI.
+
+**Commit.** `T8.1 : l'examen humain des revendications, et les dernieres donnees inventees`

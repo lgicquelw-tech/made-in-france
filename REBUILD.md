@@ -740,7 +740,7 @@ L'option 2 est la bonne, mais elle **suppose l'audit fait**. En attendant, ne pa
 
 ### B2B et paiement
 
-- [ ] **T8.1** — Fiche marque revendiquée et éditable, avec validation manuelle.
+- [x] **T8.1** — Fiche marque revendiquée et éditable, avec validation manuelle. → **Fait le 18 septembre 2026.** `GET /api/admin/claims`, `POST /api/admin/claims/[id]` et l'écran `/admin/revendications` : la demande `PENDING` créée depuis le 1er septembre avait une file d'attente **sans guichet**. La décision est le seul endroit du code qui crée un `BrandOwner`, dans une transaction avec sa ligne d'audit. Trouvé en chemin : `/admin/studios` inventait six marques réelles avec des noms de dirigeants et quatre compteurs en dur — dernière reprise de données fabriquées de l'administration.
 - [ ] **T8.2** — **Instrumenter les vrais événements** : vues de fiche, clics sortants, mises en favori.
 - [ ] **T8.3** — Reconstruire le tableau de bord sur ces événements. Supprimer tous les `Math.random()` de `index.ts:3063-3067` et de `statistiques/page.tsx:68-69`.
 - [ ] **T8.4** — Définir ce que Premium apporte concrètement, une fois les vrais chiffres visibles.
