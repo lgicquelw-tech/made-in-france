@@ -14,6 +14,8 @@
 
 export interface ResultatBan {
   label: string;
+  /** La commune du résultat — renseignée pour un lieu-dit ou une voie, pas pour une commune. */
+  city?: string | null;
   /** « 93, Seine-Saint-Denis, Île-de-France » — département puis région. */
   context: string;
   postcode: string;
@@ -66,6 +68,34 @@ export function choisirCommune(
  */
 export function formesAInterroger(ville: string): string[] {
   const entiere = ville.trim();
+  const formes = [entiere];
   const premiere = entiere.split(/\s*[/(]\s*/)[0].trim();
-  return premiere && premiere !== entiere ? [entiere, premiere] : [entiere];
+  if (premiere && premiere !== entiere) formes.push(premiere);
+
+  // « Île de Groix » n'est pas une commune ; « Groix » en est une. Sans ce retrait, la
+  // recherche de lieux-dits renvoyait un hameau « Île de Groix » situé à **Dinan**, dans
+  // la bonne région : la marque aurait été placée à 150 km de son île, sans rien signaler.
+  for (const forme of [...formes]) {
+    const sansIle = forme.replace(/^(l['’]\s*)?[îi]le\s+d[eu']?\s*/i, '').trim();
+    if (sansIle && sansIle !== forme) formes.push(sansIle);
+  }
+  return formes;
+}
+
+/**
+ * Le nom de commune d'un résultat qui n'en est pas un (lieu-dit, voie, ancienne commune).
+ *
+ * L'API Adresse ne connaît pas « Puyricard » comme commune — c'est un village rattaché à
+ * Aix-en-Provence — mais elle sait qu'une adresse qui porte ce nom est **à** Aix. Même
+ * chose pour les fusions : Doué-la-Fontaine est dans Doué-en-Anjou, Montjean-sur-Loire
+ * dans Mauges-sur-Loire. On ne retient ce chemin qu'après l'échec de toutes les formes
+ * de commune, et la région de la marque doit encore correspondre.
+ */
+export function communeDeRattachement(resultats: ResultatBan[], regionMarque: string | null): ResultatBan | null {
+  const candidats = resultats.filter((r) => r.type !== 'municipality' && r.city && r.score >= SCORE_MINIMAL);
+  if (candidats.length === 0) return null;
+  const region = regionMarque ? normaliser(regionMarque) : null;
+  const retenus = region ? candidats.filter((r) => normaliser(r.context).includes(region)) : candidats;
+  if (retenus.length === 0) return null;
+  return retenus.reduce((a, b) => (b.score > a.score ? b : a));
 }

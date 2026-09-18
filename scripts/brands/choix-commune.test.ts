@@ -2,7 +2,7 @@
 
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { choisirCommune, formesAInterroger, type ResultatBan } from './choix-commune';
+import { choisirCommune, communeDeRattachement, formesAInterroger, type ResultatBan } from './choix-commune';
 
 const r = (label: string, context: string, score: number, type = 'municipality'): ResultatBan => ({
   label, context, score, type, postcode: '00000', latitude: 0, longitude: 0,
@@ -66,4 +66,25 @@ test('formes a interroger : la premiere partie avant / ou ( en repli', () => {
   assert.deepEqual(formesAInterroger('Saint-Denis (93)'), ['Saint-Denis (93)', 'Saint-Denis']);
   assert.deepEqual(formesAInterroger('Bidache'), ['Bidache']);
   assert.deepEqual(formesAInterroger('(Boutique en ligne)'), ['(Boutique en ligne)']);
+});
+
+test('« Île de Groix » : on essaie aussi « Groix »', () => {
+  assert.deepEqual(formesAInterroger('Île de Groix'), ['Île de Groix', 'Groix']);
+  assert.deepEqual(formesAInterroger("L'Île d'Yeu"), ["L'Île d'Yeu", 'Yeu']);
+  // Une commune dont le nom commence par « Ile » sans être une île reste intacte au premier essai.
+  assert.equal(formesAInterroger('Ile-Rousse')[0], 'Ile-Rousse');
+});
+
+test('commune de rattachement : un lieu-dit designe sa commune, dans la bonne region', () => {
+  const lieuDit = (label: string, context: string, city: string, score: number): ResultatBan =>
+    ({ label, context, city, score, type: 'street', postcode: '00000', latitude: 1, longitude: 2 });
+
+  const puyricard = [lieuDit('Puyricard 13540 Aix-en-Provence', "13, Bouches-du-Rhône, Provence-Alpes-Côte d'Azur", 'Aix-en-Provence', 0.7)];
+  assert.equal(communeDeRattachement(puyricard, "Provence-Alpes-Côte d'Azur")?.city, 'Aix-en-Provence');
+  // Mauvaise région : on ne place pas.
+  assert.equal(communeDeRattachement(puyricard, 'Bretagne'), null);
+  // Une commune n'est pas un lieu-dit : ce chemin ne la concerne pas.
+  assert.equal(communeDeRattachement([r('Groix', '56, Morbihan, Bretagne', 0.94)], 'Bretagne'), null);
+  // Score trop faible : rien.
+  assert.equal(communeDeRattachement([lieuDit('X', '13, Bouches-du-Rhône, PACA', 'Y', 0.4)], null), null);
 });

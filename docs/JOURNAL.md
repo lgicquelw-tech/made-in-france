@@ -1301,3 +1301,55 @@ suspendue), 35 parcours. Deux assertions **disaient l'ancien monde** et ont chan
 WHERE ». Elles étaient justes hier, elles auraient été fausses demain.
 
 **Commit.** `marques: 899 validees en bloc, et un statut que les lectures publiques respectent`
+
+### 2026-09-18 · Les 35 communes : ce qu'un outil peut réparer, et ce qu'il doit refuser
+
+**Le point de départ.** 35 marques sans coordonnées, consignées depuis le 11 septembre
+comme « villes à corriger dans le fichier source ». J'ai cherché ce que le code pouvait
+récupérer sans inventer.
+
+**Ce qui était réparable : une seule marque, et un piège évité.** « Île de Groix » n'est
+pas une commune ; « Groix » en est une. `formesAInterroger` retire désormais le préfixe
+« Île de / Île d' / L'Île de ». GROIX ET NATURE est placée — **carte : 868 → 869 marques**.
+
+Le piège vaut plus que la correction : interrogée sans filtre de type, l'API répond pour
+« Île de Groix » par un lieu-dit du même nom situé à **Dinan**, à 150 km, *dans la bonne
+région*. Le garde-fou existant — la région départage — ne l'aurait pas arrêté. C'est
+maintenant un test.
+
+**Ce que j'ai essayé, mesuré, et refusé de livrer.** L'API Adresse sait sur quelle commune
+tombe une adresse portant un nom donné : de quoi résoudre les fusions de communes
+(Doué-la-Fontaine → Doué-en-Anjou) et les villages rattachés (Puyricard → Aix-en-Provence).
+Sur les 34 marques restantes, ce chemin proposait **12 communes, dont 6 fausses** :
+
+| Proposition | Verdict |
+|---|---|
+| Puyricard → Aix-en-Provence, Saint-Pierre-Montlimart → Montrevault-sur-Èvre, Arèches-Beaufort → Beaufort, Montjean-sur-Loire → Mauges-sur-Loire, Doué-la-Fontaine → Doué-en-Anjou, Saint-Germain-de-Marencennes → Saint-Pierre-la-Noue | fusions et villages rattachés — **plausibles**, à confirmer |
+| **Monaco → Sartène**, **Pays Basque → Mont-de-Marsan**, **Île de Ré → La Rochelle**, **France → Clermont-Dessous**, Charente-Maritime → Lagord, Martinique / Paris → Paris | **fausses** : l'API a répondu sur une *rue* qui porte ce nom, ailleurs |
+
+Un sur deux. Le principe posé en T5.4 tranche : *une marque non placée se voit dans le
+rapport, une marque mal placée ne se voit qu'en regardant la carte*. Le chemin existe donc
+en `pnpm data:geocode --suggerer`, qui **n'écrit rien** et imprime les propositions à
+vérifier. J'ai aussi vérifié qu'aucune source officielle ne fait mieux : `geo.api.gouv.fr`
+ne connaît pas les anciennes communes (Puyricard, Doué-la-Fontaine, Arèches : aucun
+résultat).
+
+**Ce qui reste, classé — c'est le travail du propriétaire sur `data/brands.xlsx` :**
+
+| Cas | Marques | Ce qu'il faut |
+|---|---|---|
+| Une **région** dans la colonne Ville | ANCRÉE, CAPS ME (Île-de-France), LILIBELLULE (Alsace), ÉBÉNISTERIE VUILLEMIN (Franche-Comté), VELOURS DE L'ABBAYE (Hauts-de-France), ALOHÉ, KADALYS (Martinique), AMEWAT (Guyane), FLANM & SAVEURS (Guadeloupe), ‘ŌTEO TAHITI (Tahiti) | la commune réelle |
+| Un **département** | MEUBLES AUGER (Charente-Maritime), POM' POM' (Manche), SÈVE & COPEAUX (Jura) | la commune réelle |
+| **« France »** | 1+3, HELIX ATELIER, MAROQUINIÈRE CRÉATIVE | la commune réelle |
+| Une **zone**, pas une commune | LA MADELEINE BASQUE D'IBAN (Pays Basque), LA ROSE TRÉMIÈRE (Île de Ré — dix communes) | laquelle |
+| Un nom **introuvable** | LE SAC DU BERGER (Laysoleil), FRANCE FOULARDS (Comelles), MARCUS SPURWAY (Gasse), DE CLERMONT (« Clermont-Clermont », visiblement une saisie doublée), HUGO (Bourré), CAMADOUE (Raphèle-lès-Arles, hameau d'Arles) | vérifier la saisie |
+| **Pas une ville** | RECYCLED BY LISA (« (Boutique en ligne) ») | la commune du siège |
+| **Hors de France** | NANNETTA (Monaco) | une décision, pas une donnée : cette marque a-t-elle sa place dans l'annuaire ? |
+
+| Vérification | Résultat |
+|---|---|
+| `pnpm data:geocode` | 869 / 903 géolocalisées (868 avant) |
+| Carte publique | **868** marques (la 869ᵉ est NANNETTA, en attente, donc hors carte) |
+| `pnpm test` | **165** (86 scripts, 79 web) — 2 nouveaux sur les formes d'île et la commune de rattachement |
+
+**Commit.** `geocodage: « Île de Groix » est Groix, et pourquoi le reste ne se devine pas`
