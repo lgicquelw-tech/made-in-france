@@ -1467,3 +1467,42 @@ ce qu'il faut fournir. Il ne reste que ce que le code lit, classé : trois oblig
 passe quand la valeur manque (le webhook refuse tout, la carte ne rend rien).
 
 **Commit.** `mise en ligne: le build ne prerend plus 35 000 fiches, et .env.example dit vrai`
+
+### 2026-09-18 · T0.2 : la base contient à nouveau ce qui ne se rescrape pas — elle est sauvegardée
+
+**Pourquoi maintenant.** T0.2 était « sans objet » le 1er septembre : il n'y avait plus de
+base. Il y en a une, et elle porte du travail qui n'existe **nulle part ailleurs** : 899
+validations de marques et leurs 898 lignes d'audit, 875 géocodages, les décisions à venir
+sur les revendications. Le catalogue brut se rescrape en une nuit ; ça, non. `REBUILD.md`
+le dit depuis août dans « Ce qu'il ne faut pas faire » : *reporter la sauvegarde*.
+
+**`pnpm db:backup`** (`scripts/db/backup.ts`) : `pg_dump` au format `custom`, compressé,
+horodaté, dans `~/backups/made-in-france/` — hors du dépôt (public) et de l'arbre de
+travail. Deux détails qui comptent :
+
+- `?schema=public` et `connection_limit` sont des paramètres **Prisma** : `pg_dump` les
+  refuse. Retirés de l'URL avant l'appel.
+- Sur échec, Node répète la commande complète dans son erreur — **mot de passe compris**
+  — et `pg_dump` laisse un fichier de 0 octet. L'erreur n'est pas relayée, le fichier vide
+  est supprimé. Mes deux premiers essais ont produit exactement ces deux fichiers vides.
+
+**La sauvegarde n'est prouvée que par sa restauration.** Restauré dans une base jetable,
+compté, supprimé :
+
+| Table | Origine | Restaurée |
+|---|---|---|
+| `brands` | 903 | **903** — 899 ACTIVE, 875 géolocalisées |
+| `products` | 38 770 | **38 770** |
+| `audit_logs` | 898 | **898** |
+| `link_checks` | 902 | **902** |
+
+Fichier : **31,6 Mo**. Cinq secondes.
+
+**Ce que ça ne fait pas, et qui reste à toi.** Le dump est **sur la même machine**. Il
+protège d'une fausse manœuvre — un `TRUNCATE` sur la mauvaise base, un `bootstrap` mal
+compris — pas d'un disque mort ni d'un vol. La commande le rappelle à chaque exécution.
+Copier `~/backups/made-in-france/` ailleurs, et relancer la commande après chaque décision
+éditoriale, c'est ce qui en fait une sauvegarde. La version automatisée est T7.4, avec la
+base managée.
+
+**Commit.** `T0.2 : pnpm db:backup, un dump prouve par sa restauration`

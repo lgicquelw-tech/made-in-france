@@ -286,16 +286,7 @@ Critère simple : si l'objectif est un site public rapide, bien référencé, ma
 
 > Rien d'autre ne commence avant. Aucune de ces tâches ne dépend d'une décision d'architecture.
 
-- [~] **T0.2** — *Sans objet pour l'instant : il n'y a plus de base à sauvegarder (T0.0).*
-  Fait à la place le 1er septembre 2026 : sauvegarde de l'arbre de travail local complet
-  (`~/backups/mif-arbre-local-20260901-0908.tar.gz`, 727 Ko, 283 fichiers, `.env` inclus).
-  ⚠️ **Elle est sur la même machine — à copier hors machine.**
-  Le `pg_dump` ci-dessous reste à faire si une copie de la base est retrouvée :
-  ~~`pg_dump` de la base complète~~, horodaté, copié **hors de la machine** (disque externe ou stockage distant). Les produits bruts se rescrapent en quelques heures ; l'enrichissement IA, les géocodages, les logos et le travail éditorial fait dans l'admin, non. C'est eux que ce dump protège.
-  ```bash
-  pg_dump "postgresql://mif_user:***@localhost:5432/madeinfrance" \
-    -Fc -f ~/backups/mif-$(date +%Y%m%d).dump
-  ```
+- [x] **T0.2** — **`pnpm db:backup`** depuis le 18 septembre 2026 : `pg_dump` compressé, horodaté, dans `~/backups/made-in-france/`, **prouvé par une restauration** dans une base jetable (903 marques, 38 770 produits, 898 lignes d'audit à l'identique). C'était « sans objet » le 1er septembre — il n'y avait plus de base ; il y en a une, et elle porte 899 validations et 875 géocodages qui n'existent nulle part ailleurs. ⚠️ **Sur la même machine** : à copier hors machine après chaque décision éditoriale. L'automatisation est T7.4. Historique : sauvegarde de l'arbre de travail le 1er septembre (`~/backups/mif-arbre-local-20260901-0908.tar.gz`).
 - [x] **T0.3** — Corriger `.gitignore` : remplacer `.env` par `.env*` + `!.env.example`. Vérifier avec `git status` que plus aucun `.env.local` n'apparaît.
 - [x] **T0.4** — Supprimer `index.ts:3984` (la ligne qui journalise la clé Stripe).
 - [x] **T0.5** — Neutraliser `GET /api/admin/ai/settings` (retirer `anthropicApiKey` et `openaiApiKey` de la réponse) et le `PUT` qui écrit `process.env` depuis le body.

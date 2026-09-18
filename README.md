@@ -158,6 +158,7 @@ Deux fichiers réels, tous deux ignorés par git :
 **Vitest**, sur tout le monorepo :
 
 ```bash
+pnpm db:backup                     # sauvegarde pg_dump dans ~/backups/made-in-france/
 pnpm test                          # 165 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage

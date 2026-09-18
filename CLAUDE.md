@@ -131,6 +131,9 @@ pnpm build                # PASSE : 970 pages en 20 s contre la vraie base (18 s
                           # A lancer avant toute affirmation sur la mise en ligne.
 pnpm lint                 # 6 paquets, 0 erreur attendue. Fonctionne depuis le 16 septembre 2026 (aucune config n'existait avant).
 
+# Sauvegarde — a relancer apres chaque decision editoriale, puis copier hors machine
+pnpm db:backup            # pg_dump compresse dans ~/backups/made-in-france/ (T0.2). Restauration : en-tete de scripts/db/backup.ts
+
 # Administration
 pnpm admin:create         # cree ou promeut un administrateur (T3.15).
                           # POST /api/admin/setup est desactive : il creait un
