@@ -1546,3 +1546,33 @@ bonnes règles**. Restauré : 12/12.
 | État du code au premier passage | conforme : aucune route en défaut aujourd'hui |
 
 **Commit.** `tests: les regles des routes deviennent un test, verifie par mutation`
+
+### 2026-09-18 · Le Studio chargeait trois fois — sur toutes ses pages
+
+**Le point de départ.** Les 14 avertissements `react-hooks/exhaustive-deps` du lint,
+relus un à un. Treize sont le motif classique « fonction de chargement définie dans le
+composant, appelée dans l'effet » — sans conséquence. Mais ils ont mis le doigt sur le
+motif corrigé le 17 septembre sur la page des paramètres, **présent à l'identique dans
+les cinq autres pages du Studio** : un effet sur `[slug, status]`, qui part à `loading`,
+puis à `authenticated`.
+
+**Mesuré plutôt que supposé.** Un parcours compte les appels à `/api/v1/brands/…/dashboard`
+au chargement du tableau de bord du Studio. Sans le garde : **trois** appels, pas deux.
+Avec : un. Le test le prouve dans les deux sens — la mutation (garde retiré) le fait
+échouer avec `+2`.
+
+**Correction.** `if (status === 'loading') return;` avant le chargement, sur les cinq pages
+(tableau de bord, labels, produits, statistiques, abonnement). Une ligne chacune, la même
+qu'aux paramètres, avec le même commentaire : la prochaine personne saura pourquoi.
+
+Sur les pages en lecture, c'était trois séries de requêtes pour une. Sur la page produits,
+qui porte un formulaire, c'était le même risque qu'aux paramètres : une saisie écrasée par
+un chargement tardif.
+
+| Vérification | Résultat |
+|---|---|
+| Appels au tableau de bord au chargement | **1** (3 sans le garde) |
+| `pnpm test:e2e` | **36** parcours (+1) |
+| Lint | 0 erreur ; les 14 avertissements `exhaustive-deps` restent, ils ne signalent rien de faux |
+
+**Commit.** `studio: un seul chargement par page — l'effet partait trois fois`

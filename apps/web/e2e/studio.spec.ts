@@ -165,3 +165,15 @@ test('connexion : un rejet technique ne fait jamais croire qu on est connecté',
     }, { timeout: 20_000 })
     .not.toBe('ni l un ni l autre');
 });
+
+test('le tableau de bord du Studio ne charge ses données qu une fois', async ({ page }) => {
+  // L'effet partait à « loading » puis à « authenticated » : deux séries d'appels, et sur
+  // les paramètres, la seconde écrasait la saisie. Corrigé sur les six pages du Studio.
+  await seConnecter(page, DONNEES.proprietaire.email, DONNEES.proprietaire.password);
+  const appels: string[] = [];
+  page.on('request', (r) => { if (r.url().includes(`/api/v1/brands/${DONNEES.marque.slug}/dashboard`)) appels.push(r.method()); });
+  await page.goto(`/studio/marque/${DONNEES.marque.slug}`);
+  await expect(page.getByText(DONNEES.marque.name).first()).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(1500);
+  expect(appels).toEqual(['GET']);
+});

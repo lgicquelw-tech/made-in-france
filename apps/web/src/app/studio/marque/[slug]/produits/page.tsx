@@ -94,6 +94,9 @@ export default function StudioProduitsPage() {
       router.push('/studio/connexion');
       return;
     }
+    // Attendre que la session soit connue : chargé à « loading » puis à « authenticated »,
+    // l'effet partait deux fois — deux séries d'appels, et la seconde écrasait la saisie en cours.
+    if (status === 'loading') return;
 
     if (slug) {
       fetchData();
