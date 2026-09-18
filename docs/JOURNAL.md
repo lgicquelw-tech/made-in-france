@@ -1353,3 +1353,52 @@ résultat).
 | `pnpm test` | **165** (86 scripts, 79 web) — 2 nouveaux sur les formes d'île et la commune de rattachement |
 
 **Commit.** `geocodage: « Île de Groix » est Groix, et pourquoi le reste ne se devine pas`
+
+### 2026-09-18 · Six communes corrigées à la source : 875 marques placées
+
+**Décision du propriétaire** (« corrige ») : appliquer les six propositions plausibles du
+rapport précédent. Ce sont toutes des **fusions de communes** (2015-2019) ou des **villages
+rattachés** — le nom du fichier source n'est pas faux, il est ancien.
+
+La correction est faite **dans `data/brands.xlsx`**, pas en base : `pnpm bootstrap` réimporte
+le fichier, une correction en base aurait été effacée au prochain passage. Forme retenue :
+**commune officielle d'abord, ancien nom entre parenthèses** — le géocodage lit la première
+partie, et la fiche garde le lieu que les gens connaissent.
+
+| Ligne | Avant | Après |
+|---|---|---|
+| 172 | Puyricard / Aix | Aix-en-Provence (Puyricard) |
+| 499 | Arèches-Beaufort | Beaufort (Arèches) |
+| 643 | Saint-Pierre-Montlimart | Montrevault-sur-Èvre (Saint-Pierre-Montlimart) |
+| 797 | Montjean-sur-Loire | Mauges-sur-Loire (Montjean-sur-Loire) |
+| 819 | Saint-Germain-de-Marencennes | Saint-Pierre-la-Noue (Saint-Germain-de-Marencennes) |
+| 822 | Doué-la-Fontaine | Doué-en-Anjou (Doué-la-Fontaine) |
+
+**Écriture d'un XLSX : vérifiée cellule par cellule.** La bibliothèque réécrit tout le
+classeur ; un diff complet contre la copie d'origine confirme **6 cellules modifiées sur
+996 lignes × 16 colonnes**, et les trois noms de marque numériques (909, 1083, 1336) sont
+toujours lus comme des nombres — c'est le piège consigné en phase 1.
+
+| Vérification | Résultat |
+|---|---|
+| Réimport | 903 mises à jour, 0 erreur ; **statuts intacts** (899 ACTIVE, 4 PENDING_REVIEW) |
+| `pnpm data:geocode` | **875 / 903** géolocalisées (869 avant) |
+| Coordonnées | Puyricard 43.541/5.406 (Aix), Beaufort 45.709/6.597 (Savoie), Montrevault 47.248/-1.021, Mauges 47.347/-0.934, Saint-Pierre-la-Noue 46.072/-0.812, Doué-en-Anjou 47.197/-0.301 — toutes dans leur département |
+| Carte publique | **874** (la 875ᵉ est NANNETTA, en attente) |
+| Fiche | « Aix-en-Provence (Puyricard) » dans le titre, le fil d'Ariane et la localisation |
+| `pnpm test:e2e` | 35 parcours |
+
+**Les 28 qui restent ne sont pas de la donnée à corriger, mais des questions.** J'ai lu le
+fichier source pour les quatre marques non validées :
+
+| Marque | Ce que dit `brands.xlsx` | Pourquoi je n'ai pas tranché |
+|---|---|---|
+| **NANNETTA** | Ville **Monaco**, région **Monaco**, dép. Monaco (98) | Monaco n'est pas la France. Une marque monégasque a-t-elle sa place dans cet annuaire ? C'est une décision éditoriale |
+| **WIA** | Ville vide, région « **Occitanie / Normandie** » | La description dit : conçue en Occitanie, formulée en Bretagne, **fabriquée en Normandie**. Trois régions, et pour un annuaire du fabriqué en France, c'est peut-être la troisième qui compte |
+| **RECYCLED BY LISA** | Ville « (Boutique en ligne) », région « **France** » | Aucune commune n'est déductible |
+| **OBSTINNÉE** | Rennes, Bretagne — description de **38 caractères** | Il manque deux caractères. Écrire une description à la place de la marque, c'est inventer ce qu'elle fait ; c'est exactement l'objet de T5.7 |
+
+Les 24 autres non géolocalisées portent une région, un département ou « France » dans la
+colonne Ville : la liste classée est dans l'entrée précédente.
+
+**Commit.** `donnees: six communes corrigees a la source, 875 marques placees`
