@@ -159,7 +159,7 @@ Deux fichiers réels, tous deux ignorés par git :
 
 ```bash
 pnpm db:backup                     # sauvegarde pg_dump dans ~/backups/made-in-france/
-pnpm test                          # 165 tests
+pnpm test                          # 177 tests
 pnpm --filter @mif/web test        # gardes d'autorisation, enveloppe de réponse
 pnpm --filter @mif/scripts test    # règles de données : liens morts, bruit, fusion, publication, géocodage
 pnpm test:integration              # 77 tests sur une vraie base, madeinfrance_test

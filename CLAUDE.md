@@ -70,7 +70,7 @@ les lise comme une source.
 | UI | Radix, lucide-react, Tiptap, Recharts, framer-motion |
 
 **Déclarés mais jamais utilisés :** Redis, Meilisearch, MinIO (dans `docker-compose.yml`), Mistral, OpenAI, Apple OAuth, PostHog, Resend.
-**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 165 tests : 86 dans `scripts/` (règles de données, normalisation d'import, langue des fiches, validation des marques), 79 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat)). Playwright : 35 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
+**Absents malgré ce qu'on pourrait croire :** pgvector (le schéma ne déclare que `uuid_ossp` et `pg_trgm`). **Tests : Vitest 5** depuis le 16 septembre 2026 (`pnpm test`, 177 tests : 86 dans `scripts/` (règles de données, normalisation d'import, langue des fiches, validation des marques), 91 dans `apps/web` (gardes, enveloppe de réponse, recherche, fil, audit, chat, **et les règles des routes** — `src/test/regles-des-routes.test.ts` vérifie statiquement les règles 1, 2, 3, 5, 10 et `force-dynamic` sur les 65 routes)). Playwright : 35 parcours (`pnpm test:e2e`) sur la base `_test`. CI GitHub Actions : `.github/workflows/ci.yml` (types, lint, tests, intégration, build, parcours).
 
 ---
 
@@ -157,7 +157,7 @@ npx tsx --env-file=.env scripts/woocommerce-scraper.ts --all    # idem WooCommer
 npx tsx --env-file=.env scripts/shopify-scraper.ts <slug> <domaine>   # une seule marque
 pnpm data:enrich                     # SIMULATION : ce qui serait envoye au modele, et le cout
 pnpm data:enrich --appliquer         # appels factures — uniquement sur decision explicite
-pnpm test                            # Vitest, tout le monorepo : 165 tests
+pnpm test                            # Vitest, tout le monorepo : 177 tests
 pnpm --filter @mif/web test          # gardes d'autorisation, enveloppe de reponse
 pnpm --filter @mif/scripts test      # regles de donnees : liens, bruit, fusion, publication, geocodage, enrichissement
 pnpm test:integration                # 77 tests sur une VRAIE base, madeinfrance_test (creee par createdb -O mif_user madeinfrance_test)
@@ -207,7 +207,7 @@ chemins commençant par `../`.
 ### Sécurité
 
 0. **La propriété d'une marque ne s'accorde jamais automatiquement.** Une revendication crée une `BrandClaimRequest` en `PENDING` ; seul un examen humain la transforme en `BrandOwner`. Deux routes l'accordaient directement, sans authentification, jusqu'au 1er septembre 2026. L'examen se fait sur `/admin/revendications` : `POST /api/admin/claims/[id]` est **le seul endroit du code qui crée un `BrandOwner`** — toute autre création de droit est un bug.
-1. **Aucune route API ne part sans garde-fou d'authentification.** Toute route sous `/api/admin/*` exige un rôle admin vérifié **côté serveur**. Toute route sous `/api/v1/brands/:slug/*` en écriture exige la propriété de la marque, vérifiée en base.
+1. **Aucune route API ne part sans garde-fou d'authentification.** Toute route sous `/api/admin/*` exige un rôle admin vérifié **côté serveur**. Toute route sous `/api/v1/brands/:slug/*` en écriture exige la propriété de la marque, vérifiée en base. **Vérifié par un test** (`src/test/regles-des-routes.test.ts`) : une route qui écrit sans garde fait échouer `pnpm test`, sauf exception nommée et justifiée dans le test lui-même.
 2. **L'identité vient de la session, jamais du client.** Un `userId`, un e-mail ou un rôle transmis dans la query string, le corps, un en-tête **ou le chemin** n'est pas une preuve d'identité. Fait le 1er septembre 2026 : `?userId=`, `?email=` et `:userId` ont tous disparu. Les routes utilisateur sont sous **`/api/v1/me/*`**, une forme où l'on ne peut pas exprimer l'identité autrement.
 3. **Jamais de `$queryRawUnsafe`.** Il n'y en a plus une seule depuis le 1er septembre 2026 : `Prisma.sql` et `Prisma.join`, où chaque `${...}` devient un paramètre lié. Seule exception admise : une clause `ORDER BY`, qui ne peut pas être un paramètre lié — elle doit alors venir d'une **liste blanche** en dur, jamais de l'entrée.
 4. **Aucune clé d'API dans un log, une réponse HTTP, une table ou une interface d'administration.** Les secrets vivent dans l'environnement du serveur, point. Un réglage IA stocke un nom de modèle et une température, pas une clé.

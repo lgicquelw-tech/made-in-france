@@ -1506,3 +1506,43 @@ Copier `~/backups/made-in-france/` ailleurs, et relancer la commande après chaq
 base managée.
 
 **Commit.** `T0.2 : pnpm db:backup, un dump prouve par sa restauration`
+
+### 2026-09-18 · Les règles non négociables deviennent des tests
+
+**Le problème qu'on ferme.** Les règles 1, 3, 5 et 10 de `CLAUDE.md` — garde sur chaque
+route, jamais de `$queryRawUnsafe`, Zod sur toute entrée, appels relatifs — et le piège des
+routes figées au build n'étaient vérifiés que par relecture. Le 17 septembre, un script
+ponctuel avait passé 58 routes ; il n'a pas survécu à la session. Une règle qu'un humain
+doit relire à chaque commit finit par ne plus l'être : c'est ainsi que les huit failles
+critiques du projet ont vécu neuf mois.
+
+**`src/test/regles-des-routes.test.ts`** : analyse statique des 65 `route.ts`, sans base,
+en 4 ms.
+
+| Règle | Ce que le test refuse |
+|---|---|
+| Routes figées au build | un `route.ts` sans `export const dynamic = 'force-dynamic'` |
+| Règle 1 | une route sous `api/admin/**` ou `api/upload` sans `requireAdmin`/`requireSuperAdmin`, quelle que soit la méthode |
+| Règle 1 | une écriture sous `api/v1/brands/[slug]/**` sans `requireBrandOwner` |
+| Règle 2 | une route sous `api/v1/me/**` sans `requireUser` |
+| Règle 1 | **toute** écriture sans garde de session — sauf quatre exceptions **nommées, avec leur raison et ce qui remplace la garde** (inscription et chat : `enforceRateLimit` ; webhook : `constructEvent` ; NextAuth) |
+| Règle 5 | une route qui lit un corps sans `.parse`/`safeParse` — sauf les actions sans corps, nommées |
+| Règle 3 | `$queryRawUnsafe` ou `$executeRawUnsafe` n'importe où dans `src/` |
+| Prisma | un `new PrismaClient` ailleurs que `lib/db.ts` |
+| Règle 10 | `localhost:4000`, `NEXT_PUBLIC_API_URL` |
+| Hygiène | une exception déclarée pour un fichier qui n'existe plus |
+
+Une fausse alerte se corrige en **ajoutant une exception nommée**, jamais en affaiblissant
+la règle : ajouter une ligne, c'est s'engager sur le « parce que ».
+
+**Vérifié par mutation** — un test qui passe du premier coup ne prouve rien tant qu'il n'a
+pas échoué : garde retirée sur `/api/admin/studios`, `force-dynamic` retiré sur
+`/api/v1/plans`, Zod contourné sur la décision de revendication → **3 échecs, sur les trois
+bonnes règles**. Restauré : 12/12.
+
+| Vérification | Résultat |
+|---|---|
+| `pnpm test` | **177** (86 scripts, 91 web — +12) |
+| État du code au premier passage | conforme : aucune route en défaut aujourd'hui |
+
+**Commit.** `tests: les regles des routes deviennent un test, verifie par mutation`
