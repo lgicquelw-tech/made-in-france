@@ -66,13 +66,19 @@ async function getProduct(slug: string) {
   });
 }
 
-export async function generateStaticParams() {
-  const products = await prisma.product.findMany({
-    where: { status: 'ACTIVE' },
-    select: { slug: true },
-    distinct: ['slug'],
-  });
-  return products.map((product) => ({ slug: product.slug }));
+/**
+ * Aucune fiche produit n'est prérendue au build.
+ *
+ * Il y en a 35 000 publiées. Les prérendre toutes, c'est 35 000 rendus et autant de
+ * séries de requêtes **à chaque déploiement**, contre une base distante — de l'ordre de
+ * l'heure, au-delà de ce qu'un hébergeur tolère, pour des pages dont la plupart ne seront
+ * jamais vues. Avec `dynamicParams` et `revalidate`, chaque fiche est rendue à sa première
+ * visite puis servie du cache une heure : même résultat pour le visiteur, un build d'une
+ * minute. Les 899 fiches marques, elles, restent prérendues : c'est peu, et ce sont les
+ * pages d'entrée.
+ */
+export function generateStaticParams(): { slug: string }[] {
+  return [];
 }
 
 export async function generateMetadata({

@@ -1431,3 +1431,39 @@ Le contact lit `content/editeur.ts` : e-mail renseigné → affiché ; sinon « 
 l'outre-mer (T4), toutes occupées par au moins une marque publique. Corrigé.
 
 **Commit.** `pied de page: des chiffres lus en base, un contact qui n'invente rien`
+
+### 2026-09-18 · Avant la mise en ligne : le build contre la vraie base, et l'environnement
+
+**But.** `CLAUDE.md` dit : *à lancer avant toute affirmation sur la mise en ligne*. Le build
+n'avait pas été lancé localement depuis que le catalogue compte 35 000 produits — la CI le
+lance sur une base de dix produits, ce qui ne prouve rien sur ce point.
+
+**Ce que le build aurait fait.** `produits/[slug]/generateStaticParams` renvoyait **tous les
+produits publiés** : 35 137 pages à prérendre, chacune avec ses requêtes, **à chaque
+déploiement**, contre une base distante — de l'ordre de l'heure, au-delà de ce qu'un
+hébergeur tolère, pour des pages dont la plupart ne seront jamais vues. Corrigé : aucune
+fiche produit prérendue ; `dynamicParams` + `revalidate = 3600` rendent chaque fiche à sa
+première visite et la gardent une heure. Les 899 fiches marques restent prérendues.
+
+**Un piège rencontré en chemin, et consigné.** Mon premier essai a échoué sur
+`Cannot read properties of null (reading 'useContext')` dans toutes les pages d'admin — une
+erreur sans rapport apparent. Cause : j'avais exporté tout `.env` dans le shell, dont
+`NODE_ENV=development`, avant `next build`. React développement et Next production ne se
+mélangent pas. `NODE_ENV` est retiré de `.env.example` avec l'explication. Second essai,
+PostgreSQL était arrêté (requête d'arrêt à 13:02, pas de moi) ; redémarré.
+
+| Vérification | Résultat |
+|---|---|
+| `next build` contre la vraie base (899 marques, 38 770 produits) | **20 secondes**, 970 pages, 0 erreur |
+| `next start` : fiche produit, 1ʳᵉ visite / 2ᵉ | **163 ms** / **3 ms** |
+| fiche marque prérendue · accueil dynamique · produit inexistant | 6 ms · 98 ms · 404 |
+| `pnpm test:e2e` après avoir rendu `.next` au serveur dev | 35 |
+
+**`.env.example` réécrit à partir de `grep process.env`.** Il déclarait 23 variables que
+rien ne lit — Redis, Meilisearch, OpenAI, Mistral, S3, Apple, Resend, un « service IA »
+Python, un géocodeur configurable, un limiteur configurable — et trompait qui déployait sur
+ce qu'il faut fournir. Il ne reste que ce que le code lit, classé : trois obligatoires
+(`DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXT_PUBLIC_APP_URL`), puis par service, avec ce qui se
+passe quand la valeur manque (le webhook refuse tout, la carte ne rend rien).
+
+**Commit.** `mise en ligne: le build ne prerend plus 35 000 fiches, et .env.example dit vrai`
