@@ -221,7 +221,7 @@ export default function MarquesPage() {
                               : brand.logoUrl
                             }
                             alt={brand.name}
-                            className="w-12 h-12 rounded-xl object-contain"
+                            className="w-12 h-12 rounded-xl object-contain" loading="lazy" decoding="async"
                           />
                         ) : (
                           <Building2 className="w-6 h-6 text-gray-400" />

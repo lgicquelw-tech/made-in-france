@@ -1576,3 +1576,82 @@ un chargement tardif.
 | Lint | 0 erreur ; les 14 avertissements `exhaustive-deps` restent, ils ne signalent rien de faux |
 
 **Commit.** `studio: un seul chargement par page — l'effet partait trois fois`
+
+### 2026-09-29 · Les saccades au défilement : ce n'étaient pas les images
+
+**La plainte.** Le site saccade au défilement.
+
+**Mesuré d'abord.** Le fil principal n'était **pas** le problème : pendant un défilement
+programmé sur l'accueil (build de production, 1280×900), médiane **4,5 ms** entre deux
+échantillons, **zéro** écart > 16 ms, et le résultat était **identique** avec et sans les
+`backdrop-filter`. Le coût était donc **côté compositeur** — invisible dans une mesure de
+fil principal, et invisible aussi dans le volet d'aperçu, qui suspend `requestAnimationFrame`
+et n'émet pas les événements de défilement. Je le dis parce que c'est une limite réelle de
+ma mesure : je n'ai **pas** pu chronométrer des frames.
+
+**La cause, structurelle et vérifiable.** Le `<nav>` du header est **`fixed`, large de
+1 270 px**, avec `backdrop-filter: blur(24px)` — par-dessus un fond `rgba(255,255,255,0.95)`.
+À 95 % d'opacité, **le flou est imperceptible** (5 % du fond transparaît), mais le
+compositeur doit re-échantillonner et re-flouter toute la bande **à chaque frame**. Et le
+même élément portait `transition: all 0.5s`, qui animait *aussi* `backdrop-filter` et
+`box-shadow` au premier pixel de défilement.
+
+| Ce qui a été corrigé | Avant | Après |
+|---|---|---|
+| `backdrop-filter` actifs **pendant** le défilement (accueil) | **2** | **0** |
+| `transition: all` réelles (accueil) | **120** | **13** |
+| Écouteur de scroll | non passif, `setState` à **chaque** événement | `{passive:true}`, `setState` **au seul changement de valeur** |
+| Logo IA du header (toutes les pages) | SVG de **359 730 o**, deux bitmaps **1024×1024** affichés en **24×24** | **9 719 o** (**−97 %**), masque 64×64 PNG + couleur 64×64 JPEG q82 |
+| `france-ia-logo.png` | **16000 × 9000, 8,2 Mo**, **référencé nulle part** | supprimé |
+| Images sous la ligne sans `loading="lazy"` | 3 | **0** |
+| Images sans `decoding="async"` | 3 | **0** (48 balises complétées) |
+| Avatars | `object-fit: fill` → **photo écrasée** | `object-cover` |
+| `backdrop-filter` sur fonds **unis** (fiche marque ×10, secteurs ×9, régions ×13, pied de page) | flou d'un aplat = le même aplat | retirés |
+
+**Sur les images, la vérité est moins flatteuse que d'habitude.** Le coupable classique —
+une photo énorme affichée en vignette — existe ici (2560×2560 dans 226 px, soit **5,7×**,
+**65 Mo décodés** sur le premier écran), mais **je ne peux pas le corriger** : ces images
+sont **distantes**, hébergées chez les marques. `next/image` en optimise 23 sur 43 (hôtes
+déclarés) ; les autres passent en `<img>` brut parce qu'ouvrir l'optimiseur à 172 hôtes
+inconnus en ferait un proxy d'images public (`CLAUDE.md`). La seule image locale du dépôt
+était le logo — traitée. **Recommandation** : générer la liste d'hôtes depuis la base après
+chaque collecte, ce qui resterait une liste blanche bornée. C'est un changement d'architecture,
+pas une correction de défilement : non fait sans décision.
+
+**Transparence testée au pixel, pas à l'extension.** Les deux bitmaps du logo sont
+`color-type` 0 et 2, **sans canal alpha ni chunk `tRNS`** — donc entièrement opaques. La
+couche couleur part donc en JPEG q82. Le masque reste en PNG : le JPEG y produirait un
+halo sur les bords, et 22 Ko → 4 Ko, le gain serait nul.
+
+| Vérification finale | Résultat |
+|---|---|
+| Images étirées (`object-fit: fill` + ratio ≠) sur 6 pages | **0** |
+| Images en échec | **2**, toutes deux **distantes** (404 chez la marque) — 0 locale |
+| Ressources de même origine | **125**, dont **0 vide** |
+| Liens internes testés | **25**, dont **0 cassé** |
+| `pnpm typecheck` / `pnpm lint` | 6/6, 0 erreur |
+| `pnpm test` / `test:integration` / `test:e2e` | **177** / **77** / **36** |
+| `next build` | 970 pages, 0 erreur |
+
+**Ce que j'ai cassé en route, et réparé.**
+
+1. **Une mesure fausse, corrigée avant d'agir.** J'ai d'abord annoncé « 448 `transition: all` ».
+   Faux : `all` est la **valeur initiale** de `transition-property`, donc je comptais aussi
+   les éléments sans aucune transition. En filtrant sur une durée > 0 : **120**.
+2. **Un remplacement silencieusement incomplet.** Mon expression régulière `<img[^>]*?/>`
+   s'arrêtait au premier `>` — or ces balises contiennent `onError={(e) => …}`. **10 balises
+   sautées sans erreur**, sur les pages les plus visitées (`/marques` affichait encore
+   8 images sans `lazy`). Repris avec un scan qui suit les accolades et les chaînes ; contrôle
+   final : 0 balise incomplète.
+3. **Un `lazy` posé là où il ne fallait pas.** Mon passage automatique a différé l'image de
+   la **lightbox** (elle s'affiche sur un clic : elle serait apparue en retard) et deux logos
+   **au-dessus de la ligne de flottaison**. Remis en `eager`.
+4. **Une fausse alerte.** Une capture d'écran montrait le header au milieu de la page ; le DOM
+   disait `position: fixed, top: 0`. C'était un artefact du volet d'aperçu pendant un
+   défilement, pas une régression.
+
+**Ce que je n'ai pas pu mesurer, et qui reste à confirmer par toi** : le gain en frames par
+seconde. Mon environnement ne rend pas de frames. Les causes retirées sont celles que la
+littérature et la structure désignent ; le ressenti au défilement, c'est toi qui l'as.
+
+**Commit.** `perf: le flou d'un header fixe recalcule a chaque frame — et autres causes de saccade`

@@ -219,7 +219,7 @@ export default function StudioLabelsPage() {
             <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-xl">
               <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center overflow-hidden">
                 {logoUrl ? (
-                  <img src={logoUrl} alt={brand.name} className="w-full h-full object-contain p-1" />
+                  <img src={logoUrl} alt={brand.name} className="w-full h-full object-contain p-1" loading="lazy" decoding="async" />
                 ) : (
                   <Building2 className="w-5 h-5 text-slate-400" />
                 )}

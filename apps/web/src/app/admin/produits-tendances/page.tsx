@@ -220,7 +220,7 @@ export default function AdminProduitsTendancesPage() {
                           <img 
                             src={product.imageUrl} 
                             alt={product.name}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain" loading="lazy" decoding="async"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -323,7 +323,7 @@ export default function AdminProduitsTendancesPage() {
                           <img 
                             src={product.imageUrl} 
                             alt={product.name}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain" loading="lazy" decoding="async"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400">

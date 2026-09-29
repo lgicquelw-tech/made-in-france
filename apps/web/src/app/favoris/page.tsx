@@ -155,7 +155,7 @@ export default function FavorisPage() {
                           style={{ backgroundColor: fav.brand.sectorColor ? `${fav.brand.sectorColor}15` : '#f3f4f6' }}
                         >
                           {favicon ? (
-                            <img
+                            <img loading="lazy" decoding="async"
                               src={favicon}
                               alt={fav.brand.name}
                               className="w-8 h-8 object-contain"

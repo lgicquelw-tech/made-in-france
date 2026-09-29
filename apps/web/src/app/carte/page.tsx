@@ -226,7 +226,7 @@ export default function CartePage() {
                         <img 
                           src={`https://www.google.com/s2/favicons?domain=${new URL(selectedBrand.websiteUrl).hostname}&sz=64`}
                           alt={selectedBrand.name}
-                          className="w-7 h-7 object-contain"
+                          className="w-7 h-7 object-contain" loading="lazy" decoding="async"
                         />
                       </div>
                     )}

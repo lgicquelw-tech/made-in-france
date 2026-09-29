@@ -23,9 +23,12 @@ export interface ProduitCarte {
 export function ProduitCard({ produit, priorite = false }: { produit: ProduitCarte; priorite?: boolean }) {
   const couleur = produit.sectorColor || '#0D2B4E';
   return (
+    // Au survol, seules la bordure et l'ombre changent : `transition-all` obligeait le
+    // navigateur à surveiller toutes les propriétés animables, sur chaque carte du fil
+    // (84 éléments mesurés sur l'accueil).
     <Link
       href={`/produits/${produit.slug}`}
-      className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-200"
+      className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-[border-color,box-shadow] duration-200"
     >
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
         {produit.imageUrl ? (

@@ -85,12 +85,23 @@ export function Header() {
   const searchRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Scroll detection for floating nav effect
+  // Détection du défilement pour la barre flottante.
+  //
+  // `{ passive: true }` : le navigateur n'a plus à attendre de savoir si on va appeler
+  // `preventDefault()` avant de faire défiler. Et on ne remonte l'état que lorsqu'il
+  // **change** — l'ancienne version appelait `setState` à chaque événement de défilement,
+  // sur un composant de 676 lignes qui n'est pas mémoïsé.
   useEffect(() => {
+    let dernier: boolean | null = null;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const depasse = window.scrollY > 20;
+      if (depasse !== dernier) {
+        dernier = depasse;
+        setIsScrolled(depasse);
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -208,12 +219,20 @@ export function Header() {
   return (
     <>
       {/* Navigation flottante */}
-      <header className={`fixed top-0 left-0 right-0 z-50 px-4 transition-all duration-500 ${
+      {/* `transition-all` sur une barre fixe de 1 270 px animait AUSSI `backdrop-filter`
+          et `box-shadow` pendant 500 ms au premier pixel de défilement. On n'anime que
+          l'espacement, qui est la seule chose qui change ici. */}
+      <header className={`fixed top-0 left-0 right-0 z-50 px-4 transition-[padding] duration-500 ${
         isScrolled ? 'pt-3' : 'pt-4 md:pt-6'
       }`}>
-        <nav className={`mx-auto max-w-6xl transition-all duration-500 ${
+        {/* ⚠️ Pas de `backdrop-blur` à l'état déroulé : le fond y est opaque à 95 %, le flou
+            n'y est donc pas perceptible — mais le compositeur devait re-flouter toute la
+            largeur de la barre à CHAQUE frame de défilement. C'était la cause n°1 des
+            saccades (29 septembre 2026). Il reste en haut de page, où le fond à 80 % le
+            laisse voir et où l'on ne défile pas encore. */}
+        <nav className={`mx-auto max-w-6xl transition-[background-color,box-shadow,border-color] duration-500 ${
           isScrolled
-            ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-france-blue/5 border border-gray-200/50 rounded-full'
+            ? 'bg-white/95 shadow-lg shadow-france-blue/5 border border-gray-200/50 rounded-full'
             : 'bg-white/80 backdrop-blur-xl shadow-soft border border-gray-100/50 rounded-full'
         }`}>
           <div className="flex items-center justify-between h-14 md:h-16 px-4 md:px-6">
@@ -294,7 +313,11 @@ export function Header() {
                       <img
                         src={session.user.image}
                         alt={session.user.name || 'Avatar'}
-                        className="w-8 h-8 rounded-full ring-2 ring-white shadow-sm"
+                        loading="lazy"
+                        decoding="async"
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm"
                       />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-france-blue to-france-blue/80 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
@@ -471,6 +494,8 @@ export function Header() {
                                 <img
                                   src={product.imageUrl}
                                   alt={product.name}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
                               ) : (
@@ -516,6 +541,8 @@ export function Header() {
                               <img
                                 src={product.imageUrl}
                                 alt={product.name}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-contain"
                               />
                             ) : (
@@ -558,7 +585,7 @@ export function Header() {
                           {brandLogoUrl(brand) ? (
                             <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={brandLogoUrl(brand)!} alt="" className="w-7 h-7 object-contain" />
+                              <img src={brandLogoUrl(brand)!} alt="" loading="lazy" decoding="async" width={28} height={28} className="w-7 h-7 object-contain" />
                             </div>
                           ) : (
                             <div
@@ -610,7 +637,11 @@ export function Header() {
                     <img
                       src={session.user.image}
                       alt={session.user.name || 'Avatar'}
-                      className="w-12 h-12 rounded-xl shadow-sm"
+                      loading="lazy"
+                      decoding="async"
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 rounded-xl object-cover shadow-sm"
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-france-blue to-france-blue/80 text-white flex items-center justify-center font-semibold shadow-sm">

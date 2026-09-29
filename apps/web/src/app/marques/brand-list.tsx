@@ -354,11 +354,11 @@ export default function BrandList({
 
                   <Link href={`/marques/${brand.slug}`}>
                     <div
-                      className="relative h-20 w-full mb-5 flex items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105"
+                      className="relative h-20 w-full mb-5 flex items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105"
                       style={{ backgroundColor: brand.sectorColor ? `${brand.sectorColor}12` : '#f3f4f6' }}
                     >
                       {brandLogoUrl(brand) ? (
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={brandLogoUrl(brand)!}
                           alt={brand.name}
                           className="w-12 h-12 object-contain"

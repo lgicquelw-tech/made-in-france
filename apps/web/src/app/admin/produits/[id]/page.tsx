@@ -397,7 +397,7 @@ export default function EditProductPage() {
                 {uploadingImage ? (
                   <Loader2 className="w-8 h-8 text-france-blue animate-spin" />
                 ) : product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <div className="text-center">
                     <Upload className="w-8 h-8 text-gray-300 mx-auto mb-1" />
@@ -426,7 +426,7 @@ export default function EditProductPage() {
                 <div className="grid grid-cols-4 gap-2">
                   {product.galleryUrls.map((url, index) => (
                     <div key={index} className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100">
-                      <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                      <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       <button
                         onClick={() => removeGalleryImage(index)}
                         className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -468,7 +468,7 @@ export default function EditProductPage() {
                         isActive ? 'bg-blue-100' : 'bg-white'
                       }`}>
                         {label.logoUrl ? (
-                          <img src={label.logoUrl} alt={label.name} className="w-6 h-6 object-contain" />
+                          <img src={label.logoUrl} alt={label.name} className="w-6 h-6 object-contain" loading="lazy" decoding="async" />
                         ) : (
                           <Award className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
                         )}

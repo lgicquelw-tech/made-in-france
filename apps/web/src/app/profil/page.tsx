@@ -244,7 +244,7 @@ export default function ProfilPage() {
                       <img
                         src={session.user.image}
                         alt={session.user.name || 'Avatar'}
-                        className="w-28 h-28 md:w-32 md:h-32 rounded-2xl border-4 border-white shadow-soft-lg object-cover"
+                        className="w-28 h-28 md:w-32 md:h-32 rounded-2xl border-4 border-white shadow-soft-lg object-cover" loading="lazy" decoding="async"
                       />
                     ) : (
                       <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl border-4 border-white shadow-soft-lg bg-gradient-to-br from-france-blue to-france-blue/80 flex items-center justify-center">

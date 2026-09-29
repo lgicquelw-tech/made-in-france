@@ -243,7 +243,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                     <img
                       src={img}
                       alt={`${product.name} ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover" loading="lazy" decoding="async"
                     />
                   </button>
                 ))}
@@ -260,7 +260,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
             >
               <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
                 {brandLogoUrl && !logoError ? (
-                  <img 
+                  <img loading="eager" decoding="async" 
                     src={brandLogoUrl} 
                     alt={product.brand.name}
                     className="w-8 h-8 object-contain"
@@ -385,7 +385,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                     <img 
                       src={brandLogoUrl} 
                       alt={product.brand.name}
-                      className="w-10 h-10 object-contain"
+                      className="w-10 h-10 object-contain" loading="lazy" decoding="async"
                     />
                   ) : (
                     <span 
@@ -487,7 +487,7 @@ export default function ProductDetail({ product, similarProducts }: ProductDetai
                       <img
                         src={p.imageUrl}
                         alt={p.name}
-                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async"
                       />
                     ) : (
                       <div 

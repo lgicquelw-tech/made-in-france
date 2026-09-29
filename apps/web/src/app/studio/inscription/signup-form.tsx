@@ -208,7 +208,7 @@ export default function SignupForm() {
             <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-slate-700 flex items-center justify-center overflow-hidden">
                 {getLogoUrl(claimedBrand) ? (
-                  <img src={getLogoUrl(claimedBrand)!} alt={claimedBrand.name} className="w-full h-full object-contain p-1" />
+                  <img src={getLogoUrl(claimedBrand)!} alt={claimedBrand.name} className="w-full h-full object-contain p-1" loading="lazy" decoding="async" />
                 ) : (
                   <Building2 className="w-6 h-6 text-slate-400" />
                 )}

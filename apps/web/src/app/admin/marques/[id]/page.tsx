@@ -733,7 +733,7 @@ export default function EditBrandPage() {
                                 <div className="relative">
                                     <div className="w-28 h-28 bg-white rounded-2xl shadow-lg flex items-center justify-center overflow-hidden border-4 border-white p-2">
                                         {logoUrl ? (
-                                            <img
+                                            <img loading="lazy" decoding="async"
                                                 src={logoUrl}
                                                 alt="Logo"
                                                 className={isUploadedLogo ? "w-full h-full object-contain" : "w-16 h-16 object-contain"}
@@ -1035,7 +1035,7 @@ export default function EditBrandPage() {
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 {(brand.galleryUrls || []).map((url, index) => (
                                                     <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
-                                                        <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                                                        <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                                         <button
                                                             onClick={() => removeGalleryImage(index)}
                                                             className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1084,7 +1084,7 @@ export default function EditBrandPage() {
                                                             isActive ? 'bg-blue-100' : 'bg-white'
                                                         }`}>
                                                             {label.logoUrl ? (
-                                                                <img src={label.logoUrl} alt={label.name} className="w-6 h-6 object-contain" />
+                                                                <img src={label.logoUrl} alt={label.name} className="w-6 h-6 object-contain" loading="lazy" decoding="async" />
                                                             ) : (
                                                                 <Award className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
                                                             )}
@@ -1495,7 +1495,7 @@ export default function EditBrandPage() {
                                     <div className="grid grid-cols-4 gap-2">
                                         {(editingProduct?.galleryUrls || []).map((url, index) => (
                                             <div key={index} className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100">
-                                                <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                                                <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                                 <button
                                                     onClick={() => removeProductGalleryImage(index)}
                                                     className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"

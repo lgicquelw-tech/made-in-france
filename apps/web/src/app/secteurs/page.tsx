@@ -131,12 +131,12 @@ export default async function SecteursPage() {
               <Link
                 key={sector.slug}
                 href={`/secteurs/${sector.slug}`}
-                className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-gray-200 hover:-translate-y-1"
+                className="group relative bg-white/80 rounded-2xl shadow-sm hover:shadow-xl transition-[box-shadow,border-color,transform] duration-500 overflow-hidden border border-gray-100 hover:border-gray-200 hover:-translate-y-1"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Barre de couleur animée en haut */}
                 <div
-                  className="absolute top-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500 ease-out"
+                  className="absolute top-0 left-0 h-1 w-0 group-hover:w-full transition-[width] duration-500 ease-out"
                   style={{ backgroundColor: sector.color }}
                 />
 
@@ -180,7 +180,7 @@ export default async function SecteursPage() {
                     </div>
 
                     <div
-                      className="flex items-center gap-1 text-sm font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0"
+                      className="flex items-center gap-1 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-x-2 group-hover:translate-x-0"
                       style={{ color: sector.color }}
                     >
                       Explorer

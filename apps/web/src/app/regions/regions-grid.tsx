@@ -168,7 +168,7 @@ export default function RegionsGrid({ regions }: RegionsGridProps) {
                 <Link
                   key={region.id}
                   href={`/regions/${region.slug}`}
-                  className="group relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-gray-200 hover:-translate-y-1"
+                  className="group relative bg-white/80 rounded-2xl shadow-sm hover:shadow-xl transition-[box-shadow,border-color,transform] duration-500 overflow-hidden border border-gray-100 hover:border-gray-200 hover:-translate-y-1"
                 >
                   {/* Barre de couleur animée en haut */}
                   <div

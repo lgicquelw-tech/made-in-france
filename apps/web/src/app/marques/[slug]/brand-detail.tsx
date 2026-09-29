@@ -48,7 +48,7 @@ function ProductsSection({
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+    <div className="bg-white/80 rounded-2xl p-8 border border-white/50 shadow-soft">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-france-blue">
           Produits ({products.length})
@@ -133,7 +133,7 @@ function GallerySection({ images, brandName, sectorColor }: { images: string[]; 
 
   return (
     <>
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+      <div className="bg-white/80 rounded-2xl p-8 border border-white/50 shadow-soft">
         <h2 className="text-xl font-semibold text-france-blue mb-6 flex items-center gap-2">
           <ImageIcon className="h-5 w-5" style={{ color: sectorColor }} />
           Galerie photos ({images.length})
@@ -148,7 +148,7 @@ function GallerySection({ images, brandName, sectorColor }: { images: string[]; 
               <img
                 src={url}
                 alt={`${brandName} - Photo ${index + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover" loading="lazy" decoding="async"
               />
             </button>
           ))}
@@ -182,10 +182,12 @@ function GallerySection({ images, brandName, sectorColor }: { images: string[]; 
             </>
           )}
           
+          {/* Lightbox : l'image est demandée par un clic, la différer la ferait
+              apparaître en retard. `eager` est le bon choix ici. */}
           <img
             src={images[currentIndex]}
             alt={`${brandName} - Photo ${currentIndex + 1}`}
-            className="max-h-[90vh] max-w-[90vw] object-contain"
+            className="max-h-[90vh] max-w-[90vw] object-contain" loading="eager" decoding="async"
           />
           
           <div className="absolute bottom-4 text-white text-sm">
@@ -215,7 +217,7 @@ function VideoSection({ videoUrl, brandName, sectorColor }: { videoUrl: string; 
 
   return (
     <>
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
+      <div className="bg-white/80 rounded-2xl p-6 border border-white/50 shadow-soft">
         <h3 className="font-semibold text-france-blue mb-4 flex items-center gap-2">
           <Youtube className="h-5 w-5" style={{ color: sectorColor }} />
           Vidéo
@@ -224,7 +226,7 @@ function VideoSection({ videoUrl, brandName, sectorColor }: { videoUrl: string; 
           className="relative w-full aspect-video rounded-xl overflow-hidden cursor-pointer group"
           onClick={() => setIsOpen(true)}
         >
-          <img
+          <img loading="lazy" decoding="async"
             src={thumbnailUrl}
             alt={`Vidéo ${brandName}`}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -367,7 +369,7 @@ function SectionContent({
   }, [section.content]);
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+    <div className="bg-white/80 rounded-2xl p-8 border border-white/50 shadow-soft">
       <h2 className="text-xl font-semibold text-france-blue mb-4 flex items-center gap-2">
         <IconComponent className="h-5 w-5" style={{ color: sectorColor }} />
         {section.title}
@@ -503,11 +505,11 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
                 <img 
                   src={brand.logoUrl}
                   alt={brand.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain" loading="eager" decoding="async"
                 />
               ) : logo ? (
                 <>
-                  <img 
+                  <img loading="eager" decoding="async" 
                     src={logo}
                     alt={brand.name}
                     className="w-16 h-16 object-contain"
@@ -711,7 +713,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
             {/* Fallback pour les anciennes marques sans sections */}
             {(!brand.aiGeneratedContent?.sections || brand.aiGeneratedContent.sections.length === 0) && brand.story && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+              <div className="bg-white/80 rounded-2xl p-8 border border-white/50 shadow-soft">
                 <h2 className="text-xl font-semibold text-france-blue mb-4 flex items-center gap-2">
                   <BookOpen className="h-5 w-5" style={{ color: sectorColor }} />
                   L'histoire de {brand.name}
@@ -730,7 +732,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
             {/* Mini carte */}
             {brand.latitude && brand.longitude && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+              <div className="bg-white/80 rounded-2xl p-8 border border-white/50 shadow-soft">
                 <h2 className="text-xl font-semibold text-france-blue mb-4">
                   Localisation
                 </h2>
@@ -765,7 +767,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
             {/* Marques similaires */}
             {similarBrands.length > 0 && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-soft">
+              <div className="bg-white/80 rounded-2xl p-8 border border-white/50 shadow-soft">
                 <h2 className="text-xl font-semibold text-france-blue mb-6">
                   Marques similaires
                 </h2>
@@ -805,7 +807,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Infos clés */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
+            <div className="bg-white/80 rounded-2xl p-6 border border-white/50 shadow-soft">
               <h3 className="font-semibold text-france-blue mb-4">Informations</h3>
               <dl className="space-y-4">
                 {brand.yearFounded && (
@@ -867,7 +869,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
             {/* Labels */}
             {brand.labels && brand.labels.length > 0 && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
+              <div className="bg-white/80 rounded-2xl p-6 border border-white/50 shadow-soft">
                 <h3 className="font-semibold text-france-blue mb-4">Labels & Certifications</h3>
                 <div className="space-y-3">
                   {brand.labels.map((bl) => (
@@ -885,7 +887,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
 
             {/* Galerie photos */}
             {brand.galleryUrls && brand.galleryUrls.length > 0 && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-soft">
+              <div className="bg-white/80 rounded-2xl p-6 border border-white/50 shadow-soft">
                 <h3 className="font-semibold text-france-blue mb-4">Galerie photos</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {brand.galleryUrls.slice(0, 4).map((url, index) => (
@@ -900,7 +902,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
                       <img
                         src={url}
                         alt={`${brand.name} - Photo ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover" loading="lazy" decoding="async"
                       />
                     </button>
                   ))}
@@ -986,7 +988,7 @@ export default function BrandDetail({ brand, similarBrands, products }: BrandDet
             <img
               src={brand.galleryUrls[currentImageIndex]}
               alt={`${brand.name} - Photo ${currentImageIndex + 1}`}
-              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl" loading="lazy" decoding="async"
             />
           </div>
           

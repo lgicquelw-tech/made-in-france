@@ -139,7 +139,7 @@ export default async function SecteurDetailPage({ params }: { params: { slug: st
                 >
                   {brandLogoUrl(brand) ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={brandLogoUrl(brand)!} alt="" className="w-8 h-8 object-contain" />
+                    <img src={brandLogoUrl(brand)!} alt="" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
                   ) : (
                     <span className="text-xl font-bold text-gray-400">{brand.name.charAt(0)}</span>
                   )}

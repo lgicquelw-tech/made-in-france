@@ -45,7 +45,7 @@ export default function HomeContent({ fil, marques, secteurs, nbMarques }: Props
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
           {secteurs.map((s) => (
-            <Link key={s.id} href={`/secteurs/${s.slug}`} className="group rounded-xl border border-gray-100 bg-white p-3 text-center hover:border-gray-200 hover:shadow-md transition-all">
+            <Link key={s.id} href={`/secteurs/${s.slug}`} className="group rounded-xl border border-gray-100 bg-white p-3 text-center hover:border-gray-200 hover:shadow-md transition-[border-color,box-shadow]">
               <div className="text-2xl mb-1" aria-hidden>{ICONES[s.slug] ?? '📦'}</div>
               <p className="text-xs font-medium text-gray-900 leading-tight group-hover:text-france-blue">{s.name}</p>
               <p className="text-[11px] text-gray-500">{s.brandCount} marques</p>
@@ -65,11 +65,11 @@ export default function HomeContent({ fil, marques, secteurs, nbMarques }: Props
             {marques.map((m) => {
               const logo = brandLogoUrl(m, 64);
               return (
-                <Link key={m.id} href={`/marques/${m.slug}`} className="group flex gap-4 rounded-2xl border border-gray-100 bg-white p-4 hover:border-gray-200 hover:shadow-md transition-all">
+                <Link key={m.id} href={`/marques/${m.slug}`} className="group flex gap-4 rounded-2xl border border-gray-100 bg-white p-4 hover:border-gray-200 hover:shadow-md transition-[border-color,box-shadow]">
                   <div className="w-14 h-14 rounded-xl border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden bg-white">
                     {/* Favicon de 64 px : pas d'optimiseur pour si petit (T4.10). */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    {logo ? <img src={logo} alt="" className="w-8 h-8 object-contain" /> : <span className="text-xl font-bold" style={{ color: m.sectorColor ?? '#0D2B4E' }}>{m.name.charAt(0)}</span>}
+                    {logo ? <img src={logo} alt="" loading="lazy" decoding="async" width={32} height={32} className="w-8 h-8 object-contain" /> : <span className="text-xl font-bold" style={{ color: m.sectorColor ?? '#0D2B4E' }}>{m.name.charAt(0)}</span>}
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-semibold text-gray-900 truncate group-hover:text-france-blue">{m.name}</h3>
@@ -85,7 +85,7 @@ export default function HomeContent({ fil, marques, secteurs, nbMarques }: Props
 
       {/* Carte : une invitation, pas une photo de stock. */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
-        <Link href="/carte" className="group flex items-center justify-between gap-4 rounded-2xl bg-france-blue text-white p-6 md:p-8 hover:shadow-xl transition-all">
+        <Link href="/carte" className="group flex items-center justify-between gap-4 rounded-2xl bg-france-blue text-white p-6 md:p-8 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-4">
             <MapPin className="h-8 w-8 text-france-gold flex-shrink-0" aria-hidden />
             <div>

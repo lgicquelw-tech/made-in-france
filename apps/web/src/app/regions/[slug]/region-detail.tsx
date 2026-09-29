@@ -121,7 +121,7 @@ export default function RegionDetail({
                 >
                   <div className="relative h-16 w-full mb-4 flex items-center justify-center bg-gray-100 rounded-xl">
                     {brandLogoUrl(brand) ? (
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={brandLogoUrl(brand)!}
                         alt=""
                         className="w-10 h-10 object-contain"

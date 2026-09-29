@@ -278,7 +278,7 @@ export default function BrandProducts({ brand, products }: BrandProductsProps) {
                       <img 
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async"
                       />
                     ) : (
                       <div 

@@ -97,7 +97,7 @@ export default function CollectionsPage() {
                     </div>
                     <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
                       {collection.image ? (
-                        <img src={collection.image} alt={collection.name} className="w-12 h-12 rounded-lg object-cover" />
+                        <img src={collection.image} alt={collection.name} className="w-12 h-12 rounded-lg object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <Image className="w-6 h-6 text-gray-400" />
                       )}

@@ -157,7 +157,7 @@ export default function StudiosPage() {
                         <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
                           {s.logoUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={s.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                            <img src={s.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <Building2 className="w-5 h-5 text-gray-400" />
                           )}

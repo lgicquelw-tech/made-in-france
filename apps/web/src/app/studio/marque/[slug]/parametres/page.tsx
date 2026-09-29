@@ -604,7 +604,7 @@ export default function StudioParametresPage() {
             <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-xl">
               <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center overflow-hidden">
                 {logoUrl ? (
-                  <img src={logoUrl} alt={brand.name || ''} className="w-full h-full object-contain p-1" />
+                  <img src={logoUrl} alt={brand.name || ''} className="w-full h-full object-contain p-1" loading="lazy" decoding="async" />
                 ) : (
                   <Building2 className="w-5 h-5 text-slate-400" />
                 )}
@@ -763,7 +763,7 @@ export default function StudioParametresPage() {
                     <div className="relative">
                       <div className="w-24 h-24 bg-slate-700 rounded-2xl shadow-lg flex items-center justify-center overflow-hidden border-4 border-slate-800">
                         {logoUrl ? (
-                          <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+                          <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" loading="lazy" decoding="async" />
                         ) : (
                           <span className="text-2xl font-bold text-white">{brand.name?.charAt(0) || '?'}</span>
                         )}
@@ -1039,7 +1039,7 @@ export default function StudioParametresPage() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             {(brand.galleryUrls || []).map((url, index) => (
                               <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-slate-700">
-                                <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                                <img src={url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                 <button
                                   onClick={() => removeGalleryImage(index)}
                                   className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"

@@ -63,7 +63,7 @@ export function Footer({ chiffres }: { chiffres: Chiffres | null }) {
       <div className="relative container py-16 md:py-20">
         {/* Stats bar */}
         {stats && (
-          <div className="grid grid-cols-3 gap-4 md:gap-8 mb-16 p-6 md:p-8 bg-white/80 backdrop-blur-xl rounded-3xl border border-gray-100 shadow-soft">
+          <div className="grid grid-cols-3 gap-4 md:gap-8 mb-16 p-6 md:p-8 bg-white/80 rounded-3xl border border-gray-100 shadow-soft">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-2xl md:text-4xl font-bold text-france-blue mb-1">{stat.value}</div>
@@ -134,7 +134,7 @@ export function Footer({ chiffres }: { chiffres: Chiffres | null }) {
                       className="text-sm text-gray-600 hover:text-france-blue transition-colors inline-flex items-center gap-1 group"
                     >
                       {link.name}
-                      <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
+                      <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-[opacity,transform]" />
                     </Link>
                   </li>
                 ))}

@@ -337,7 +337,7 @@ export default function LabelsPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                       {label.logoUrl ? (
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={label.logoUrl}
                           alt={label.name}
                           className="w-10 h-10 object-contain"
@@ -545,7 +545,7 @@ export default function LabelsPage() {
                 {formData.logoUrl && (
                   <div className="mb-3 relative inline-block">
                     <div className="w-20 h-20 rounded-xl border-2 border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={formData.logoUrl}
                         alt="Logo preview"
                         className="max-w-full max-h-full object-contain"

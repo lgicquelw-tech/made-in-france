@@ -229,7 +229,7 @@ export default function SearchContent({ initialQuery, initialResults }: SearchCo
                           <img 
                             src={product.imageUrl}
                             alt={product.name}
-                            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async"
                           />
                         ) : (
                           <div 
@@ -275,7 +275,7 @@ export default function SearchContent({ initialQuery, initialResults }: SearchCo
                         <div className="w-14 h-14 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {/* Favicon de 64 px dérivé du site : pas d'optimiseur pour si petit (T4.10). */}
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={brandLogoUrl(brand)!} alt="" className="w-8 h-8 object-contain" />
+                          <img src={brandLogoUrl(brand)!} alt="" className="w-8 h-8 object-contain" loading="lazy" decoding="async" />
                         </div>
                       ) : (
                         <div

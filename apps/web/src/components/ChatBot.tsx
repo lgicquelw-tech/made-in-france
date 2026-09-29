@@ -211,7 +211,7 @@ export default function ChatBot() {
                                 style={{ backgroundColor: brand.sectorColor ? `${brand.sectorColor}15` : '#f3f4f6' }}
                               >
                                 {logoUrl ? (
-                                  <img
+                                  <img loading="lazy" decoding="async"
                                     src={logoUrl}
                                     alt={brand.name}
                                     className="w-8 h-8 object-contain"
@@ -296,7 +296,7 @@ export default function ChatBot() {
                               <img
                                 src={product.imageUrl}
                                 alt={product.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" decoding="async"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-400">

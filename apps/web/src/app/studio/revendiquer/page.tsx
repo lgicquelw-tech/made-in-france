@@ -169,7 +169,7 @@ export default function StudioRevendiquerPage() {
                           >
                             <div className="w-12 h-12 rounded-lg bg-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
                               {logoUrl ? (
-                                <img src={logoUrl} alt={brand.name} className="w-full h-full object-contain p-1" />
+                                <img src={logoUrl} alt={brand.name} className="w-full h-full object-contain p-1" loading="lazy" decoding="async" />
                               ) : (
                                 <Building2 className="w-6 h-6 text-slate-400" />
                               )}
@@ -216,7 +216,7 @@ export default function StudioRevendiquerPage() {
               <div className="text-center mb-6">
                 <div className="w-20 h-20 rounded-2xl bg-slate-700 flex items-center justify-center overflow-hidden mx-auto mb-4">
                   {getLogoUrl(selectedBrand) ? (
-                    <img src={getLogoUrl(selectedBrand)!} alt={selectedBrand.name} className="w-full h-full object-contain p-2" />
+                    <img src={getLogoUrl(selectedBrand)!} alt={selectedBrand.name} className="w-full h-full object-contain p-2" loading="lazy" decoding="async" />
                   ) : (
                     <Building2 className="w-10 h-10 text-slate-400" />
                   )}
